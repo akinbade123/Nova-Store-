@@ -10,7 +10,7 @@ import { FREE_SHIPPING_THRESHOLD } from '../../data/site';
 
 export function CartDrawer() {
   const { isCartOpen, close } = useUI();
-  const { items, count, subtotal, amountToFreeShipping, updateQuantity, removeItem } = useCart();
+  const { items, loading, count, subtotal, amountToFreeShipping, updateQuantity, removeItem } = useCart();
   const progress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
   return (
@@ -40,13 +40,15 @@ export function CartDrawer() {
         )
       }
     >
-      {items.length === 0 ? (
+      {loading ? (
+        <div className="h-full" aria-busy="true" />
+      ) : items.length === 0 ? (
         <div className="flex h-full flex-col items-center justify-center px-8 py-16 text-center">
           <span className="flex size-16 items-center justify-center rounded-full bg-surface">
             <ShoppingBag className="size-7 text-ink" strokeWidth={1.5} />
           </span>
           <p className="mt-5 font-display text-xl font-semibold">Your bag is empty</p>
-          <p className="mt-2 max-w-[260px] text-sm leading-relaxed text-muted">
+          <p className="mt-2 max-w-65 text-sm leading-relaxed text-muted">
             Looks like you haven’t added anything yet. Let’s find your next favourite.
           </p>
           <Button to="/shop" onClick={close} className="mt-7">
@@ -84,7 +86,7 @@ export function CartDrawer() {
                 <Link
                   to={`/product/${product.slug}`}
                   onClick={close}
-                  className="block h-[104px] w-[84px] shrink-0 overflow-hidden rounded-xl bg-surface"
+                  className="block h-26 w-21 shrink-0 overflow-hidden rounded-xl bg-surface"
                 >
                   <img
                     src={imageUrl(product.images[0].src, { w: 168, h: 208 })}

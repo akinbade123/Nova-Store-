@@ -10,7 +10,7 @@ import { useAsync } from '../../hooks/useAsync';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { orderService } from '../../services/orderService';
 import { addressService } from '../../services/addressService';
-import { productService } from '../../services/productService';
+import { useProducts } from '../../hooks/useProducts';
 import { countryByCode } from '../../utils/validation';
 import { formatPrice } from '../../utils/format';
 import { imageUrl } from '../../utils/image';
@@ -43,7 +43,7 @@ export default function AccountOverviewPage() {
 
   const latest = orders.data?.[0];
   const defaultAddress = addresses.data?.find((address) => address.isDefault);
-  const saved = [...wishlistIds].reverse().slice(0, 4).map((id) => productService.findById(id)).filter(Boolean);
+  const { products: saved } = useProducts([...wishlistIds].reverse().slice(0, 4));
 
   const stats = [
     { label: 'Orders', value: orders.data?.length, to: '/account/orders', Icon: Package },

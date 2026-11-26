@@ -73,9 +73,9 @@ const trust = [
 ];
 
 export default function CartPage() {
-  const { items, count, subtotal, savings, amountToFreeShipping, promo, getTotals } = useCart();
+  const { items, loading: cartLoading, count, subtotal, savings, amountToFreeShipping, promo, getTotals } = useCart();
   const totals = getTotals();
-  const isEmpty = items.length === 0;
+  const isEmpty = !cartLoading && items.length === 0;
   useDocumentTitle('Your bag');
 
   // Room for the mobile checkout bar.
@@ -86,6 +86,8 @@ export default function CartPage() {
   }, [isEmpty]);
 
   const crumbs = [{ label: 'Home', to: '/' }, { label: 'Bag' }];
+
+  if (cartLoading) return <div className="min-h-[60vh]" aria-busy="true" />;
 
   if (isEmpty) {
     return (

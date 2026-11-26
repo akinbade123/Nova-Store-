@@ -9,7 +9,9 @@ export function useBuyAgain() {
   const { toast } = useToast();
   const { openCart } = useUI();
 
-  return (items) => {
+  return async (items) => {
+    // Make sure current product details (stock, price) are loaded before re-adding.
+    await productService.loadByIds(items.map((item) => item.productId));
     let added = 0;
     const unavailable = [];
     items.forEach((item) => {

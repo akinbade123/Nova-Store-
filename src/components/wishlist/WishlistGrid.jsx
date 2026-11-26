@@ -10,7 +10,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
 import { useUI } from '../../context/UIContext';
-import { productService } from '../../services/productService';
+import { useProducts } from '../../hooks/useProducts';
 import { categoryName } from '../../data/categories';
 import { discountPercent } from '../../utils/format';
 import { cn } from '../../utils/cn';
@@ -153,7 +153,9 @@ function WishlistItem({ product }) {
 export function WishlistGrid({ empty, columns = 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' }) {
   const { ids } = useWishlist();
   // Newest saves first.
-  const products = [...ids].reverse().map((id) => productService.findById(id)).filter(Boolean);
+  const { products, loading } = useProducts([...ids].reverse());
+
+  if (loading) return <div className="min-h-80" aria-busy="true" />;
 
   if (products.length === 0) {
     return (

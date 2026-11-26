@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Search, X } from 'lucide-react';
@@ -6,6 +6,8 @@ import { useUI } from '../../context/UIContext';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { productService } from '../../services/productService';
+import { USE_MOCK_DATA } from '../../services/api';
+import { useAsync } from '../../hooks/useAsync';
 import { categories } from '../../data/categories';
 import { imageUrl } from '../../utils/image';
 import { formatPrice } from '../../utils/format';
@@ -17,8 +19,14 @@ export function SearchPanel() {
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const [query, setQuery] = useState('');
-  const deferredQuery = useDeferredValue(query);
-  const results = productService.searchLocal(deferredQuery, 5);
+  // Wait for a pause in typing before asking the API, so each keystroke isn't a request.
+  const [deferredQuery, setDeferredQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDeferredQuery(query), USE_MOCK_DATA ? 0 : 200);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const { data } = useAsync(() => productService.search(deferredQuery, 5), [deferredQuery]);
+  const results = data ?? [];
 
   useLockBodyScroll(isSearchOpen);
   useEscapeKey(isSearchOpen, close);
