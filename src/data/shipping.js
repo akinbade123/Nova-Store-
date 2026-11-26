@@ -1,4 +1,4 @@
-import { FREE_SHIPPING_THRESHOLD } from './site';
+import { FREE_SHIPPING_THRESHOLD } from './site.js';
 
 /** Shipping methods. `freeOver` waives the fee once the bag subtotal reaches it. */
 export const SHIPPING_METHODS = [

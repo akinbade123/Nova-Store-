@@ -1,6 +1,6 @@
 # NOVA API specification
 
-**Status:** draft v1 for the first backend build. Every endpoint in sections 3–9 is already called by the storefront. Section 10 lists the endpoints the launch needs that the frontend doesn't call yet, and section 11 lists the frontend changes they require.
+**Status:** v1. Sections 3–9 are **implemented** in [server/](../server/README.md), except placing and cancelling orders (`501 not_implemented` until section 10 is built). Every endpoint in sections 3–9 is already called by the storefront. Section 10 lists the endpoints the launch needs that the frontend doesn't call yet, and section 11 lists the frontend changes they require.
 
 **Scope:** this spec assumes a custom backend. With a commerce engine (Medusa, Shopify), use it as the target that the frontend's service files in `src/services/` map onto.
 

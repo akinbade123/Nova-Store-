@@ -1,6 +1,6 @@
 # NOVA data model
 
-**Status:** draft v1, for PostgreSQL. It covers everything [API.md](API.md) needs and nothing more. Each section ends with what was deliberately left out, so it's clear what to add later and why it isn't needed yet.
+**Status:** v1, for PostgreSQL. **Implemented** in [server/src/db/schema.ts](../server/src/db/schema.ts); this document and that file must agree. It covers everything [API.md](API.md) needs and nothing more. Each section ends with what was deliberately left out, so it's clear what to add later and why it isn't needed yet.
 
 **Contents**
 1. [Overview](#1-overview)
@@ -44,8 +44,8 @@ Seventeen tables in five groups: accounts, catalogue, promotions and shipping, o
 | Primary keys | `text`, using the prefixes the frontend already shows: `u-`, `p-`, `addr-`, `NV-`. Generate them from random bytes, not sequences, so they can't be guessed. |
 | Money | `integer` **cents**, in columns named `*_cents`. The API converts to major units at the edge. One `currency` column per order, so a currency change later doesn't rewrite history. |
 | Time | `timestamptz`, stored in UTC. Every table has `created_at default now()`. Mutable tables also have `updated_at`. |
-| Email | `citext`, lowercased and trimmed before saving |
-| Secrets | Tokens (sessions, password resets, guest order access) are stored **only as SHA-256 hashes**. Passwords use argon2id or bcrypt, never plain SHA-256. |
+| Email | `text`, lowercased and trimmed before saving, so a plain unique index is case-insensitive. No `citext` extension is needed. |
+| Secrets | Tokens (sessions, password resets, guest order access) are stored **only as SHA-256 hashes**. Passwords use scrypt from Node's standard library (memory-hard, OWASP-recommended alongside argon2id and bcrypt), never plain SHA-256. |
 | Deletion | Hard-delete what's personal and not needed. Anonymise what accounting needs (orders). See [8](#8-rules-that-span-tables). |
 | JSON columns | Used only for data that's displayed but never queried: specs, address snapshots, the colours list |
 
@@ -55,8 +55,8 @@ Seventeen tables in five groups: accounts, catalogue, promotions and shipping, o
 | Column | Type | Notes |
 |---|---|---|
 | `id` | text PK | `u-…` |
-| `email` | citext unique not null | |
-| `password_hash` | text not null | argon2id |
+| `email` | text unique not null | Lowercased |
+| `password_hash` | text not null | `scrypt$N$r$p$salt$hash`, so the cost can be raised later |
 | `first_name`, `last_name` | text not null | |
 | `marketing` | boolean not null default false | |
 | `role` | text not null default `'customer'` | `customer` or `admin` |
@@ -127,6 +127,7 @@ Index: `unique (user_id) where is_default`. The database then guarantees there's
 | `published` | boolean not null default true | Unpublished products are hidden everywhere except admin |
 | `rating_avg` | numeric(2,1) not null default 0 | Kept in step with approved reviews |
 | `review_count` | integer not null default 0 | |
+| `rating_counts` | integer[5] not null | Approved reviews per star, `[1★ … 5★]`. The reviews `breakdown` reads it, so no count query is needed. |
 | `highlights` | text[] not null default `'{}'` | Product detail |
 | `specs` | jsonb not null default `'[]'` | `[[label, value]]` |
 | `care` | text null | |
@@ -139,7 +140,7 @@ Indexes:
 - `(category_id)`
 - `(is_featured) where published`
 - `(is_best_seller) where published`
-- a GIN trigram index on `name || ' ' || description` for `q` search (`pg_trgm`)
+- none for `q` search yet: `ILIKE` over a few dozen products is instant. Add a `pg_trgm` GIN index on `name || ' ' || description` at a few thousand.
 
 ### `product_images`
 | Column | Type | Notes |
@@ -149,7 +150,7 @@ Indexes:
 | `url` | text not null | Full CDN URL |
 | `position` | integer not null | `0` is the main image |
 | `zoom`, `focal_x`, `focal_y` | numeric null | Detail-shot crops, as in the sample data |
-| `in_gallery_only` | boolean not null default false | `true` = only on the product page `gallery`, not in `images` |
+| `kind` | text not null | `card` (the product's `images`) or `gallery` (the product page `gallery`) |
 
 ### `collections` and `collection_products`
 | `collections` column | Type | Notes |
@@ -173,7 +174,8 @@ Indexes:
 | `id` | text PK | |
 | `product_id` | text FK → products, on delete cascade | |
 | `user_id` | text FK → users, on delete set null | Null for imported reviews |
-| `order_item_id` | text FK → order_items null | Set means a verified purchase |
+| `order_item_id` | text null | Set means a verified purchase |
+| `verified` | boolean not null default false | For imported reviews verified elsewhere. The API's `verified` is `verified OR order_item_id IS NOT NULL`. |
 | `rating` | smallint not null, check 1–5 | |
 | `title`, `body` | text not null | |
 | `display_name`, `location` | text not null | "Amara O.", "Lagos". Copied, so a deleted account doesn't break the review. |
@@ -230,7 +232,7 @@ The API derives `verified` from `order_item_id is not null`.
 | `guest_token_hash` | text null | Hash of `accessToken` |
 | `status` | text not null | See the status table below |
 | `currency` | char(3) not null | |
-| `email` | citext not null | Contact details, copied at purchase |
+| `email` | text not null | Contact details, copied at purchase. Lowercased. |
 | `phone` | text not null | |
 | `marketing` | boolean not null | |
 | `shipping_address` | jsonb not null | An Address copy, without `id`, `label` or `isDefault` |
@@ -300,7 +302,7 @@ Anything else is rejected.
 ### `newsletter_subscribers`
 | Column | Type | Notes |
 |---|---|---|
-| `email` | citext PK | |
+| `email` | text PK | Lowercased |
 | `source` | text not null | `footer`, `register`… |
 | `confirmed_at` | timestamptz null | For double opt-in |
 | `unsubscribed_at` | timestamptz null | |
@@ -312,7 +314,7 @@ Anything else is rejected.
 | `ticket` | text PK | `SUP-` plus 6 digits |
 | `user_id` | text FK → users, on delete set null | |
 | `name`, `topic`, `message` | text not null | |
-| `email` | citext not null | |
+| `email` | text not null | Lowercased |
 | `order_id` | text null | As typed, not a foreign key |
 | `status` | text not null default `'open'` | `open` or `closed` |
 | `created_at` | timestamptz | |

@@ -16,6 +16,17 @@ cp .env.example .env   # optional: the defaults already use sample data
 npm run dev            # start the dev server at http://localhost:5173
 ```
 
+### Running against the real API
+
+The backend lives in [server/](server/README.md). It needs no database install for development: it runs an embedded PostgreSQL and fills it with the same sample data.
+
+```bash
+cd server && npm install && npm run dev          # terminal 1: API at http://localhost:4000/api
+VITE_USE_MOCK_DATA=false npm run dev             # terminal 2 (repo root): Vite forwards /api to it
+```
+
+Checkout isn't connected yet: in this mode the API answers `501 not_implemented` to placing an order.
+
 ## Scripts
 
 | Command | What it does |
