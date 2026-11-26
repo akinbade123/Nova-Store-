@@ -16,14 +16,14 @@ function SummaryItems({ items }) {
               alt=""
               className="h-20 w-16 rounded-xl bg-white object-cover ring-1 ring-line"
             />
-            <span className="absolute -right-2 -top-2 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ink px-1.5 text-[11px] font-semibold text-white ring-2 ring-surface">
+            <span className="absolute -right-2 -top-2 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ink px-1.5 text-2xs font-semibold text-white ring-2 ring-surface">
               {quantity}
               <span className="sr-only"> × </span>
             </span>
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{product.name}</p>
-            <p className="mt-0.5 text-[13px] text-muted">{[color, size && `Size ${size}`].filter(Boolean).join(' · ')}</p>
+            <p className="mt-0.5 text-caption text-muted">{[color, size && `Size ${size}`].filter(Boolean).join(' · ')}</p>
           </div>
           <p className="shrink-0 text-sm font-medium tabular-nums">{formatPrice(product.price * quantity)}</p>
         </li>

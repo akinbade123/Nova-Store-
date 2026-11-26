@@ -118,7 +118,7 @@ function PriceFilter({ minPrice, maxPrice, onChange }) {
                 aria-pressed={active}
                 onClick={() => (active ? onChange(null, null) : onChange(range.min, range.max))}
                 className={cn(
-                  'h-8 rounded-full px-3 text-[13px] font-medium transition-colors',
+                  'h-8 rounded-full px-3 text-caption font-medium transition-colors',
                   active ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong hover:ring-ink',
                 )}
               >
@@ -141,7 +141,7 @@ function PriceFilter({ minPrice, maxPrice, onChange }) {
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">$</span>
             <input type="number" inputMode="numeric" min="0" placeholder="Max" value={max} onChange={(e) => setMax(e.target.value)} className={inputClass} aria-invalid={Boolean(error)} />
           </label>
-          <button type="submit" className="h-10 shrink-0 rounded-lg bg-ink px-3.5 text-[13px] font-semibold text-white hover:bg-ink-soft">
+          <button type="submit" className="h-10 shrink-0 rounded-lg bg-ink px-3.5 text-caption font-semibold text-white hover:bg-ink-soft">
             Go
           </button>
         </div>

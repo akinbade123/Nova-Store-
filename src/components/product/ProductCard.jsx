@@ -70,7 +70,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
             <button
               type="button"
               onClick={handleQuickAdd}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white/95 text-[13px] font-semibold text-ink shadow-soft backdrop-blur transition-colors duration-200 hover:bg-ink hover:text-white"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white/95 text-caption font-semibold text-ink shadow-soft backdrop-blur transition-colors duration-200 hover:bg-ink hover:text-white"
             >
               {justAdded ? <Check className="size-4" /> : <Plus className="size-4" />}
               {justAdded ? 'Added to bag' : needsSize ? 'Quick add — select size' : 'Quick add'}
@@ -141,7 +141,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
             </div>
           )}
         </div>
-        <h3 id={`product-${product.id}`} className="mt-1 font-sans text-[15px] font-medium leading-snug tracking-normal">
+        <h3 id={`product-${product.id}`} className="mt-1 font-sans text-body font-medium leading-snug tracking-normal">
           <Link to={href} className="line-clamp-1 underline-offset-4 hover:underline">
             {product.name}
           </Link>

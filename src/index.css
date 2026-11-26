@@ -12,8 +12,8 @@
 
   --color-ink: #111111;
   --color-ink-soft: #2a2a2a;
-  /* #777777 from the brief is 4.48:1 on white; #737373 keeps the tone and passes WCAG AA (4.74:1). */
-  --color-muted: #737373;
+  /* Must stay at least 4.5:1 (WCAG AA) on every background it sits on, down to line (#eeeeee): #696969 is 4.73:1 there. */
+  --color-muted: #696969;
   --color-subtle: #a3a3a3;
   --color-line: #eeeeee;
   --color-line-strong: #e2e2e2;
@@ -22,10 +22,17 @@
   --color-accent: #2447f5;
   --color-accent-hover: #1a37d4;
   --color-accent-soft: #eef1ff;
-  --color-sale: #c2410c;
-  --color-success: #15803d;
+  --color-sale: #b53c0b; /* 5:1 on its own 10% tint, for sale badges */
+  --color-success: #126c36; /* 5.6:1 on its own 10% tint */
   --color-danger: #c81e1e;
   --color-star: #111111;
+
+  /* Type scale on top of Tailwind's xs (12px), sm (14px), base (16px), xl… Use these, not text-[Npx]. */
+  --text-2xs: 0.6875rem; /* 11px: counters and small badges */
+  --text-caption: 0.8125rem; /* 13px: secondary text, field errors, meta lines */
+  --text-body: 0.9375rem; /* 15px: inputs and body copy */
+  --text-heading: 1.75rem; /* 28px: section headings on phones */
+  --text-title: 2rem; /* 32px: page titles on phones */
 
   --text-display: clamp(2.5rem, 1.6rem + 3.6vw, 4.75rem);
   --text-display--line-height: 1.02;
@@ -118,6 +125,15 @@
 @media (width < 64rem) {
   body.has-bottom-bar { padding-bottom: 6rem; }
   body.has-bottom-bar [data-toaster] { bottom: 5rem; }
+}
+
+/* The small uppercase label above section headings. Add a text colour alongside it. */
+@utility eyebrow {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
 }
 
 @utility no-scrollbar {

@@ -129,11 +129,13 @@ Use `useForm(initialValues, validate)`. `validate` returns `{ field: message }`.
 Use `useToast().toast({ title, description, variant, action })` for short confirmations, with `action: { label: 'Undo', onClick }` for actions that can be undone. Use `ConfirmDialog` for destructive actions.
 
 **Sample data**
-Add products through the `p({...})` helper in `src/data/products.js`. It fills in defaults. The `id` and `slug` must be unique. `image` is an Unsplash photo id. Keep the shape matching what the API will return.
+Components never import `src/data/products.js` directly; they go through `productService`, which loads the sample catalogue from `src/services/mock/catalog.js` only in sample-data mode. Add products through the `p({...})` helper in `src/data/products.js`. It fills in defaults. The `id` and `slug` must be unique. `image` is an Unsplash photo id. Keep the shape matching what the API will return.
 
 ## 4. Styling
 
 - Use Tailwind 4 utility classes with the NOVA design tokens from the `@theme` block in `src/index.css`: `ink`, `ink-soft`, `muted`, `subtle`, `line`, `line-strong`, `surface`, `accent`, `danger`, and `font-display` / `font-sans`. Don't hard-code hex colours in components. Add a token instead.
+- Use the type scale, not `text-[Npx]`: Tailwind's sizes plus `text-2xs` (11px), `text-caption` (13px), `text-body` (15px), `text-heading` (28px) and `text-title` (32px). Use the `eyebrow` utility for the small uppercase label above a heading.
+- Check contrast when you add or change a colour: 4.5:1 for normal text on every background it appears on, including tinted badges (`bg-success/10`) and grey cards (`bg-surface`).
 - There's no `tailwind.config.js`. Tailwind 4 is set up in CSS.
 - Combine conditional classes with `cn()`. Write class names out in full, never build them from strings at runtime.
 - Use `can-hover:` for hover effects, so they don't stick on touch screens.

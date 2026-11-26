@@ -4,14 +4,15 @@ import { ArrowRight, Package, RotateCcw } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
-import { OrderStatusBadge, itemCount, orderDate } from '../../components/account/orderUtils';
+import { OrderStatusBadge } from '../../components/account/OrderStatusBadge';
+import { itemCount } from '../../utils/orders';
 import { useBuyAgain } from '../../components/account/useBuyAgain';
 import { AccountSection } from '../../layouts/AccountLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { orderService } from '../../services/orderService';
-import { formatPrice } from '../../utils/format';
+import { formatDate, formatPrice } from '../../utils/format';
 import { imageUrl } from '../../utils/image';
 import { cn } from '../../utils/cn';
 
@@ -32,7 +33,7 @@ function OrderCard({ order }) {
           </div>
           <div>
             <dt className="text-xs text-muted">Placed</dt>
-            <dd className="mt-0.5 font-medium">{orderDate(order.createdAt)}</dd>
+            <dd className="mt-0.5 font-medium">{formatDate(order.createdAt)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted">Total</dt>
@@ -98,7 +99,7 @@ export default function OrdersPage() {
               aria-selected={filter === status}
               onClick={() => setFilter(status)}
               className={cn(
-                'h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors',
+                'h-9 shrink-0 rounded-full px-4 text-caption font-medium transition-colors',
                 filter === status ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong hover:ring-ink',
               )}
             >

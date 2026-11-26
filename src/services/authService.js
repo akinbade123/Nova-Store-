@@ -7,7 +7,6 @@ import { api, mockDelay, USE_MOCK_DATA } from './api';
  */
 
 const USERS_KEY = 'nova:users';
-export const DEMO_ACCOUNT = { email: 'demo@nova.store', password: 'Nova2026!' };
 
 const reject = (code, message) => Promise.reject(Object.assign(new Error(message), { code, userMessage: message }));
 
@@ -23,6 +22,7 @@ async function readUsers() {
   } catch {
     users = [];
   }
+  const { DEMO_ACCOUNT } = await import('./mock/demoAccount.js');
   if (!users.some((user) => user.email === DEMO_ACCOUNT.email)) {
     users.push({
       id: 'u-demo',

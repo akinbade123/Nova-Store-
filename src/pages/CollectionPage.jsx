@@ -70,9 +70,9 @@ export default function CollectionPage() {
                     items={[{ label: 'Home', to: '/' }, { label: 'Collections', to: '/collections' }, { label: collection.name }]}
                     className="mb-6 [&_a:hover]:text-white [&_a]:text-white/70 [&_span]:text-white/90 [&_svg]:text-white/50"
                   />
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">{collection.eyebrow}</p>
+                  <p className="eyebrow text-white/75">{collection.eyebrow}</p>
                   <h1 className="mt-3 text-[38px] font-bold leading-[1.02] tracking-tight text-white sm:text-6xl">{collection.name}</h1>
-                  <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-white/80 sm:text-base">{collection.description}</p>
+                  <p className="mt-4 max-w-lg text-body leading-relaxed text-white/80 sm:text-base">{collection.description}</p>
                 </div>
               </>
             ) : (
@@ -107,7 +107,7 @@ export default function CollectionPage() {
         {/* More collections */}
         <section aria-labelledby="more-collections" className="mt-20 border-t border-line pt-14 lg:mt-28 lg:pt-20">
           <div className="mb-8 flex items-end justify-between gap-4">
-            <h2 id="more-collections" className="text-[28px] font-semibold leading-tight sm:text-4xl">
+            <h2 id="more-collections" className="text-heading font-semibold leading-tight sm:text-4xl">
               More collections
             </h2>
             <Link to="/collections" className="group hidden items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline sm:inline-flex">
@@ -127,7 +127,7 @@ export default function CollectionPage() {
                       className="size-full object-cover transition-transform duration-700 ease-out-soft group-hover:scale-[1.03]"
                     />
                   </div>
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted">{item.eyebrow}</p>
+                  <p className="mt-4 eyebrow text-muted">{item.eyebrow}</p>
                   <p className="mt-1.5 font-display text-xl font-semibold underline-offset-4 group-hover:underline">{item.name}</p>
                   <p className="mt-1 text-sm text-muted">{item.tagline}</p>
                 </Link>

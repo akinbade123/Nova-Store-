@@ -23,7 +23,7 @@ const paymentLabel = (payment) => {
 function InfoCard({ Icon, title, children }) {
   return (
     <div className="rounded-2xl p-5 ring-1 ring-inset ring-line">
-      <p className="flex items-center gap-2 text-[13px] font-semibold">
+      <p className="flex items-center gap-2 text-caption font-semibold">
         <Icon className="size-4" strokeWidth={1.75} aria-hidden="true" />
         {title}
       </p>
@@ -94,11 +94,11 @@ export default function OrderConfirmationPage() {
         <span className="mx-auto flex size-16 animate-fade-in items-center justify-center rounded-full bg-success text-white">
           <Check className="size-8" strokeWidth={2.25} aria-hidden="true" />
         </span>
-        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Order confirmed</p>
-        <h1 className="mt-3 text-[32px] font-bold leading-tight tracking-tight sm:text-5xl">
+        <p className="mt-6 eyebrow text-muted">Order confirmed</p>
+        <h1 className="mt-3 text-title font-bold leading-tight tracking-tight sm:text-5xl">
           Thank you, {address.firstName}!
         </h1>
-        <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-muted">
+        <p className="mx-auto mt-4 max-w-md text-body leading-relaxed text-muted">
           We’ve received your order and sent a confirmation to <span className="font-medium text-ink">{order.contact.email}</span>.
         </p>
         <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-surface py-1.5 pl-4 pr-1.5 text-sm">
@@ -177,7 +177,7 @@ export default function OrderConfirmationPage() {
               </Link>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{item.name}</p>
-                <p className="mt-0.5 text-[13px] text-muted">
+                <p className="mt-0.5 text-caption text-muted">
                   {[item.color, item.size && `Size ${item.size}`, `Qty ${item.quantity}`].filter(Boolean).join(' · ')}
                 </p>
               </div>

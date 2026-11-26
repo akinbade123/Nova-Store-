@@ -4,11 +4,14 @@ import { Container } from '../ui/Container';
 import { SectionHeader } from '../ui/SectionHeader';
 import { SmartImage } from '../ui/SmartImage';
 import { categories } from '../../data/categories';
-import { products } from '../../data/products';
-
-const countFor = (slug) => products.filter((product) => product.category === slug).length;
+import { productService } from '../../services/productService';
+import { useAsync } from '../../hooks/useAsync';
 
 export function FeaturedCategories() {
+  // One request: the catalogue's facets carry a product count per category.
+  const { data } = useAsync(() => productService.query({ limit: 1 }), []);
+  const counts = data?.facets?.categories;
+
   return (
     <section aria-labelledby="categories-heading" className="py-16 lg:py-24">
       <Container>
@@ -40,7 +43,7 @@ export function FeaturedCategories() {
                     <h3 className="font-display text-lg font-semibold leading-tight text-white sm:mt-1 sm:text-2xl">
                       {category.name}
                     </h3>
-                    <p className="mt-1 text-xs text-white/75">{countFor(category.slug)} products</p>
+                    <p className="mt-1 text-xs text-white/75">{counts?.[category.slug] != null ? `${counts[category.slug]} products` : '\u00a0'}</p>
                   </div>
                   <span
                     className="hidden size-10 shrink-0 items-center justify-center rounded-full bg-white text-ink transition-transform duration-300 ease-out-soft group-hover:translate-x-0.5 sm:flex"

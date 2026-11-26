@@ -51,13 +51,13 @@ export function CartLineItem({ item }) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs text-muted">{categoryName(product.category)}</p>
-            <h3 className="mt-0.5 font-sans text-[15px] font-semibold leading-snug tracking-normal">
+            <h3 className="mt-0.5 font-sans text-body font-semibold leading-snug tracking-normal">
               <Link to={href} className="underline-offset-4 hover:underline">
                 {product.name}
               </Link>
             </h3>
-            {variant && <p className="mt-1 text-[13px] text-muted">{variant}</p>}
-            <p className="mt-1 text-[13px] tabular-nums">
+            {variant && <p className="mt-1 text-caption text-muted">{variant}</p>}
+            <p className="mt-1 text-caption tabular-nums">
               {formatPrice(product.price)}
               {product.compareAtPrice > product.price && (
                 <s className="ml-1.5 text-muted">{formatPrice(product.compareAtPrice)}</s>
@@ -65,7 +65,7 @@ export function CartLineItem({ item }) {
               {quantity > 1 && <span className="text-muted"> each</span>}
             </p>
           </div>
-          <p className="shrink-0 text-[15px] font-semibold tabular-nums" aria-label={`Line total ${formatPrice(product.price * quantity)}`}>
+          <p className="shrink-0 text-body font-semibold tabular-nums" aria-label={`Line total ${formatPrice(product.price * quantity)}`}>
             {formatPrice(product.price * quantity)}
           </p>
         </div>
@@ -84,7 +84,7 @@ export function CartLineItem({ item }) {
             <button
               type="button"
               onClick={handleSaveForLater}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] text-muted transition-colors hover:bg-surface hover:text-ink"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-caption text-muted transition-colors hover:bg-surface hover:text-ink"
             >
               <Heart className="size-4" strokeWidth={1.75} aria-hidden="true" />
               <span className="hidden sm:inline">Save for later</span>
@@ -93,7 +93,7 @@ export function CartLineItem({ item }) {
             <button
               type="button"
               onClick={handleRemove}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] text-muted transition-colors hover:bg-surface hover:text-danger"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-caption text-muted transition-colors hover:bg-surface hover:text-danger"
             >
               <Trash2 className="size-4" strokeWidth={1.75} aria-hidden="true" />
               <span className="hidden sm:inline">Remove</span>

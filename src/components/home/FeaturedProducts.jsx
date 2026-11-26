@@ -46,7 +46,7 @@ export function FeaturedProducts() {
               aria-controls="featured-panel"
               onClick={() => setActive(tab.slug)}
               className={cn(
-                'h-10 shrink-0 rounded-full px-5 text-[13px] font-medium transition-colors duration-200',
+                'h-10 shrink-0 rounded-full px-5 text-caption font-medium transition-colors duration-200',
                 active === tab.slug
                   ? 'bg-ink text-white'
                   : 'bg-white text-ink ring-1 ring-inset ring-line-strong hover:ring-ink',

@@ -23,7 +23,7 @@ export function CheckoutLayout() {
       <header className="border-b border-line">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:h-[72px] lg:px-10">
           <Logo />
-          <p className="flex items-center gap-2 text-[13px] font-medium text-muted">
+          <p className="flex items-center gap-2 text-caption font-medium text-muted">
             <Lock className="size-4 text-ink" strokeWidth={1.75} aria-hidden="true" />
             Secure checkout
           </p>

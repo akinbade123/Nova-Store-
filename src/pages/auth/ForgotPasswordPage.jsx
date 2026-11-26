@@ -65,8 +65,8 @@ export default function ForgotPasswordPage() {
         <span className="flex size-14 items-center justify-center rounded-2xl bg-surface">
           <MailCheck className="size-7" strokeWidth={1.5} aria-hidden="true" />
         </span>
-        <h1 className="mt-6 text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Check your inbox</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted" role="status">
+        <h1 className="mt-6 text-title font-bold leading-tight tracking-tight sm:text-4xl">Check your inbox</h1>
+        <p className="mt-3 text-body leading-relaxed text-muted" role="status">
           If there’s a NOVA account for <span className="font-medium text-ink">{form.values.email.trim()}</span>, you’ll get an
           email with a link to reset your password. The link expires in 1 hour.
         </p>
@@ -114,8 +114,8 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Reset your password</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted">
+      <h1 className="text-title font-bold leading-tight tracking-tight sm:text-4xl">Reset your password</h1>
+      <p className="mt-3 text-body leading-relaxed text-muted">
         Enter the email you use for NOVA and we’ll send you a link to create a new password.
       </p>
       <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">

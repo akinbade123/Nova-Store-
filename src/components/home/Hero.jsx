@@ -5,12 +5,16 @@ import { Button } from '../ui/Button';
 import { SmartImage } from '../ui/SmartImage';
 import { imageUrl } from '../../utils/image';
 import { formatPrice } from '../../utils/format';
-import { products } from '../../data/products';
+import { productService } from '../../services/productService';
+import { useAsync } from '../../hooks/useAsync';
 
 const HERO_IMAGE = '1490481651871-ab68de25d43d';
-const spotlight = products.find((product) => product.slug === 'moto-leather-jacket');
+const SPOTLIGHT_SLUG = 'moto-leather-jacket';
 
 export function Hero() {
+  // Hidden if the product can't be loaded; the hero works without it.
+  const { data: spotlight } = useAsync(() => productService.getBySlug(SPOTLIGHT_SLUG), []);
+
   return (
     <section aria-labelledby="hero-heading" className="pt-3 sm:pt-4 lg:pt-6">
       <Container className="px-3 sm:px-6">
@@ -39,7 +43,7 @@ export function Hero() {
             <h1 id="hero-heading" className="mt-6 text-balance text-[clamp(2.5rem,1.4rem+3.2vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.035em]">
               Discover Your Next Favourite.
             </h1>
-            <p className="mt-5 max-w-[440px] text-base leading-relaxed text-ink/70 sm:text-[17px]">
+            <p className="mt-5 max-w-[440px] text-base leading-relaxed text-ink/70 sm:text-lg">
               Thoughtfully chosen electronics, fashion and home essentials — designed to be lived with and made to last.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -51,7 +55,7 @@ export function Hero() {
                 Explore Collections
               </Button>
             </div>
-            <dl className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px] text-ink/70">
+            <dl className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-caption text-ink/70">
               <div className="flex items-center gap-2">
                 <dt className="sr-only">Customer rating</dt>
                 <Star className="size-4 fill-ink text-ink" strokeWidth={0} aria-hidden="true" />
@@ -79,7 +83,7 @@ export function Hero() {
                 className="h-[88px] w-[72px] shrink-0 rounded-xl bg-surface object-cover"
               />
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Just landed</span>
+                <span className="block eyebrow text-muted">Just landed</span>
                 <span className="mt-1 block truncate text-sm font-semibold">{spotlight.name}</span>
                 <span className="mt-0.5 block text-sm text-muted">{formatPrice(spotlight.price)}</span>
               </span>

@@ -154,7 +154,7 @@ export default function CheckoutPage() {
           <ShoppingBag className="size-7" strokeWidth={1.5} aria-hidden="true" />
         </span>
         <h1 className="mt-6 text-3xl font-bold tracking-tight">Your bag is empty</h1>
-        <p className="mt-3 text-[15px] text-muted">Add something you love, then come back here to check out.</p>
+        <p className="mt-3 text-body text-muted">Add something you love, then come back here to check out.</p>
         <Button to="/shop" size="lg" className="mt-8">
           Continue shopping
         </Button>
@@ -252,7 +252,7 @@ export default function CheckoutPage() {
         <div className="flex-1 lg:flex lg:justify-end">
           <div className="mx-auto w-full max-w-xl px-4 pb-16 pt-8 sm:px-6 lg:mx-0 lg:max-w-[640px] lg:px-12 lg:pb-20 lg:pt-12 xl:pr-20">
             <nav aria-label="Checkout progress" className="mb-8">
-              <ol className="flex items-center gap-2 text-[13px] text-muted">
+              <ol className="flex items-center gap-2 text-caption text-muted">
                 <li>
                   <Link to="/cart" className="hover:text-ink">
                     Bag
@@ -282,11 +282,11 @@ export default function CheckoutPage() {
                   title="Contact"
                   aside={
                     user ? (
-                      <p className="text-[13px] text-muted">
+                      <p className="text-caption text-muted">
                         Signed in as <span className="font-medium text-ink">{user.firstName}</span>
                       </p>
                     ) : (
-                      <Link to="/login?redirect=/checkout" className="text-[13px] font-medium underline underline-offset-4 hover:text-muted">
+                      <Link to="/login?redirect=/checkout" className="text-caption font-medium underline underline-offset-4 hover:text-muted">
                         Sign in
                       </Link>
                     )

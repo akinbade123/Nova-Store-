@@ -105,7 +105,7 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col gap-6 border-t border-white/10 pt-8 lg:mt-16 lg:flex-row lg:items-center lg:justify-between">
           <PaymentIcons className="flex flex-wrap items-center gap-2" />
-          <div className="flex flex-col gap-3 text-[13px] text-white/50 sm:flex-row sm:items-center sm:gap-6">
+          <div className="flex flex-col gap-3 text-caption text-white/50 sm:flex-row sm:items-center sm:gap-6">
             <ul className="flex flex-wrap gap-x-5 gap-y-2">
               <li><Link to="/legal/privacy" className="hover:text-white">Privacy</Link></li>
               <li><Link to="/legal/terms" className="hover:text-white">Terms</Link></li>

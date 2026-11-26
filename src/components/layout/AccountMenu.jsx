@@ -68,7 +68,7 @@ export function AccountMenu({ className }) {
         aria-label={`Account menu for ${user.firstName}`}
         className="inline-flex size-10 items-center justify-center rounded-full transition-colors hover:bg-surface"
       >
-        <span className="flex size-8 items-center justify-center rounded-full bg-ink text-[11px] font-semibold tracking-wide text-white">
+        <span className="flex size-8 items-center justify-center rounded-full bg-ink text-2xs font-semibold tracking-wide text-white">
           {initials(user)}
         </span>
       </button>
@@ -82,7 +82,7 @@ export function AccountMenu({ className }) {
             <p className="text-sm font-semibold">
               {user.firstName} {user.lastName}
             </p>
-            <p className="truncate text-[13px] text-muted">{user.email}</p>
+            <p className="truncate text-caption text-muted">{user.email}</p>
           </div>
           <ul className="border-t border-line pt-1.5">
             {links.map(({ label, to, Icon }) => (

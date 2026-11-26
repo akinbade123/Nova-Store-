@@ -58,7 +58,7 @@ function ContactForm({ onReset }) {
       <div role="status" className="flex flex-col items-start rounded-3xl bg-success/[0.06] p-8 ring-1 ring-inset ring-success/20">
         <CircleCheck className="size-8 text-success" strokeWidth={1.5} aria-hidden="true" />
         <h3 className="mt-5 text-xl font-semibold">Message sent — thank you</h3>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink/75">
+        <p className="mt-2 text-body leading-relaxed text-ink/75">
           Your reference is <span className="font-semibold text-ink">{status.ticket}</span>. We’ve emailed a copy to{' '}
           <span className="font-medium text-ink">{form.values.email.trim()}</span> and will reply within a few hours (Monday to Saturday).
         </p>
@@ -88,7 +88,7 @@ function ContactForm({ onReset }) {
         </SelectField>
         <TextField label="Order number" optional placeholder="e.g. NV-8K2Q4D" autoCapitalize="characters" {...form.field('order')} />
         <div className="sm:col-span-2">
-          <label htmlFor={fieldId('message')} className="mb-1.5 flex justify-between text-[13px] font-medium">
+          <label htmlFor={fieldId('message')} className="mb-1.5 flex justify-between text-caption font-medium">
             Message
             <span className={cn('text-xs font-normal tabular-nums', messageField.value.length > 1000 ? 'text-danger' : 'text-muted')}>
               {messageField.value.length}/1000
@@ -102,13 +102,13 @@ function ContactForm({ onReset }) {
             aria-describedby={messageError ? `${fieldId('message')}-error` : undefined}
             placeholder="How can we help? Include any details that will help us sort it quickly."
             className={cn(
-              'w-full resize-y rounded-xl bg-white px-4 py-3 text-[15px] outline-none ring-1 ring-inset transition-shadow placeholder:text-subtle focus:ring-2',
+              'w-full resize-y rounded-xl bg-white px-4 py-3 text-body outline-none ring-1 ring-inset transition-shadow placeholder:text-subtle focus:ring-2',
               messageError ? 'ring-danger focus:ring-danger' : 'ring-line-strong hover:ring-subtle focus:ring-ink',
             )}
             {...messageField}
           />
           {messageError && (
-            <p id={`${fieldId('message')}-error`} className="mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium text-danger">
+            <p id={`${fieldId('message')}-error`} className="mt-1.5 flex items-start gap-1.5 text-caption font-medium text-danger">
               <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
               {messageError}
             </p>
@@ -149,8 +149,8 @@ export default function HelpPage() {
         <Container className="pb-14 pt-6 lg:pb-20 lg:pt-10">
           <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Help centre' }]} />
           <div className="mx-auto max-w-2xl pt-10 text-center lg:pt-14">
-            <h1 className="text-[36px] font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl">How can we help?</h1>
-            <p className="mt-4 text-[15px] text-muted sm:text-base">Search our answers, or get in touch — real people reply within hours.</p>
+            <h1 className="text-title font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl">How can we help?</h1>
+            <p className="mt-4 text-body text-muted sm:text-base">Search our answers, or get in touch — real people reply within hours.</p>
             <form role="search" onSubmit={(event) => event.preventDefault()} className="mt-8">
               <label className="mx-auto flex h-14 max-w-xl items-center gap-3 rounded-full bg-white px-5 shadow-soft ring-1 ring-line transition focus-within:ring-2 focus-within:ring-ink">
                 <Search className="size-5 shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
@@ -184,12 +184,12 @@ export default function HelpPage() {
                 {results.map((item) => (
                   <AccordionItem key={item.q} title={item.q} defaultOpen={results.length <= 3} headingLevel={3}>
                     <p>{item.a}</p>
-                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">{item.section.title}</p>
+                    <p className="mt-3 eyebrow text-muted">{item.section.title}</p>
                   </AccordionItem>
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-[15px] text-muted">
+              <p className="mt-3 text-body text-muted">
                 Try a different word, browse the topics below, or{' '}
                 <a href="#contact" className="font-medium text-ink underline underline-offset-4">
                   send us a message
@@ -208,8 +208,8 @@ export default function HelpPage() {
                   <li key={section.id}>
                     <a href={`#${section.id}`} className="group flex h-full flex-col rounded-2xl p-5 ring-1 ring-inset ring-line transition-colors hover:bg-surface hover:ring-transparent">
                       <Icon className="size-6" strokeWidth={1.5} aria-hidden="true" />
-                      <span className="mt-6 text-[15px] font-semibold">{section.title}</span>
-                      <span className="mt-1 text-[13px] leading-snug text-muted">{section.summary}</span>
+                      <span className="mt-6 text-body font-semibold">{section.title}</span>
+                      <span className="mt-1 text-caption leading-snug text-muted">{section.summary}</span>
                     </a>
                   </li>
                 );
@@ -220,7 +220,7 @@ export default function HelpPage() {
             <div className="mx-auto mt-16 max-w-3xl space-y-14 lg:mt-24">
               {faqSections.map((section) => (
                 <section key={section.id} id={section.id} aria-labelledby={`${section.id}-heading`} className="scroll-mt-24">
-                  <h2 id={`${section.id}-heading`} className="text-2xl font-semibold tracking-tight sm:text-[28px]">
+                  <h2 id={`${section.id}-heading`} className="text-2xl font-semibold tracking-tight sm:text-heading">
                     {section.title}
                   </h2>
                   <div className="mt-5 border-t border-line">
@@ -240,11 +240,11 @@ export default function HelpPage() {
         <section id="contact" aria-labelledby="contact-heading" className="mt-20 scroll-mt-24 border-t border-line pt-16 lg:mt-28 lg:pt-24">
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.3fr] lg:gap-16">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Contact us</p>
-              <h2 id="contact-heading" className="mt-3 text-[30px] font-semibold leading-[1.1] tracking-tight sm:text-4xl">
+              <p className="eyebrow text-muted">Contact us</p>
+              <h2 id="contact-heading" className="mt-3 text-heading font-semibold leading-[1.1] tracking-tight sm:text-4xl">
                 Still need help?
               </h2>
-              <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">
+              <p className="mt-4 max-w-md text-body leading-relaxed text-muted">
                 Our customer care team is here Monday to Saturday. Most messages get a reply within a few hours.
               </p>
               <ul className="mt-8 space-y-3">
@@ -259,14 +259,14 @@ export default function HelpPage() {
                         <Icon className="size-5" strokeWidth={1.5} aria-hidden="true" />
                       </span>
                       <span>
-                        <span className="block text-[15px] font-semibold">{title}</span>
-                        <span className="block text-[13px] text-muted">{text}</span>
+                        <span className="block text-body font-semibold">{title}</span>
+                        <span className="block text-caption text-muted">{text}</span>
                       </span>
                     </a>
                   </li>
                 ))}
               </ul>
-              <p className="mt-6 flex items-center gap-2 text-[13px] text-muted">
+              <p className="mt-6 flex items-center gap-2 text-caption text-muted">
                 <Clock className="size-4" aria-hidden="true" />
                 Have your order number ready? Find it in{' '}
                 <Link to="/account/orders" className="font-medium text-ink underline underline-offset-4">

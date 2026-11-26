@@ -55,7 +55,7 @@ export function Navbar() {
                   end={item.to === '/'}
                   className={({ isActive }) =>
                     cn(
-                      'relative inline-flex h-10 items-center px-4 text-[14px] font-medium transition-colors duration-200',
+                      'relative inline-flex h-10 items-center px-4 text-sm font-medium transition-colors duration-200',
                       'after:absolute after:inset-x-4 after:bottom-1 after:h-[1.5px] after:origin-left after:bg-ink after:transition-transform after:duration-300',
                       isActive ? 'text-ink after:scale-x-100' : 'text-muted after:scale-x-0 hover:text-ink',
                     )

@@ -90,14 +90,14 @@ export function SearchPanel() {
           {!deferredQuery.trim() ? (
             <div className="mt-8 grid gap-8 sm:grid-cols-[1fr_1.4fr]">
               <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Popular searches</p>
+                <p className="mb-3 eyebrow text-muted">Popular searches</p>
                 <ul className="flex flex-wrap gap-2">
                   {popularSearches.map((term) => (
                     <li key={term}>
                       <button
                         type="button"
                         onClick={() => setQuery(term)}
-                        className="h-9 rounded-full px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
+                        className="h-9 rounded-full px-4 text-caption font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
                       >
                         {term}
                       </button>
@@ -106,7 +106,7 @@ export function SearchPanel() {
                 </ul>
               </div>
               <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Shop by category</p>
+                <p className="mb-3 eyebrow text-muted">Shop by category</p>
                 <ul className="grid grid-cols-2 gap-2">
                   {categories.map((category) => (
                     <li key={category.id}>
@@ -131,7 +131,7 @@ export function SearchPanel() {
             <div className="mt-6" aria-live="polite">
               {results.length > 0 ? (
                 <>
-                  <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Products</p>
+                  <p className="mb-2 px-2 eyebrow text-muted">Products</p>
                   <ul className="divide-y divide-line">
                     {results.map((product) => (
                       <li key={product.id}>
@@ -147,7 +147,7 @@ export function SearchPanel() {
                           />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium">{product.name}</span>
-                            <span className="mt-0.5 block text-[13px] text-muted">{formatPrice(product.price)}</span>
+                            <span className="mt-0.5 block text-caption text-muted">{formatPrice(product.price)}</span>
                           </span>
                           <ArrowRight className="size-4 shrink-0 text-subtle" aria-hidden="true" />
                         </Link>

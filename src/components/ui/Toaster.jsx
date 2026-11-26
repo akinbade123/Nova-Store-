@@ -41,7 +41,7 @@ export function Toaster() {
           )}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-ink">{toast.title}</p>
-            {toast.description && <p className="mt-0.5 truncate text-[13px] text-muted">{toast.description}</p>}
+            {toast.description && <p className="mt-0.5 truncate text-caption text-muted">{toast.description}</p>}
           </div>
           {toast.action && (
             <button
@@ -50,7 +50,7 @@ export function Toaster() {
                 toast.action.onClick();
                 dismiss(toast.id);
               }}
-              className="shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink underline-offset-4 hover:underline"
+              className="shrink-0 rounded-full px-3 py-1.5 text-caption font-semibold text-ink underline-offset-4 hover:underline"
             >
               {toast.action.label}
             </button>

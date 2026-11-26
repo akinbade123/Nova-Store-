@@ -4,7 +4,8 @@ import { ArrowLeft, Check, Copy, CreditCard, MapPin, PackageSearch, RotateCcw, T
 import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { OrderStatusBadge, orderDate, paymentLabel, shortDate } from '../../components/account/orderUtils';
+import { OrderStatusBadge } from '../../components/account/OrderStatusBadge';
+import { paymentLabel } from '../../utils/orders';
 import { useBuyAgain } from '../../components/account/useBuyAgain';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -12,25 +13,25 @@ import { useAsync } from '../../hooks/useAsync';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { orderService } from '../../services/orderService';
 import { countryByCode } from '../../utils/validation';
-import { formatPrice } from '../../utils/format';
+import { formatDate, formatShortDate, formatPrice } from '../../utils/format';
 import { imageUrl } from '../../utils/image';
 import { cn } from '../../utils/cn';
 
 function timeline(order) {
   if (order.status === 'Cancelled') {
     return [
-      { label: 'Order placed', date: shortDate(order.createdAt), done: true },
-      { label: 'Cancelled', date: order.cancelledAt ? shortDate(order.cancelledAt) : '', done: true },
+      { label: 'Order placed', date: formatShortDate(order.createdAt), done: true },
+      { label: 'Cancelled', date: order.cancelledAt ? formatShortDate(order.cancelledAt) : '', done: true },
     ];
   }
   const reached = { Processing: 1, Shipped: 2, Delivered: 3 }[order.status] ?? 0;
   return [
-    { label: 'Order placed', date: shortDate(order.createdAt), done: true },
-    { label: 'Processing', date: reached === 1 ? 'Being packed' : shortDate(order.createdAt), done: reached >= 1 },
-    { label: 'Shipped', date: order.shippedAt ? shortDate(order.shippedAt) : '', done: reached >= 2 },
+    { label: 'Order placed', date: formatShortDate(order.createdAt), done: true },
+    { label: 'Processing', date: reached === 1 ? 'Being packed' : formatShortDate(order.createdAt), done: reached >= 1 },
+    { label: 'Shipped', date: order.shippedAt ? formatShortDate(order.shippedAt) : '', done: reached >= 2 },
     {
       label: 'Delivered',
-      date: order.deliveredAt ? shortDate(order.deliveredAt) : order.estimatedDelivery ? `Expected ${order.estimatedDelivery}` : '',
+      date: order.deliveredAt ? formatShortDate(order.deliveredAt) : order.estimatedDelivery ? `Expected ${order.estimatedDelivery}` : '',
       done: reached >= 3,
     },
   ];
@@ -61,7 +62,7 @@ function Timeline({ order }) {
               {step.label}
               {index === current && <span className="sr-only"> (current status)</span>}
             </p>
-            <p className="mt-0.5 text-[13px] text-muted">{step.date || ' '}</p>
+            <p className="mt-0.5 text-caption text-muted">{step.date || ' '}</p>
           </div>
         </li>
       ))}
@@ -156,11 +157,11 @@ export default function OrderDetailPage() {
       {back}
       <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="flex flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight sm:text-[28px]">
+          <h2 className="flex flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight sm:text-heading">
             Order {order.id}
             <OrderStatusBadge status={order.status} />
           </h2>
-          <p className="mt-1.5 text-sm text-muted">Placed on {orderDate(order.createdAt)}</p>
+          <p className="mt-1.5 text-sm text-muted">Placed on {formatDate(order.createdAt)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" onClick={() => buyAgain(order.items)}>
@@ -189,7 +190,7 @@ export default function OrderDetailPage() {
               <span>
                 <span className="font-medium">{order.tracking.carrier}</span>
                 <span className="text-muted"> · Tracking </span>
-                <span className="font-mono text-[13px] font-medium">{order.tracking.number}</span>
+                <span className="font-mono text-caption font-medium">{order.tracking.number}</span>
               </span>
             </p>
             <Button size="sm" variant="secondary" onClick={copyTracking} className="bg-white">
@@ -202,7 +203,7 @@ export default function OrderDetailPage() {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_340px]">
         <section aria-labelledby="items-heading" className="rounded-3xl p-6 ring-1 ring-inset ring-line sm:p-7">
-          <h3 id="items-heading" className="font-sans text-[15px] font-semibold tracking-normal">
+          <h3 id="items-heading" className="font-sans text-body font-semibold tracking-normal">
             Items
           </h3>
           <ul className="mt-5 divide-y divide-line">
@@ -215,13 +216,13 @@ export default function OrderDetailPage() {
                   <Link to={`/product/${item.slug}`} className="text-sm font-medium underline-offset-4 hover:underline">
                     {item.name}
                   </Link>
-                  <p className="mt-0.5 text-[13px] text-muted">
+                  <p className="mt-0.5 text-caption text-muted">
                     {[item.color, item.size && `Size ${item.size}`, `Qty ${item.quantity}`].filter(Boolean).join(' · ')}
                   </p>
                   <button
                     type="button"
                     onClick={() => buyAgain([item])}
-                    className="mt-2 text-[13px] font-medium underline underline-offset-4 hover:text-muted"
+                    className="mt-2 text-caption font-medium underline underline-offset-4 hover:text-muted"
                   >
                     Buy again
                   </button>
@@ -254,14 +255,14 @@ export default function OrderDetailPage() {
 
         <div className="space-y-4 text-sm leading-relaxed text-ink/75">
           <div className="rounded-3xl p-6 ring-1 ring-inset ring-line">
-            <p className="mb-2.5 flex items-center gap-2 text-[13px] font-semibold text-ink">
+            <p className="mb-2.5 flex items-center gap-2 text-caption font-semibold text-ink">
               <MapPin className="size-4" strokeWidth={1.75} aria-hidden="true" />
               Delivery address
             </p>
             <AddressBlock address={order.shippingAddress} />
           </div>
           <div className="rounded-3xl p-6 ring-1 ring-inset ring-line">
-            <p className="mb-2.5 flex items-center gap-2 text-[13px] font-semibold text-ink">
+            <p className="mb-2.5 flex items-center gap-2 text-caption font-semibold text-ink">
               <CreditCard className="size-4" strokeWidth={1.75} aria-hidden="true" />
               Payment
             </p>

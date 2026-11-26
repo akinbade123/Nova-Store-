@@ -21,13 +21,13 @@ export function PromoBanner() {
           />
 
           <div className="relative z-10 max-w-xl px-6 pb-8 sm:px-10 sm:pb-12 lg:px-16 lg:pb-0 xl:px-20">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">The Autumn Edit</p>
-            <h2 id="promo-heading" className="mt-4 text-[34px] font-bold leading-[1.05] text-white sm:text-5xl lg:text-[56px]">
+            <p className="eyebrow text-white/75">The Autumn Edit</p>
+            <h2 id="promo-heading" className="mt-4 text-title font-bold leading-[1.05] text-white sm:text-5xl lg:text-[56px]">
               Layers worth
               <br />
               living in.
             </h2>
-            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-white/80 sm:text-base">
+            <p className="mt-5 max-w-md text-body leading-relaxed text-white/80 sm:text-base">
               Up to 30% off knitwear, outerwear and everyday essentials — cut from softer fabrics for the colder months.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">

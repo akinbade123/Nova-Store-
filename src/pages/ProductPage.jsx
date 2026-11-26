@@ -123,7 +123,7 @@ export default function ProductPage() {
           <ProductSkeleton />
         ) : (
           <>
-            <div className="grid gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16">
               <div className="-mx-4 sm:mx-0 lg:col-span-7">
                 <div className="lg:sticky lg:top-24">
                   <ProductGallery key={product.id} images={product.gallery} name={product.name}>

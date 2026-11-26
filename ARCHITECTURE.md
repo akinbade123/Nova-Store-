@@ -123,7 +123,7 @@ The response is always `{ items, total, facets }`. `total` is the number of matc
 
 Some screens hold product IDs, not products: the cart, the wishlist and "Buy again". They need product details without waiting for a page-level request. `productService` keeps a cache for them:
 
-- **Sample-data mode:** the cache starts with the whole catalogue, so lookups are instant.
+- **Sample-data mode:** the whole catalogue goes into the cache as soon as [services/mock/catalog.js](src/services/mock/catalog.js) has loaded. `productService` loads that file (and the demo login in `services/mock/demoAccount.js`) with a dynamic `import()` only in this mode, so builds with `VITE_USE_MOCK_DATA=false` never download the sample catalogue. Components must not import `src/data/products.js` directly: go through `productService`.
 - **API mode:** every product the API returns is added to the cache, and newer responses overwrite older entries, so prices and stock stay current. `loadByIds(ids)` fetches anything missing in one request (`GET /products?ids=a,b,c`). IDs the API doesn't return are marked unavailable, and lists drop them instead of loading forever.
 - `findById(id)` reads the cache synchronously. `useProducts(ids)` re-renders when the cache changes.
 
@@ -181,7 +181,8 @@ This mode is for development only. Hashing passwords in the browser and storing 
 
 ## Styling
 
-- Tailwind CSS 4 is loaded through `@tailwindcss/vite`, so there's no `tailwind.config.js`. Design tokens (colours, fonts) are defined in an `@theme` block in [src/index.css](src/index.css) and become utility classes such as `text-ink` and `bg-surface`.
+- Tailwind CSS 4 is loaded through `@tailwindcss/vite`, so there's no `tailwind.config.js`. Design tokens (colours, fonts, type sizes) are defined in an `@theme` block in [src/index.css](src/index.css) and become utility classes such as `text-ink`, `bg-surface` and `text-caption`.
+- **Type scale:** Tailwind's `text-xs`…`text-9xl` plus five NOVA sizes: `text-2xs` (11px), `text-caption` (13px), `text-body` (15px), `text-heading` (28px, section headings on phones) and `text-title` (32px, page titles on phones). Use these rather than `text-[Npx]`. The small uppercase label above section headings is the `eyebrow` utility. Text colours must meet WCAG AA (4.5:1) on every background they sit on; the comments next to `muted`, `sale` and `success` give their ratios.
 - The custom variant `can-hover:` applies hover styles only on devices with a precise pointer, so they don't stick on touch screens.
 - `cn()` in [src/utils/cn.js](src/utils/cn.js) joins conditional class names.
 - The fonts are Inter and Manrope, loaded from Google Fonts in `index.html`.

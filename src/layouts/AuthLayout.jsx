@@ -37,7 +37,7 @@ export function AuthLayout() {
       <div className="flex min-h-dvh flex-col px-5 py-5 sm:px-10 lg:px-14 xl:px-20">
         <header className="flex items-center justify-between">
           <Logo />
-          <Link to="/" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-caption font-medium text-muted transition-colors hover:text-ink">
             <ArrowLeft className="size-4" aria-hidden="true" />
             Back to store
           </Link>
@@ -68,13 +68,13 @@ export function AuthLayout() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
           <div className="absolute inset-x-0 bottom-0 p-10 text-white xl:p-14">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">NOVA Members</p>
+            <p className="eyebrow text-white/70">NOVA Members</p>
             <p className="mt-4 max-w-md font-display text-4xl font-bold leading-[1.08] tracking-tight xl:text-5xl">
               Everything you love, in one place.
             </p>
             <ul className="mt-8 space-y-3">
               {perks.map((perk) => (
-                <li key={perk} className="flex items-center gap-3 text-[15px] text-white/85">
+                <li key={perk} className="flex items-center gap-3 text-body text-white/85">
                   <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur">
                     <Check className="size-3.5" strokeWidth={2.5} />
                   </span>
