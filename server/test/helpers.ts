@@ -6,16 +6,20 @@ import { createConsoleMailer } from '../src/lib/email.ts';
 export { DEMO_ACCOUNT };
 
 /** A fresh API on an in-memory database with migrations applied and the sample data loaded. */
-export async function testApi({ rateLimits = false } = {}) {
+export async function testApi({ rateLimits = false, trustProxyHops = 0 } = {}) {
   const database = await createDb();
   await database.migrate();
   await seed(database.db, { demoAccount: true });
   const mailer = createConsoleMailer({ quiet: true });
-  const app = createApp({ db: database.db, mailer, appUrl: 'https://nova.test', supportEmail: 'support@nova.test', rateLimits });
+  const app = createApp({ db: database.db, mailer, appUrl: 'https://nova.test', supportEmail: 'support@nova.test', rateLimits, trustProxyHops });
 
   /** Calls the API in-process. Returns the status and parsed JSON body (null for empty responses). */
-  async function call(method: string, path: string, { body, token }: { body?: unknown; token?: string } = {}) {
-    const headers: Record<string, string> = {};
+  async function call(
+    method: string,
+    path: string,
+    { body, token, headers: extra }: { body?: unknown; token?: string; headers?: Record<string, string> } = {},
+  ) {
+    const headers: Record<string, string> = { ...extra };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${token}`;
     const res = await app.request(`/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });

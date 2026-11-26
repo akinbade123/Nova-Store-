@@ -6,12 +6,21 @@ import { passwordResets, users } from '../../db/schema.ts';
 import { hashPassword, newId, newToken, passwordProblem, sha256, timingDummyHash, verifyPassword } from '../../lib/crypto.ts';
 import { sendInBackground } from '../../lib/email.ts';
 import { ApiError } from '../../lib/errors.ts';
+import { tooManyAttempts } from '../../lib/rateLimit.ts';
 import { fields, readBody } from '../../lib/validate.ts';
 import type { AppEnv, Deps } from '../../types.ts';
 import { authenticate, createSession, revokeSession, revokeUserSessions, toPublicUser } from './sessions.ts';
 
 const RESET_TTL_MS = 60 * 60 * 1000;
 const MINUTE = 60 * 1000;
+
+/**
+ * Failed sign-ins allowed per email per window, on top of the per-IP limit. Spreading guesses over many
+ * IPs doesn't help an attacker, because this counts per account. Applied to every email, existing or not,
+ * so the limit itself doesn't reveal which emails have accounts.
+ */
+const LOGIN_FAILURES_PER_EMAIL = 10;
+const LOGIN_FAILURE_WINDOW_MS = 15 * MINUTE;
 
 export const newPassword = () =>
   z
@@ -40,7 +49,7 @@ const invalidCredentials = () =>
   new ApiError(401, 'invalid_credentials', 'That email and password don’t match our records. Check them and try again.');
 
 export function authRoutes(deps: Deps) {
-  const { db, mailer, appUrl, rateLimit } = deps;
+  const { db, mailer, appUrl, rateLimit, limiter } = deps;
   const app = new Hono<AppEnv>();
 
   app.post('/auth/register', rateLimit('register', 5, MINUTE), async (c) => {
@@ -66,10 +75,17 @@ export function authRoutes(deps: Deps) {
 
   app.post('/auth/login', rateLimit('login', 10, MINUTE), async (c) => {
     const body = await readBody(c, loginBody);
+    const failuresKey = `login-failures:${body.email}`;
+    if (limiter.count(failuresKey) >= LOGIN_FAILURES_PER_EMAIL) {
+      throw tooManyAttempts('Too many sign-in attempts for this account. Wait 15 minutes, or reset your password.');
+    }
     const [user] = await db.select().from(users).where(and(eq(users.email, body.email), isNull(users.deletedAt))).limit(1);
     // Check a password even when there's no account, so response times don't reveal which emails exist.
     const valid = await verifyPassword(body.password, user?.passwordHash ?? (await timingDummyHash()));
-    if (!user || !valid) throw invalidCredentials();
+    if (!user || !valid) {
+      limiter.hit(failuresKey, LOGIN_FAILURE_WINDOW_MS);
+      throw invalidCredentials();
+    }
     const token = await createSession(db, user.id);
     return c.json({ user: toPublicUser(user), token });
   });

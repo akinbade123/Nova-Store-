@@ -21,7 +21,7 @@ if (!env.databaseUrl) {
 }
 
 if (env.isProduction) console.warn('Using the console mailer: emails are printed, not sent. Connect an email provider before launch.');
-const app = createApp({ db: database.db, mailer: createConsoleMailer(), appUrl: env.appUrl, supportEmail: env.supportEmail });
+const app = createApp({ db: database.db, mailer: createConsoleMailer(), appUrl: env.appUrl, supportEmail: env.supportEmail, trustProxyHops: env.trustProxyHops });
 
 const server = serve({ fetch: app.fetch, port: env.port }, ({ port }) => {
   console.log(`NOVA API listening on http://localhost:${port}/api (${env.databaseUrl ? 'PostgreSQL' : `embedded database in ${env.pgliteDir}`})`);

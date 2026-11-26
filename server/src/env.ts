@@ -17,4 +17,6 @@ export const env = {
   appUrl: (process.env.APP_URL ?? 'http://localhost:5173').replace(/\/$/, ''),
   /** Where support messages are sent. */
   supportEmail: process.env.SUPPORT_EMAIL ?? 'support@nova.store',
+  /** How many proxies sit in front of the API (e.g. 1 behind a Vercel rewrite). 0: ignore X-Forwarded-For. */
+  trustProxyHops: Number(process.env.TRUST_PROXY_HOPS ?? 0),
 };

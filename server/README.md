@@ -82,5 +82,6 @@ server/
 1. Set `DATABASE_URL` and `NODE_ENV=production`. Run `npm run db:migrate`, then `npm run db:seed` (without `--demo`).
 2. Connect a transactional email provider in `src/lib/email.ts`.
 3. Serve the API at `/api` on the storefront's domain, for example with a Vercel rewrite to the API's host. The storefront calls `/api` by default, so no CORS setup is needed.
-4. The rate limiter keeps its counters in memory. That's fine for one instance; with several, move the counters to the database or Redis.
-5. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
+4. If the API runs behind a proxy (a Vercel rewrite, a load balancer), set `TRUST_PROXY_HOPS` to the number of proxies, usually `1`. Otherwise every request looks like it comes from the proxy, and all shoppers share one rate limit. Never set it when clients reach the API directly: they could then fake their IP to dodge the limits.
+5. The rate limiter keeps its counters in memory. That's fine for one instance; with several, move the counters to the database or Redis.
+6. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.

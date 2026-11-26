@@ -129,4 +129,57 @@ describe('rate limiting', () => {
       await fresh.close();
     }
   });
+
+  const wrongLogin = (app: Awaited<ReturnType<typeof testApi>>, email: string, forwardedFor?: string) =>
+    app.call('POST', '/auth/login', {
+      body: { email, password: 'Wrong2026' },
+      headers: forwardedFor ? { 'X-Forwarded-For': forwardedFor } : {},
+    });
+
+  it('ignores X-Forwarded-For unless a proxy is configured, so a fake one can’t dodge the limit', async () => {
+    const fresh = await testApi({ rateLimits: true });
+    try {
+      const statuses = [];
+      for (let i = 0; i < 11; i += 1) statuses.push((await wrongLogin(fresh, `x${i}@example.com`, `10.0.${i}.1`)).status);
+      assert.equal(statuses.at(-1), 429);
+    } finally {
+      await fresh.close();
+    }
+  });
+
+  it('behind a proxy, uses the address the proxy saw, not what the client wrote', async () => {
+    const fresh = await testApi({ rateLimits: true, trustProxyHops: 1 });
+    try {
+      // The client prepends a different fake address each time; the proxy appends the real one (203.0.113.7).
+      const statuses = [];
+      for (let i = 0; i < 11; i += 1) statuses.push((await wrongLogin(fresh, `y${i}@example.com`, `10.0.${i}.1, 203.0.113.7`)).status);
+      assert.equal(statuses.at(-1), 429);
+      // A genuinely different client is unaffected.
+      assert.equal((await wrongLogin(fresh, 'z@example.com', '198.51.100.9')).status, 401);
+    } finally {
+      await fresh.close();
+    }
+  });
+
+  it('limits failed sign-ins per account, even when they come from many addresses', async () => {
+    const fresh = await testApi({ rateLimits: true, trustProxyHops: 1 });
+    try {
+      for (let i = 0; i < 10; i += 1) assert.equal((await wrongLogin(fresh, DEMO_ACCOUNT.email, `198.51.100.${i}`)).status, 401);
+      // Even the right password is refused for now, so guessing can't continue from a new address.
+      const blocked = await fresh.call('POST', '/auth/login', {
+        body: DEMO_ACCOUNT,
+        headers: { 'X-Forwarded-For': '198.51.100.200' },
+      });
+      assert.equal(blocked.status, 429);
+      assert.match(blocked.body.message, /reset your password/);
+      // Other accounts can still sign in.
+      const other = await fresh.call('POST', '/auth/register', {
+        body: { firstName: 'O', lastName: 'K', email: 'other@example.com', password: 'Password2026' },
+        headers: { 'X-Forwarded-For': '198.51.100.201' },
+      });
+      assert.equal(other.status, 201);
+    } finally {
+      await fresh.close();
+    }
+  });
 });
