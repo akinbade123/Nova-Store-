@@ -5,6 +5,33 @@ import { testimonials } from '../data/testimonials';
 import { findCollection } from '../data/collections';
 import { getProductDetails, getSampleReviews, ratingBreakdown } from '../data/productDetails';
 
+/*
+ * Product cache behind the synchronous lookups used by lists kept as ids (cart, wishlist).
+ * Sample-data mode: the whole catalogue. API mode: every product the API has returned
+ * this session, plus anything requested with loadByIds(). Fresh API responses overwrite
+ * older entries, so prices and stock stay current. Subscribe to re-render when it changes.
+ */
+const cache = new Map(USE_MOCK_DATA ? products.map((item) => [item.id, item]) : []);
+const unavailable = new Set(); // asked the API for these ids and got nothing back
+const inFlight = new Set();
+const listeners = new Set();
+let cacheVersion = 0;
+
+function notify() {
+  cacheVersion += 1;
+  listeners.forEach((listener) => listener());
+}
+
+function remember(items) {
+  const list = (Array.isArray(items) ? items : [items]).filter((item) => item?.id);
+  if (!list.length) return;
+  list.forEach((item) => {
+    cache.set(item.id, item);
+    unavailable.delete(item.id);
+  });
+  notify();
+}
+
 const discountRatio = (item) => (item.compareAtPrice ? (item.compareAtPrice - item.price) / item.compareAtPrice : 0);
 
 const sorters = {
@@ -74,6 +101,7 @@ export const productService = {
   async list(params = {}) {
     if (USE_MOCK_DATA) return mockDelay(listMock(params));
     const { data } = await api.get('/products', { params });
+    remember(data);
     return data;
   },
 
@@ -84,12 +112,14 @@ export const productService = {
     const { data } = await api.get('/products', {
       params: { ...rest, categories: selected?.length ? selected.join(',') : undefined },
     });
+    remember(data.items);
     return data;
   },
 
   async getBySlug(slug) {
     if (USE_MOCK_DATA) return mockDelay(products.find((item) => item.slug === slug) ?? null);
     const { data } = await api.get(`/products/${slug}`);
+    remember(data);
     return data;
   },
 
@@ -100,6 +130,7 @@ export const productService = {
   async getDetail(slug) {
     if (!USE_MOCK_DATA) {
       const { data } = await api.get(`/products/${slug}`, { params: { include: 'details' } });
+      remember(data);
       return data;
     }
     const product = products.find((item) => item.slug === slug);
@@ -129,6 +160,7 @@ export const productService = {
   async related(product, limit = 8) {
     if (!USE_MOCK_DATA) {
       const { data } = await api.get(`/products/${product.id}/related`, { params: { limit } });
+      remember(data);
       return data;
     }
     const others = products.filter((item) => item.id !== product.id);
@@ -137,13 +169,63 @@ export const productService = {
     return mockDelay([...same, ...rest].slice(0, limit), 700);
   },
 
-  /** Synchronous lookup used by the instant search panel and the cart. */
-  searchLocal(term, limit = 5) {
-    return term.trim() ? listMock({ search: term, limit }) : [];
+  /** Quick results for the search panel. Resolves to an array of products. */
+  async search(term, limit = 5) {
+    const q = term.trim();
+    if (!q) return [];
+    if (USE_MOCK_DATA) return listMock({ search: q, limit });
+    const { data } = await api.get('/products', { params: { q, limit } });
+    const items = data.items ?? data;
+    remember(items);
+    return items;
   },
 
+  /** Synchronous cache lookup. Returns null until the product has been loaded (see loadByIds). */
   findById(id) {
-    return products.find((item) => item.id === id) ?? null;
+    return cache.get(id) ?? null;
+  },
+
+  /** True once an id is loaded, or the API has confirmed it no longer exists. */
+  isResolved(id) {
+    return cache.has(id) || unavailable.has(id);
+  },
+
+  /**
+   * Fetches products that aren't cached yet, in one request: GET /products?ids=a,b,c.
+   * Never rejects. Ids the API doesn't return (or can't, on a network error) are marked
+   * unavailable, so lists drop them instead of loading forever.
+   */
+  async loadByIds(ids) {
+    const missing = [...new Set(ids)].filter((id) => !cache.has(id) && !unavailable.has(id) && !inFlight.has(id));
+    if (!missing.length) return;
+    if (USE_MOCK_DATA) {
+      // The whole sample catalogue is already cached, so anything missing doesn't exist.
+      missing.forEach((id) => unavailable.add(id));
+      notify();
+      return;
+    }
+    missing.forEach((id) => inFlight.add(id));
+    try {
+      const { data } = await api.get('/products', { params: { ids: missing.join(','), limit: missing.length } });
+      remember(data.items ?? data);
+    } catch {
+      /* fall through: treated as unavailable for this session */
+    } finally {
+      missing.forEach((id) => {
+        inFlight.delete(id);
+        if (!cache.has(id)) unavailable.add(id);
+      });
+      notify();
+    }
+  },
+
+  subscribe(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  },
+
+  cacheVersion() {
+    return cacheVersion;
   },
 
   async categories() {
@@ -156,6 +238,7 @@ export const productService = {
   async collection(slug, { sort = 'curated' } = {}) {
     if (!USE_MOCK_DATA) {
       const { data } = await api.get(`/collections/${slug}`, { params: { sort } });
+      remember(data?.products);
       return data;
     }
     const collection = findCollection(slug);

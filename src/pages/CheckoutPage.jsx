@@ -95,7 +95,7 @@ function ErrorSummary({ errors, innerRef }) {
 export default function CheckoutPage() {
   useDocumentTitle('Checkout');
   const navigate = useNavigate();
-  const { items, count, subtotal, promo, getTotals, clear } = useCart();
+  const { items, loading: cartLoading, count, subtotal, promo, getTotals, clear } = useCart();
   const { user } = useAuth();
   const form = useForm(loadDraft(user), validateCheckout);
   const { values, setField } = form;
@@ -118,6 +118,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     setPaymentError('');
   }, [values.paymentMethod, values.cardNumber, values.cardExpiry, values.cardCvc]);
+
+  if (cartLoading) return <div className="min-h-[60vh]" aria-busy="true" />;
 
   if (items.length === 0) {
     return (
