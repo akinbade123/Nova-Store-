@@ -26,6 +26,7 @@ export default function ForgotPasswordPage() {
   const [status, setStatus] = useState('idle'); // idle | sending | sent
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
+  const [devResetPath, setDevResetPath] = useState(null);
 
   useEffect(() => {
     if (cooldown <= 0) return undefined;
@@ -37,7 +38,8 @@ export default function ForgotPasswordPage() {
     setError('');
     setStatus('sending');
     try {
-      await requestPasswordReset(form.values.email.trim());
+      const result = await requestPasswordReset(form.values.email.trim());
+      setDevResetPath(result?.devResetPath ?? null);
       setStatus('sent');
       setCooldown(RESEND_SECONDS);
       return true;
@@ -68,7 +70,15 @@ export default function ForgotPasswordPage() {
           If there’s a NOVA account for <span className="font-medium text-ink">{form.values.email.trim()}</span>, you’ll get an
           email with a link to reset your password. The link expires in 1 hour.
         </p>
-        <Alert tone="info" className="mt-8">
+        {devResetPath && (
+          <Alert tone="info" className="mt-8">
+            Sample-data mode doesn’t send emails.{' '}
+            <Link to={devResetPath} className="font-semibold underline underline-offset-4 hover:no-underline">
+              Open the reset link
+            </Link>
+          </Alert>
+        )}
+        <Alert tone="info" className={devResetPath ? 'mt-3' : 'mt-8'}>
           Can’t find it? Check your spam or promotions folder, or make sure you used the email linked to your account.
         </Alert>
         <div className="mt-8 grid gap-3">

@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 const perks = [
   'Track orders and manage returns in one place',
-  'Save favourites to your wishlist across devices',
+  'Check out faster with your saved addresses',
   'Early access to new arrivals and member offers',
 ];
 

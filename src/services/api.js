@@ -15,13 +15,26 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+/** Fired on `window` when the API rejects the stored session. AuthProvider listens for it. */
+export const SESSION_EXPIRED_EVENT = 'nova:session-expired';
+
+/*
+ * Error contract: the API responds with { message, code }. `userMessage` is safe to show;
+ * `code` (e.g. 'email_taken') lets callers handle specific cases, the same as in sample-data mode.
+ */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const body = error.response?.data;
     const message =
-      error.response?.data?.message ??
+      body?.message ??
       (error.code === 'ECONNABORTED' ? 'The request timed out. Please try again.' : 'Something went wrong. Please try again.');
-    return Promise.reject(Object.assign(error, { userMessage: message }));
+    // A 401 on a request that carried a token means the session expired or was revoked.
+    // Requests without a token (e.g. a wrong password at sign-in) are left alone.
+    if (error.response?.status === 401 && error.config?.headers?.Authorization) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    }
+    return Promise.reject(Object.assign(error, { userMessage: message, code: body?.code ?? error.code }));
   },
 );
 

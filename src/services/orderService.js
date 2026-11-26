@@ -17,7 +17,7 @@ const newOrderId = () => `NV-${Date.now().toString(36).toUpperCase().slice(-6)}`
 export const orderService = {
   /**
    * Places an order. Payload: { contact, shippingAddress, billingAddress, shippingMethod, payment, items, totals, promo }.
-   * Card details never leave this function in full: only brand and last four digits are kept.
+   * `payment` is { method, brand, last4 }: the full card number never leaves the checkout form.
    * Sample-data mode: a card ending in 0002 is declined, to exercise the error state.
    */
   async placeOrder(payload) {
@@ -27,17 +27,15 @@ export const orderService = {
     }
 
     await mockDelay(null, 1600);
-    if (payload.payment.method === 'card' && payload.payment.cardNumber.replace(/\D/g, '').endsWith('0002')) {
+    if (payload.payment.method === 'card' && payload.payment.last4 === '0002') {
       return reject('card_declined', 'Your card was declined. Please check the details, or use a different card or payment method.');
     }
 
-    const { cardNumber, ...payment } = payload.payment;
     const order = {
       id: newOrderId(),
       createdAt: new Date().toISOString(),
       status: 'Processing',
       ...payload,
-      payment: { ...payment, last4: cardNumber ? cardNumber.replace(/\D/g, '').slice(-4) : null },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify([order, ...readOrders()].slice(0, 50)));
     return order;
