@@ -1,4 +1,4 @@
-import { api, mockDelay, USE_MOCK_DATA } from './api';
+import { api, mockDelay, nullIfNotFound, USE_MOCK_DATA } from './api';
 import { products } from '../data/products';
 import { categories } from '../data/categories';
 import { testimonials } from '../data/testimonials';
@@ -156,7 +156,9 @@ export const productService = {
    */
   async getDetail(slug) {
     if (!USE_MOCK_DATA) {
-      const { data } = await api.get(`/products/${slug}`, { params: { include: 'details' } });
+      const data = await api
+        .get(`/products/${slug}`, { params: { include: 'details' } })
+        .then((response) => response.data, nullIfNotFound);
       remember(data);
       return data;
     }
@@ -260,7 +262,7 @@ export const productService = {
   /** A curated collection with its products: { collection, products } or null. */
   async collection(slug, { sort = 'curated' } = {}) {
     if (!USE_MOCK_DATA) {
-      const { data } = await api.get(`/collections/${slug}`, { params: { sort } });
+      const data = await api.get(`/collections/${slug}`, { params: { sort } }).then((response) => response.data, nullIfNotFound);
       remember(data?.products);
       return data;
     }

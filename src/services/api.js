@@ -38,5 +38,15 @@ api.interceptors.response.use(
   },
 );
 
+/**
+ * For lookups where "doesn't exist" is a normal answer: `.catch(nullIfNotFound)` turns a 404
+ * into `null`, the same as sample-data mode, so pages show their "not found" state.
+ * Every other error is re-thrown, so pages show their error state with "Try again".
+ */
+export function nullIfNotFound(error) {
+  if (error.response?.status === 404) return null;
+  throw error;
+}
+
 /** Simulates network latency for sample data so loading states are exercised during development. */
 export const mockDelay = (data, ms = 650) => new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), ms));

@@ -61,7 +61,7 @@ src/
 └── index.css        Tailwind import and NOVA design tokens
 ```
 
-[ARCHITECTURE.md](ARCHITECTURE.md) explains how these pieces fit together and how to connect the real backend.
+[ARCHITECTURE.md](ARCHITECTURE.md) explains how these pieces fit together and how to connect the real backend. For the backend itself, [docs/API.md](docs/API.md) is the API specification and [docs/DATA_MODEL.md](docs/DATA_MODEL.md) is the database design.
 
 ## Deployment
 

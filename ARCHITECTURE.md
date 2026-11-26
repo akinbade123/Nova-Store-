@@ -193,6 +193,8 @@ This mode is for development only. Hashing passwords in the browser and storing 
 
 ## Connecting the real backend
 
+The full request and response bodies for every endpoint are in [docs/API.md](docs/API.md), and the database design is in [docs/DATA_MODEL.md](docs/DATA_MODEL.md). This section is the short version.
+
 1. Set `VITE_USE_MOCK_DATA=false` and point `VITE_API_URL` at the API.
 2. Make the API implement the endpoints the services already call:
 

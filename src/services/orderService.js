@@ -1,4 +1,4 @@
-import { api, mockDelay, USE_MOCK_DATA } from './api';
+import { api, mockDelay, nullIfNotFound, USE_MOCK_DATA } from './api';
 
 const STORAGE_KEY = 'nova:orders';
 
@@ -43,8 +43,7 @@ export const orderService = {
 
   async getOrder(id) {
     if (!USE_MOCK_DATA) {
-      const { data } = await api.get(`/orders/${id}`);
-      return data;
+      return api.get(`/orders/${id}`).then((response) => response.data, nullIfNotFound);
     }
     return mockDelay(readOrders().find((order) => order.id === id) ?? null, 300);
   },

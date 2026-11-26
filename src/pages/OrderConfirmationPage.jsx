@@ -4,6 +4,7 @@ import { Check, Copy, CreditCard, Mail, MapPin, PackageSearch, Truck } from 'luc
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
 import { useAsync } from '../hooks/useAsync';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useToast } from '../context/ToastContext';
@@ -40,7 +41,7 @@ export default function OrderConfirmationPage() {
   const [copied, setCopied] = useState(false);
 
   const passed = state?.order?.id === orderId ? state.order : null;
-  const { data, loading } = useAsync(() => (passed ? Promise.resolve(passed) : orderService.getOrder(orderId)), [orderId]);
+  const { data, loading, error, retry } = useAsync(() => (passed ? Promise.resolve(passed) : orderService.getOrder(orderId)), [orderId]);
   const order = passed ?? data;
   useDocumentTitle(order ? `Order ${order.id} confirmed` : 'Order confirmation');
 
@@ -51,6 +52,15 @@ export default function OrderConfirmationPage() {
         <Skeleton className="mx-auto h-9 w-2/3" />
         <Skeleton className="mx-auto h-4 w-1/2" />
         <Skeleton className="h-40 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  // A failed request isn't a missing order: offer a retry instead of "couldn't find".
+  if (!order && error) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <ErrorState message={error.userMessage ?? 'We couldn’t load your order.'} onRetry={retry} />
       </div>
     );
   }
