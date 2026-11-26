@@ -369,6 +369,7 @@ The current frontend sends the body shown below. **It must be replaced before la
 
 ```json
 {
+  "checkoutId": "57746f02-…",
   "userId": "u-demo",
   "contact": { "email": "…", "phone": "…", "marketing": false },
   "shippingAddress": Address, "billingAddress": Address,
@@ -463,7 +464,9 @@ The rules match `computeTotals` in `src/utils/pricing.js` exactly, so the browse
 }
 ```
 
-- **`checkoutId`** is a UUID the browser creates once per checkout. It's unique in the database, so a repeated request returns the existing order instead of creating a second one.
+- **`checkoutId`** is a UUID the browser creates once per cart. It's unique in the database, so a repeated request returns the existing order (**201** with the same body) instead of creating a second one. The frontend already sends it and follows these rules:
+  - **Same id:** retries of the same cart, including after a reload, a timeout, a network error or a 5xx. In those cases the browser can't know whether the order was created.
+  - **New id:** after a definite answer, such as `card_declined` or `validation_failed` (no order exists), after a success, or when the cart changes. So a retry can never return an order for different items.
 - The server prices everything again. If the total differs from `quoteId`'s quote, it returns `price_changed`.
 - It creates the order in `pending_payment` and starts a payment with the provider.
 
@@ -527,7 +530,7 @@ Send through a transactional email provider from a background job, so a slow ema
 |---|---|---|---|
 | 1 | ✅ **Done.** `nullIfNotFound` in `api.js` turns a 404 into `null` in `productService.getDetail`, `productService.collection` and `orderService.getOrder`. Other errors still throw, and the confirmation page now shows "Try again" for them. | `src/services/*`, `OrderConfirmationPage.jsx` | The product, collection and confirmation pages each show a "not found" state for a missing item, and an error state with "Try again" for a failed request |
 | 2 | Show `POST /checkout/quote` totals in checkout, and handle `price_changed` / `out_of_stock` | `CheckoutPage.jsx` | The server, not the browser, decides what's charged |
-| 3 | Send the launch `POST /orders` body with a `checkoutId` made once per checkout, then hand off to the provider's checkout | `CheckoutPage.jsx`, `orderService.js` | Stops double orders and keeps card data out of the app |
+| 3 | Send the launch `POST /orders` body, then hand off to the provider's checkout. ✅ **`checkoutId` part done:** it's sent today, and a same-moment double submit is blocked in the browser. | `CheckoutPage.jsx`, `orderService.js` | Stops double orders and keeps card data out of the app |
 | 4 | Replace the card fields with the provider's hosted fields or redirect. Hide PayPal and Apple Pay until they're integrated. | `PaymentMethods.jsx` | The card number must never touch NOVA's servers |
 | 5 | Keep `accessToken` (in `sessionStorage`) and pass `?token=` on the confirmation page | `OrderConfirmationPage.jsx`, `orderService.js` | Guests can reload their confirmation without exposing other orders |
 | 6 | Optional: read shipping methods from the quote instead of `src/data/shipping.js` | `pricing.js`, `ShippingMethods.jsx` | One source of truth for prices |

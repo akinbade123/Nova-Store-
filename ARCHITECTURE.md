@@ -165,6 +165,7 @@ This mode is for development only. Hashing passwords in the browser and storing 
 | `nova:cart`, `nova:promo` | local | Cart lines and the applied promo code |
 | `nova:wishlist` | local | Wishlist product IDs |
 | `nova:checkout-draft` | session | Checkout form progress, kept across page reloads |
+| `nova:checkout-id` | session | `{ id, cart }`: the `checkoutId` for the current cart, so a repeated "Place order" is recognised (see below) |
 | `nova:announcement-dismissed` | local | ID of the dismissed announcement banner |
 | `nova:users`, `nova:orders` | local | Sample-data mode only: fake accounts and orders |
 | `nova:addresses:<userId>` | local | Sample-data mode only: each user's saved addresses |
@@ -174,6 +175,7 @@ This mode is for development only. Hashing passwords in the browser and storing 
 
 - [`computeTotals`](src/utils/pricing.js) is the single function that calculates order totals. The cart drawer, cart page and checkout all use it. Prices include tax. Free-shipping thresholds are checked against the subtotal **before** discounts. A promo with a minimum spend is kept but marked inactive (`promoShortfall`) until the subtotal reaches the minimum.
 - Checkout validation rules live in [checkoutSchema.js](src/components/checkout/checkoutSchema.js). They're built from helpers in [src/utils/validation.js](src/utils/validation.js): email, phone, postal code by country, card number (Luhn check), expiry and CVC.
+- **One order per "Place order".** A ref blocks a second submit while one is in flight, so a double click can't send two. Each order also carries a `checkoutId`, one per cart, and the server returns the existing order for a repeated id. The id is kept when the outcome is unknown (timeout, network error, 5xx), and replaced after a definite answer, a success or a cart change. The full rules are under `POST /orders` in [docs/API.md](docs/API.md).
 - The full card number never leaves the checkout form. The order sends `payment: { method, brand, last4 }`, and the checkout draft saved in `sessionStorage` leaves out all card fields. With the real backend, the card fields should be replaced by a payment provider's hosted fields, and the payment token they return sent instead.
 - The order sends item prices and totals worked out in the browser. The backend must **not** trust them: it should recalculate everything from product IDs, quantities, the promo code and the shipping method.
 

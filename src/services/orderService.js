@@ -27,6 +27,9 @@ export const orderService = {
     }
 
     await mockDelay(null, 1600);
+    // Same rule as the API: a repeated checkoutId returns the order already created for it.
+    const existing = payload.checkoutId && readOrders().find((order) => order.checkoutId === payload.checkoutId);
+    if (existing) return existing;
     if (payload.payment.method === 'card' && payload.payment.last4 === '0002') {
       return reject('card_declined', 'Your card was declined. Please check the details, or use a different card or payment method.');
     }

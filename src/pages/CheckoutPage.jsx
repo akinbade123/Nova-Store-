@@ -18,6 +18,27 @@ import { cardBrand } from '../utils/validation';
 import { deliveryWindow, formatPrice } from '../utils/format';
 
 const DRAFT_KEY = 'nova:checkout-draft';
+const CHECKOUT_ID_KEY = 'nova:checkout-id';
+
+/**
+ * The id the server uses to recognise a repeated "Place order" (see docs/API.md, POST /orders).
+ * One per cart: it survives reloads and retries of the same cart, and a changed cart gets a new one,
+ * so a retry can never return an order for different items.
+ */
+function checkoutIdFor(cartSignature) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(CHECKOUT_ID_KEY));
+    if (saved?.cart === cartSignature) return saved.id;
+  } catch {
+    /* start a new one */
+  }
+  const id = crypto.randomUUID();
+  sessionStorage.setItem(CHECKOUT_ID_KEY, JSON.stringify({ id, cart: cartSignature }));
+  return id;
+}
+
+/** True when we can't know whether the server created the order: no response, or a server error. */
+const outcomeUnknown = (err) => Boolean(err.isAxiosError) && (!err.response || err.response.status >= 500);
 
 /** Saved draft first, then the signed-in profile, then blanks. */
 function loadDraft(user) {
@@ -101,6 +122,7 @@ export default function CheckoutPage() {
   const { values, setField } = form;
 
   const [placing, setPlacing] = useState(false);
+  const placingRef = useRef(false);
   const [paymentError, setPaymentError] = useState('');
   const errorSummaryRef = useRef(null);
   const paymentRef = useRef(null);
@@ -155,10 +177,14 @@ export default function CheckoutPage() {
       return;
     }
 
+    // `placing` only updates after a re-render, so a double click could otherwise submit twice.
+    if (placingRef.current) return;
+    placingRef.current = true;
     setPlacing(true);
     try {
       const shippingAddress = pickAddress(values);
       const order = await orderService.placeOrder({
+        checkoutId: checkoutIdFor(items.map((item) => `${item.key}x${item.quantity}`).join(',')),
         userId: user?.id ?? null,
         contact: { email: values.email.trim(), phone: values.phone.trim(), marketing: values.marketing },
         shippingAddress,
@@ -191,9 +217,14 @@ export default function CheckoutPage() {
         promo: totals.promoActive ? promo : null,
       });
       sessionStorage.removeItem(DRAFT_KEY);
+      sessionStorage.removeItem(CHECKOUT_ID_KEY);
       navigate(`/checkout/confirmation/${order.id}`, { replace: true, state: { order } });
       clear();
     } catch (err) {
+      // A definite "no" (e.g. card declined) means no order exists, so the next attempt is a new one.
+      // If the outcome is unknown, keep the id: the server returns the order if it was created.
+      if (!outcomeUnknown(err)) sessionStorage.removeItem(CHECKOUT_ID_KEY);
+      placingRef.current = false;
       setPlacing(false);
       setPaymentError(err.userMessage ?? 'We couldn’t process your payment. Please try again.');
       requestAnimationFrame(() => paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
