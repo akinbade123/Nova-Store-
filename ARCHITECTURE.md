@@ -197,6 +197,8 @@ This mode is for development only. Hashing passwords in the browser and storing 
 
 The full request and response bodies for every endpoint are in [docs/API.md](docs/API.md), and the database design is in [docs/DATA_MODEL.md](docs/DATA_MODEL.md). This section is the short version.
 
+**Status:** the API in [server/](server/README.md) implements every endpoint below except `POST /orders` and `POST /orders/:id/cancel`, which answer `501 not_implemented` until checkout is built. In development, Vite forwards `/api` to it on port 4000.
+
 1. Set `VITE_USE_MOCK_DATA=false` and point `VITE_API_URL` at the API.
 2. Make the API implement the endpoints the services already call:
 

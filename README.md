@@ -2,7 +2,7 @@
 
 NOVA is an online storefront for electronics, fashion, accessories and home goods. It's a single-page React app with a full shopping flow: browsing and filtering, product pages, a cart, checkout, order history, accounts and a wishlist.
 
-The backend API hasn't been built yet. Until it is, the app runs in **sample-data mode**: it serves products from local files and keeps accounts, orders and addresses in the browser's `localStorage`. You can try every flow without a server.
+By default the app runs in **sample-data mode**: it serves products from local files and keeps accounts, orders and addresses in the browser's `localStorage`, so you can try every flow without a server. The backend API in [server/](server/README.md) covers everything except checkout so far; see [Running against the real API](#running-against-the-real-api).
 
 **Stack:** React 19 · React Router 7 · Vite 8 · Tailwind CSS 4 · Axios · Lucide icons
 
@@ -18,14 +18,14 @@ npm run dev            # start the dev server at http://localhost:5173
 
 ### Running against the real API
 
-The backend lives in [server/](server/README.md). It needs no database install for development: it runs an embedded PostgreSQL and fills it with the same sample data.
+The backend lives in [server/](server/README.md) and needs **Node.js 22.18+**, because it runs TypeScript directly. It needs no database install for development: it runs an embedded PostgreSQL and fills it with the same sample data.
 
 ```bash
 cd server && npm install && npm run dev          # terminal 1: API at http://localhost:4000/api
 VITE_USE_MOCK_DATA=false npm run dev             # terminal 2 (repo root): Vite forwards /api to it
 ```
 
-Checkout isn't connected yet: in this mode the API answers `501 not_implemented` to placing an order.
+Checkout isn't connected yet. In this mode, placing an order shows "Checkout isn't available yet" and the order isn't created.
 
 ## Scripts
 
@@ -59,9 +59,11 @@ Sample data lives only in your browser. To reset it, clear the site's storage in
 ## Project layout
 
 ```
+server/              The backend API (see server/README.md)
 src/
 ├── main.jsx         Entry point: mounts <App />
-├── App.jsx          All routes and lazy-loaded pages├── layouts/         Page shells: Main, Auth, Checkout, Account
+├── App.jsx          All routes and lazy-loaded pages
+├── layouts/         Page shells: Main, Auth, Checkout, Account
 ├── pages/           One file per route
 ├── components/      Grouped by feature (cart, checkout, pdp, shop…) plus ui/ primitives
 ├── context/         App-wide state: auth, cart, wishlist, UI overlays, toasts

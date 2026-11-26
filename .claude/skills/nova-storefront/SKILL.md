@@ -5,7 +5,7 @@ description: How to work on the NOVA storefront (React 19, Vite 8, Tailwind 4, R
 
 # Working on the NOVA storefront
 
-NOVA is a client-only React single-page app. Every page reads data through service modules in `src/services/`. Until the backend exists, those services return sample data from `src/data/` and store accounts, orders and addresses in `localStorage`. `ARCHITECTURE.md` at the repo root has the full design. Read it when a task touches more than one layer.
+NOVA is a React single-page app with a Node API in `server/` (see `server/README.md` for its conventions and tests). Every page reads data through service modules in `src/services/`. In sample-data mode (the default), those services return sample data from `src/data/` and store accounts, orders and addresses in `localStorage`. With `VITE_USE_MOCK_DATA=false` they call the API, which covers everything except placing and cancelling orders so far. `ARCHITECTURE.md` at the repo root has the full design. Read it when a task touches more than one layer.
 
 Work the way a careful senior engineer would. Understand the problem before changing anything. Prefer the smallest change that fixes the real cause. Reuse what the codebase already has. Prove the change works before calling it done. People of very different experience levels use this repo, so explain what you found and what you changed in plain words.
 

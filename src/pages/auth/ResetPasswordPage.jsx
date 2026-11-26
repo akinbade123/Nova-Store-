@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
         <Button type="submit" size="lg" fullWidth loading={submitting} className="mt-8!">
           Update password
         </Button>
-      </form>
+      </form> 
       <BackToSignIn />
     </div>
   );
