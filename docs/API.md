@@ -64,6 +64,7 @@ Every error response has this body:
 | `card_declined` | 402 | Payment declined | |
 | `not_cancellable` | 409 | Order already shipped | |
 | `rate_limited` | 429 | Too many requests | |
+| `payload_too_large` | 413 | Request body over 100 KB | |
 
 ## 3. Shared objects
 
@@ -293,12 +294,13 @@ The single contract for every product list. All frontend calls go through `fetch
 |---|---|---|
 | `q` | string | Search name, category and description, case-insensitive |
 | `categories` | csv | Category slugs. A product matches if it's in any of them. |
-| `ids` | csv | Product IDs. Used by the cart and wishlist. |
+| `ids` | csv | Product IDs, at most 100. Used by the cart and wishlist. The response's `facets.categories` is then `{}`, because those callers don't need counts. |
 | `featured`, `bestSeller`, `inStock`, `onSale` | `true` | Filter when present. `onSale` means `compareAtPrice > price`. |
 | `minPrice`, `maxPrice` | number | Inclusive |
 | `minRating` | number | `rating >= minRating` |
 | `sort` | enum | `featured` (default: featured first, then by review count), `popular` (review count), `newest`, `price-asc`, `price-desc`, `rating`, `discount` (largest % off) |
 | `limit` | int | Default 12, maximum 100 |
+| `offset` | int | Matches to skip, for the next page. Default 0, maximum 10,000 |
 
 Returns:
 
@@ -309,7 +311,7 @@ Returns:
 - `total` counts every match before `limit`.
 - `facets.categories` counts matches per category using **every filter except `categories`**, so each option shows how many results choosing it would give.
 - Unknown `ids` are left out of the results, not an error.
-- The Shop page's "Load more" raises `limit` by 12 each time. That's fine at this catalogue size. Add `offset` if it grows into the hundreds.
+- The Shop page's "Load more" asks for the next 12 with `offset` and adds them to the page.
 
 ### `GET /products/:slug`
 - Returns a Product, or with `?include=details` a Product detail.
@@ -350,7 +352,13 @@ Returns:
 ## 8. Orders
 
 ### `GET /me/orders` (auth)
-- Returns `Order[]`, newest first. No pagination in v1.
+- Query: `limit` (default 10, max 50), `cursor` (the `nextCursor` from the previous page), `status` (`Processing`, `Shipped`, `Delivered` or `Cancelled`).
+- Returns one page, newest first:
+  ```json
+  { "items": [Order], "nextCursor": "NV-…" | null, "counts": { "All": 13, "Processing": 4, "Shipped": 3, "Delivered": 4, "Cancelled": 2 } }
+  ```
+- `nextCursor` is the last order's id, or `null` on the last page. The next page continues from that order's position in the database (created time, then id), so orders placed at the same moment are never skipped or repeated.
+- `counts` covers all of the user's visible orders whatever `status` is, so every status tab can show its number.
 - Include guest orders placed with the user's email **only if that email is verified**.
 - Don't list orders still waiting for payment.
 

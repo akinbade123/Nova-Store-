@@ -39,15 +39,16 @@ export default function AccountOverviewPage() {
   useDocumentTitle('My account');
   const { user } = useAuth();
   const { ids: wishlistIds, count: wishlistCount } = useWishlist();
-  const orders = useAsync(() => orderService.listOrders(user), [user.id, user.email]);
+  // Only the latest order is shown; `counts.All` gives the total without loading the rest.
+  const orders = useAsync(() => orderService.listOrders(user, { limit: 1 }), [user.id, user.email]);
   const addresses = useAsync(() => addressService.list(user.id), [user.id]);
 
-  const latest = orders.data?.[0];
+  const latest = orders.data?.items[0];
   const defaultAddress = addresses.data?.find((address) => address.isDefault);
   const { products: saved } = useProducts([...wishlistIds].reverse().slice(0, 4));
 
   const stats = [
-    { label: 'Orders', value: orders.data?.length, to: '/account/orders', Icon: Package },
+    { label: 'Orders', value: orders.data?.counts.All, to: '/account/orders', Icon: Package },
     { label: 'Wishlist', value: wishlistCount, to: '/account/wishlist', Icon: Heart },
     { label: 'Addresses', value: addresses.data?.length, to: '/account/addresses', Icon: MapPin },
   ];

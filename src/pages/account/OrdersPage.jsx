@@ -83,13 +83,27 @@ export default function OrdersPage() {
   useDocumentTitle('Orders');
   const { user } = useAuth();
   const [filter, setFilter] = useState('All');
-  const { data, loading, error, retry } = useAsync(() => orderService.listOrders(user), [user.id, user.email]);
-  const orders = (data ?? []).filter((order) => filter === 'All' || order.status === filter);
-  const countFor = (status) => (data ?? []).filter((order) => status === 'All' || order.status === status).length;
+  // The cursor belongs to a filter: switching tabs starts again at the first page.
+  const [page, setPage] = useState({ filter, cursor: null });
+  const cursor = page.filter === filter ? page.cursor : null;
+  const { data, loading, error, retry } = useAsync(
+    () =>
+      orderService.listOrders(user, { status: filter === 'All' ? undefined : filter, cursor }).then((result) => ({
+        ...result,
+        filter,
+        // "Show more" adds the next page to the orders already on screen.
+        items: cursor && data?.filter === filter ? [...data.items, ...result.items] : result.items,
+      })),
+    [user.id, user.email, filter, cursor],
+  );
+  const current = data?.filter === filter ? data : null;
+  const orders = current?.items ?? [];
+  const loadingMore = loading && Boolean(cursor) && Boolean(current);
+  const countFor = (status) => data?.counts[status] ?? 0;
 
   return (
     <AccountSection title="Orders" description="Track deliveries, view receipts and reorder favourites.">
-      {(data?.length ?? 0) > 0 && (
+      {countFor('All') > 0 && (
         <div role="tablist" aria-label="Filter orders by status" className="no-scrollbar -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           {FILTERS.map((status) => (
             <button
@@ -111,7 +125,7 @@ export default function OrdersPage() {
 
       {error ? (
         <ErrorState message="We couldn’t load your orders." onRetry={retry} />
-      ) : loading ? (
+      ) : loading && !loadingMore ? (
         <div className="space-y-4">
           {Array.from({ length: 2 }, (_, i) => (
             <Skeleton key={i} className="h-44 w-full rounded-3xl" />
@@ -139,11 +153,20 @@ export default function OrdersPage() {
           )}
         </div>
       ) : (
-        <ul className="space-y-4">
-          {orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-4">
+            {orders.map((order) => (
+              <OrderCard key={order.id} order={order} />
+            ))}
+          </ul>
+          {current?.nextCursor && (
+            <div className="mt-8 flex justify-center">
+              <Button variant="secondary" loading={loadingMore} onClick={() => setPage({ filter, cursor: current.nextCursor })}>
+                Show more orders
+              </Button>
+            </div>
+          )}
+        </>
       )}
       <p className="mt-8 text-sm text-muted">
         Can’t find an order placed as a guest? Make sure you’re signed in with the email you used at checkout, or{' '}

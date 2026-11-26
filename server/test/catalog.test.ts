@@ -73,6 +73,29 @@ describe('GET /products', () => {
     }
   });
 
+  it('pages with offset: the pages put together are exactly the full list, in order', async () => {
+    for (const sort of ['featured', 'price-asc', 'newest']) {
+      const everything = (await get(`/products?sort=${sort}&limit=100`)).items.map((p: any) => p.id);
+      const paged: string[] = [];
+      for (let offset = 0; offset < everything.length; offset += 7) {
+        const page = await get(`/products?sort=${sort}&limit=7&offset=${offset}`);
+        assert.equal(page.total, everything.length, 'total is all matches, not the page');
+        paged.push(...page.items.map((p: any) => p.id));
+      }
+      assert.deepEqual(paged, everything, sort);
+    }
+    assert.deepEqual((await get(`/products?offset=${all.length}`)).items, []);
+    assert.equal((await api.call('GET', '/products?offset=-1')).status, 422);
+  });
+
+  it('skips the category counts when looking products up by id, and caps ids at 100', async () => {
+    const body = await get('/products?ids=p-001,p-104');
+    assert.equal(body.items.length, 2);
+    assert.deepEqual(body.facets, { categories: {} });
+    const tooMany = Array.from({ length: 101 }, (_, i) => `p-${i}`).join(',');
+    assert.equal((await api.call('GET', `/products?ids=${tooMany}`)).status, 422);
+  });
+
   it('treats % and _ in search text literally', async () => {
     assert.equal((await get('/products?q=%25')).total, 0);
   });

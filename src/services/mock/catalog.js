@@ -43,7 +43,7 @@ export function list({ category, featured, bestSeller, search, sort, limit } = {
  * Category facet counts ignore the category filter itself, so each option
  * shows how many results selecting it would add.
  */
-export function query({ q, categories: selected = [], minPrice, maxPrice, minRating, inStock, onSale, sort = 'featured', limit = 12 } = {}) {
+export function query({ q, categories: selected = [], minPrice, maxPrice, minRating, inStock, onSale, sort = 'featured', limit = 12, offset = 0 } = {}) {
   const passesOtherFilters = (item) =>
     (!q || matchesSearch(item, q)) &&
     (minPrice == null || item.price >= minPrice) &&
@@ -62,7 +62,7 @@ export function query({ q, categories: selected = [], minPrice, maxPrice, minRat
     sorters[sort] ?? sorters.featured,
   );
 
-  return { items: matched.slice(0, limit), total: matched.length, facets };
+  return { items: matched.slice(offset, offset + limit), total: matched.length, facets };
 }
 
 export const bySlug = (slug) => products.find((item) => item.slug === slug) ?? null;

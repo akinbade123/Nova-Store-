@@ -39,12 +39,12 @@ const sampleReady = USE_MOCK_DATA ? sample().then((mock) => remember(mock.produc
  *
  *   q           search text           categories  comma-separated slugs
  *   ids         comma-separated ids   featured, bestSeller, inStock, onSale  'true' when set
- *   minPrice, maxPrice, minRating     sort (see SORT_OPTIONS)   limit
+ *   minPrice, maxPrice, minRating     sort (see SORT_OPTIONS)   limit (max 100)   offset (skip that many)
  */
 const joinList = (values) => (values?.length ? values.join(',') : undefined);
 const flag = (value) => (value ? 'true' : undefined);
 
-async function fetchProducts({ q, category, categories, ids, featured, bestSeller, inStock, onSale, minPrice, maxPrice, minRating, sort, limit } = {}) {
+async function fetchProducts({ q, category, categories, ids, featured, bestSeller, inStock, onSale, minPrice, maxPrice, minRating, sort, limit, offset } = {}) {
   const { data } = await api.get('/products', {
     params: {
       q: q?.trim() || undefined,
@@ -59,6 +59,7 @@ async function fetchProducts({ q, category, categories, ids, featured, bestSelle
       minRating: minRating || undefined,
       sort,
       limit,
+      offset: offset || undefined,
     },
   });
   remember(data.items);
@@ -155,7 +156,10 @@ export const productService = {
     }
     missing.forEach((id) => inFlight.add(id));
     try {
-      await fetchProducts({ ids: missing, limit: missing.length });
+      // The API takes at most 100 ids per request.
+      const chunks = [];
+      for (let i = 0; i < missing.length; i += 100) chunks.push(missing.slice(i, i + 100));
+      await Promise.all(chunks.map((chunk) => fetchProducts({ ids: chunk, limit: chunk.length })));
     } catch {
       /* fall through: treated as unavailable for this session */
     } finally {

@@ -10,6 +10,7 @@ import type { AppEnv, Deps } from '../../types.ts';
 import { ORDER_BY, SORTS, productQuery, queryProducts, toImage, toProduct, withImages } from './products.ts';
 
 const REVIEWS_SHOWN = 8;
+const FEATURED_REVIEWS_MAX = 12; // the homepage shows a handful; marking more as featured mustn't slow it down
 
 const findProduct = async (db: Db, column: 'slug' | 'id', value: string) => {
   const [row] = await db
@@ -118,7 +119,8 @@ export function catalogRoutes({ db }: Deps) {
       .from(reviews)
       .innerJoin(products, eq(products.id, reviews.productId))
       .where(and(eq(reviews.isFeatured, true), eq(reviews.status, 'approved')))
-      .orderBy(asc(reviews.id));
+      .orderBy(asc(reviews.id))
+      .limit(FEATURED_REVIEWS_MAX);
     return c.json(
       rows.map(({ review, productName }) => ({
         id: review.id,

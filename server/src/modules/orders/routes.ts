@@ -3,11 +3,13 @@
  * so they answer 501 until the next phase (quote, payment hand-off, webhook).
  */
 import { Hono } from 'hono';
-import { and, asc, desc, eq, inArray, notInArray, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, notInArray, or, sql } from 'drizzle-orm';
+import { z } from 'zod';
 import type { Db } from '../../db/client.ts';
 import { orderItems, orders } from '../../db/schema.ts';
 import { sha256 } from '../../lib/crypto.ts';
 import { ApiError, notFound } from '../../lib/errors.ts';
+import { readQuery } from '../../lib/validate.ts';
 import { toDollars } from '../../lib/money.ts';
 import type { AppEnv, Deps, UserRow } from '../../types.ts';
 import { authenticate, requireAuth } from '../accounts/sessions.ts';
@@ -29,6 +31,18 @@ const STATUS_LABEL: Record<OrderRow['status'], 'Processing' | 'Shipped' | 'Deliv
   refunded: 'Cancelled',
 };
 const HIDDEN_FROM_HISTORY: OrderRow['status'][] = ['pending_payment', 'payment_failed'];
+type Label = (typeof STATUS_LABEL)[OrderRow['status']];
+const LABELS = ['Processing', 'Shipped', 'Delivered', 'Cancelled'] as const satisfies readonly Label[];
+/** The stored statuses behind each label, leaving out the ones history never shows. */
+const statusesFor = (label: Label) =>
+  (Object.keys(STATUS_LABEL) as OrderRow['status'][]).filter((status) => STATUS_LABEL[status] === label && !HIDDEN_FROM_HISTORY.includes(status));
+
+const historyQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  /** The id of the last order on the previous page. */
+  cursor: z.string().max(40).optional(),
+  status: z.enum(LABELS).optional(),
+});
 
 // The same short en-GB format the storefront uses (deliveryWindow in src/utils/format.js).
 const shortDate = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -92,14 +106,39 @@ export function orderRoutes(deps: Deps) {
   const { db } = deps;
   const app = new Hono<AppEnv>();
 
+  /**
+   * One page of order history, newest first: { items, nextCursor, counts }.
+   * The cursor is the last order's id; the next page continues from that order's position, using the
+   * database's own timestamp, so two orders placed in the same millisecond are never skipped or repeated.
+   * `counts` covers all of the user's orders (not just this page), for the status tabs.
+   */
   app.get('/me/orders', requireAuth(deps), async (c) => {
     const user = c.get('user');
-    const rows = await db
-      .select()
-      .from(orders)
-      .where(and(ownedBy(user), notInArray(orders.status, HIDDEN_FROM_HISTORY)))
-      .orderBy(desc(orders.createdAt));
-    return c.json(await withItems(db, rows));
+    const { limit, cursor, status } = readQuery(c, historyQuery);
+    const visible = and(ownedBy(user), notInArray(orders.status, HIDDEN_FROM_HISTORY));
+    const after = cursor
+      ? sql`(${orders.createdAt}, ${orders.id}) < (SELECT o.created_at, o.id FROM ${orders} o WHERE o.id = ${cursor})`
+      : undefined;
+    const [rows, grouped] = await Promise.all([
+      db
+        .select()
+        .from(orders)
+        .where(and(visible, status ? inArray(orders.status, statusesFor(status)) : undefined, after))
+        .orderBy(desc(orders.createdAt), desc(orders.id))
+        .limit(limit + 1), // one extra tells us whether there's another page
+      db.select({ status: orders.status, n: count() }).from(orders).where(visible).groupBy(orders.status),
+    ]);
+    const page = rows.slice(0, limit);
+    const counts: Record<'All' | Label, number> = { All: 0, Processing: 0, Shipped: 0, Delivered: 0, Cancelled: 0 };
+    for (const { status: stored, n } of grouped) {
+      counts[STATUS_LABEL[stored]] += n;
+      counts.All += n;
+    }
+    return c.json({
+      items: await withItems(db, page),
+      nextCursor: rows.length > limit ? page.at(-1)!.id : null,
+      counts,
+    });
   });
 
   // Owners see their own orders; guests need the order's access token. Anyone else gets not_found,

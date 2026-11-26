@@ -95,12 +95,18 @@ export default function ShopPage() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
   // Pagination is tied to the filter set: changing any filter starts again at page one.
-  const [pagination, setPagination] = useState({ key, limit: PAGE_SIZE });
-  const limit = pagination.key === key ? pagination.limit : PAGE_SIZE;
+  const [pagination, setPagination] = useState({ key, offset: 0 });
+  const offset = pagination.key === key ? pagination.offset : 0;
 
   const { data, loading, error, retry } = useAsync(
-    () => productService.query({ ...filters, limit }).then((result) => ({ ...result, key })),
-    [key, limit],
+    () =>
+      productService.query({ ...filters, limit: PAGE_SIZE, offset }).then((result) => ({
+        ...result,
+        key,
+        // "Load more" fetches only the next page and adds it to what's already shown.
+        items: offset && data?.key === key ? [...data.items, ...result.items] : result.items,
+      })),
+    [key, offset],
   );
 
   const heading = useHeading(filters);
@@ -293,7 +299,7 @@ export default function ShopPage() {
                         size="lg"
                         className="mt-6 min-w-[200px]"
                         loading={loadingMore}
-                        onClick={() => setPagination({ key, limit: limit + PAGE_SIZE })}
+                        onClick={() => setPagination({ key, offset: items.length })}
                       >
                         Load more
                       </Button>
