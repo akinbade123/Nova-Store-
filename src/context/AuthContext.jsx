@@ -1,5 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { authService } from '../services/authService';
+import { SESSION_EXPIRED_EVENT } from '../services/api';
+import { useToast } from './ToastContext';
 
 const AuthContext = createContext(null);
 
@@ -30,6 +32,24 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readSession()?.user ?? null);
   // Where protected pages should send someone who just signed out on purpose (instead of the sign-in page).
   const [exitTo, setExitTo] = useState(null);
+  const { toast } = useToast();
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  // The API rejected the stored token: end the session locally so the UI stops acting signed in.
+  // exitTo stays null, so protected pages send the shopper to sign in and back again.
+  useEffect(() => {
+    const handleExpired = () => {
+      if (!userRef.current) return; // several requests can fail at once; react to the first
+      userRef.current = null;
+      persistSession(null);
+      setExitTo(null);
+      setUser(null);
+      toast({ variant: 'info', title: 'Your session has ended', description: 'Please sign in again to continue.' });
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleExpired);
+  }, [toast]);
 
   const signIn = useCallback(async ({ email, password, remember = true }) => {
     const session = await authService.signIn({ email, password });
@@ -87,6 +107,7 @@ export function AuthProvider({ children }) {
       changePassword,
       deleteAccount,
       requestPasswordReset: authService.requestPasswordReset,
+      resetPassword: authService.resetPassword,
     }),
     [user, exitTo, signIn, register, signOut, updateProfile, changePassword, deleteAccount],
   );

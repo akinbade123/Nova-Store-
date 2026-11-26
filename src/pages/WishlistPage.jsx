@@ -65,8 +65,8 @@ export default function WishlistPage() {
             <p className="flex items-center gap-3 text-sm">
               <Heart className="size-5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
               <span>
-                <span className="font-semibold">Don’t lose your favourites.</span>{' '}
-                <span className="text-muted">Sign in to keep your wishlist across devices.</span>
+                <span className="font-semibold">Saved on this device.</span>{' '}
+                <span className="text-muted">Sign in to track orders and check out faster with your saved details.</span>
               </span>
             </p>
             <div className="flex shrink-0 gap-2">

@@ -40,6 +40,17 @@ async function readUsers() {
 
 const writeUsers = (users) => localStorage.setItem(USERS_KEY, JSON.stringify(users));
 
+/* Sample-data password resets: token -> { email, expiresAt }. Links expire after 1 hour, as the email says. */
+const RESETS_KEY = 'nova:password-resets';
+const RESET_TTL_MS = 60 * 60 * 1000;
+const readResets = () => {
+  try {
+    return JSON.parse(localStorage.getItem(RESETS_KEY)) ?? {};
+  } catch {
+    return {};
+  }
+};
+
 const toPublicUser =({ passwordHash, ...user }) => user;
 const newToken = () => `mock.${crypto.randomUUID()}`;
 
@@ -82,14 +93,42 @@ export const authService = {
     return { user: toPublicUser(user), token: newToken() };
   },
 
-  /** Always resolves the same way, so the form never reveals which emails have accounts. */
+  /**
+   * Always resolves the same way, so the form never reveals which emails have accounts.
+   * Sample-data mode sends no email, so it also returns `devResetPath`: the link the email would contain.
+   */
   async requestPasswordReset(email) {
     if (!USE_MOCK_DATA) {
       await api.post('/auth/forgot-password', { email });
       return { sent: true };
     }
     await mockDelay(null, 900);
-    return { sent: true };
+    const token = crypto.randomUUID();
+    const resets = readResets();
+    resets[token] = { email: email.trim().toLowerCase(), expiresAt: Date.now() + RESET_TTL_MS };
+    localStorage.setItem(RESETS_KEY, JSON.stringify(resets));
+    return { sent: true, devResetPath: `/reset-password?token=${token}` };
+  },
+
+  /** Sets a new password using the token from the reset email. The token works once. */
+  async resetPassword({ token, password }) {
+    if (!USE_MOCK_DATA) {
+      await api.post('/auth/reset-password', { token, password });
+      return { reset: true };
+    }
+    await mockDelay(null, 900);
+    const resets = readResets();
+    const entry = resets[token];
+    const users = await readUsers();
+    const user = entry && entry.expiresAt > Date.now() ? users.find((item) => item.email === entry.email) : null;
+    if (!user) {
+      return reject('invalid_token', 'This reset link is invalid or has expired. Request a new one to continue.');
+    }
+    const passwordHash = await hashPassword(password);
+    writeUsers(users.map((item) => (item.id === user.id ? { ...item, passwordHash } : item)));
+    delete resets[token];
+    localStorage.setItem(RESETS_KEY, JSON.stringify(resets));
+    return { reset: true };
   },
 
   async signOut() {

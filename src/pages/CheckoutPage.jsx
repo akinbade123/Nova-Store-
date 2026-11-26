@@ -166,7 +166,9 @@ export default function CheckoutPage() {
         payment: {
           method: values.paymentMethod,
           brand: values.paymentMethod === 'card' ? cardBrand(values.cardNumber) : null,
-          cardNumber: values.paymentMethod === 'card' ? values.cardNumber : null,
+          // Never send the full card number. With a real payment provider, its hosted card
+          // fields return a token, and that token is sent here instead.
+          last4: values.paymentMethod === 'card' ? values.cardNumber.replace(/\D/g, '').slice(-4) : null,
         },
         items: items.map(({ product, quantity, color, size }) => ({
           productId: product.id,
