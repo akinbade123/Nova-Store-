@@ -7,7 +7,7 @@ export function PromoBanner() {
   return (
     <section aria-labelledby="promo-heading" className="pb-16 lg:pb-24">
       <Container className="px-3 sm:px-6 lg:px-10">
-        <div className="relative isolate flex min-h-[560px] items-end overflow-hidden rounded-[24px] bg-ink sm:min-h-[520px] lg:min-h-[600px] lg:items-center lg:rounded-[32px]">
+        <div className="relative isolate flex min-h-140 items-end overflow-hidden rounded-3xl bg-ink sm:min-h-130 lg:min-h-150 lg:items-center lg:rounded-4xl">
           <SmartImage
             src="1445205170230-053b83016050"
             alt="Warm-toned knitwear and coats on a boutique rail"
@@ -16,7 +16,7 @@ export function PromoBanner() {
             imgClassName="object-[60%_center]"
           />
           <div
-            className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/5 lg:bg-gradient-to-r lg:from-black/75 lg:via-black/35 lg:to-transparent"
+            className="absolute inset-0 bg-linear-to-t from-black/80 via-black/35 to-black/5 lg:bg-linear-to-r lg:from-black/75 lg:via-black/35 lg:to-transparent"
             aria-hidden="true"
           />
 
