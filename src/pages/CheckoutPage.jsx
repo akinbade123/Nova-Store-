@@ -37,8 +37,12 @@ function checkoutIdFor(cartSignature) {
   return id;
 }
 
-/** True when we can't know whether the server created the order: no response, or a server error. */
-const outcomeUnknown = (err) => Boolean(err.isAxiosError) && (!err.response || err.response.status >= 500);
+/**
+ * True when we can't know whether the server created the order: no response, or a server error.
+ * 501 is excluded: it means the endpoint doesn't exist yet, so nothing was created.
+ */
+const outcomeUnknown = (err) =>
+  Boolean(err.isAxiosError) && (!err.response || (err.response.status >= 500 && err.response.status !== 501));
 
 /** Saved draft first, then the signed-in profile, then blanks. */
 function loadDraft(user) {
@@ -123,7 +127,7 @@ export default function CheckoutPage() {
 
   const [placing, setPlacing] = useState(false);
   const placingRef = useRef(false);
-  const [paymentError, setPaymentError] = useState('');
+  const [paymentError, setPaymentError] = useState(null);
   const errorSummaryRef = useRef(null);
   const paymentRef = useRef(null);
 
@@ -138,7 +142,7 @@ export default function CheckoutPage() {
 
   // Clear a stale payment error once the shopper edits payment details.
   useEffect(() => {
-    setPaymentError('');
+    setPaymentError(null);
   }, [values.paymentMethod, values.cardNumber, values.cardExpiry, values.cardCvc]);
 
   if (cartLoading) return <div className="min-h-[60vh]" aria-busy="true" />;
@@ -167,7 +171,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setPaymentError('');
+    setPaymentError(null);
     const errors = form.submit();
     if (Object.keys(errors).length > 0) {
       requestAnimationFrame(() => {
@@ -226,7 +230,15 @@ export default function CheckoutPage() {
       if (!outcomeUnknown(err)) sessionStorage.removeItem(CHECKOUT_ID_KEY);
       placingRef.current = false;
       setPlacing(false);
-      setPaymentError(err.userMessage ?? 'We couldn’t process your payment. Please try again.');
+      // Never say the payment failed when it may have gone through.
+      setPaymentError(
+        outcomeUnknown(err)
+          ? {
+              title: 'We couldn’t confirm your order',
+              message: 'We lost the connection before hearing back. Try again: if your first attempt went through, you’ll see that order and won’t be charged twice.',
+            }
+          : { title: 'Your order wasn’t placed', message: err.userMessage ?? 'We couldn’t process your payment. Please try again.' },
+      );
       requestAnimationFrame(() => paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
   };

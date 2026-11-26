@@ -465,7 +465,7 @@ The rules match `computeTotals` in `src/utils/pricing.js` exactly, so the browse
 ```
 
 - **`checkoutId`** is a UUID the browser creates once per cart. It's unique in the database, so a repeated request returns the existing order (**201** with the same body) instead of creating a second one. The frontend already sends it and follows these rules:
-  - **Same id:** retries of the same cart, including after a reload, a timeout, a network error or a 5xx. In those cases the browser can't know whether the order was created.
+  - **Same id:** retries of the same cart, including after a reload, a timeout, a network error or a 5xx (except 501, which means nothing was created). In those cases the browser can't know whether the order was created.
   - **New id:** after a definite answer, such as `card_declined` or `validation_failed` (no order exists), after a success, or when the cart changes. So a retry can never return an order for different items.
 - The server prices everything again. If the total differs from `quoteId`'s quote, it returns `price_changed`.
 - It creates the order in `pending_payment` and starts a payment with the provider.
