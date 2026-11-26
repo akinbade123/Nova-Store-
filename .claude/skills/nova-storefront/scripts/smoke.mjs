@@ -39,7 +39,7 @@ const collectionPath = await page.$eval('a[href^="/collections/"]', (a) => a.get
 const guest = [
   '/', '/shop', '/shop?category=electronics&sort=price-asc', productPath, '/cart', '/wishlist',
   '/collections', collectionPath, '/about', '/help', '/legal', '/legal/terms', '/legal/cookies',
-  '/login', '/register', '/forgot-password', '/checkout', '/this-page-does-not-exist', ...extra,
+  '/login', '/register', '/forgot-password', '/reset-password', '/reset-password?token=smoke', '/checkout', '/this-page-does-not-exist', ...extra,
 ].filter(Boolean);
 console.log('— Signed out —');
 for (const path of guest) await visit(path);

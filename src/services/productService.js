@@ -32,6 +32,38 @@ function remember(items) {
   notify();
 }
 
+/*
+ * The one contract for GET /products. Every caller goes through fetchProducts, so the
+ * backend sees one set of parameter names and always answers { items, total, facets }.
+ *
+ *   q           search text           categories  comma-separated slugs
+ *   ids         comma-separated ids   featured, bestSeller, inStock, onSale  'true' when set
+ *   minPrice, maxPrice, minRating     sort (see SORT_OPTIONS)   limit
+ */
+const joinList = (values) => (values?.length ? values.join(',') : undefined);
+const flag = (value) => (value ? 'true' : undefined);
+
+async function fetchProducts({ q, category, categories, ids, featured, bestSeller, inStock, onSale, minPrice, maxPrice, minRating, sort, limit } = {}) {
+  const { data } = await api.get('/products', {
+    params: {
+      q: q?.trim() || undefined,
+      categories: joinList(categories ?? (category ? [category] : undefined)),
+      ids: joinList(ids),
+      featured: flag(featured),
+      bestSeller: flag(bestSeller),
+      inStock: flag(inStock),
+      onSale: flag(onSale),
+      minPrice: minPrice ?? undefined,
+      maxPrice: maxPrice ?? undefined,
+      minRating: minRating || undefined,
+      sort,
+      limit,
+    },
+  });
+  remember(data.items);
+  return data;
+}
+
 const discountRatio = (item) => (item.compareAtPrice ? (item.compareAtPrice - item.price) / item.compareAtPrice : 0);
 
 const sorters = {
@@ -98,22 +130,17 @@ function catalogueMock({
 }
 
 export const productService = {
+  /** Plain array of products for rails and suggestions: { category, featured, bestSeller, search, sort, limit }. */
   async list(params = {}) {
     if (USE_MOCK_DATA) return mockDelay(listMock(params));
-    const { data } = await api.get('/products', { params });
-    remember(data);
-    return data;
+    const { search, ...rest } = params;
+    return (await fetchProducts({ ...rest, q: search })).items;
   },
 
   /** Filtered, sorted and paginated catalogue: { items, total, facets }. */
   async query(params = {}) {
     if (USE_MOCK_DATA) return mockDelay(catalogueMock(params), 450);
-    const { categories: selected, ...rest } = params;
-    const { data } = await api.get('/products', {
-      params: { ...rest, categories: selected?.length ? selected.join(',') : undefined },
-    });
-    remember(data.items);
-    return data;
+    return fetchProducts(params);
   },
 
   async getBySlug(slug) {
@@ -174,10 +201,7 @@ export const productService = {
     const q = term.trim();
     if (!q) return [];
     if (USE_MOCK_DATA) return listMock({ search: q, limit });
-    const { data } = await api.get('/products', { params: { q, limit } });
-    const items = data.items ?? data;
-    remember(items);
-    return items;
+    return (await fetchProducts({ q, limit })).items;
   },
 
   /** Synchronous cache lookup. Returns null until the product has been loaded (see loadByIds). */
@@ -206,8 +230,7 @@ export const productService = {
     }
     missing.forEach((id) => inFlight.add(id));
     try {
-      const { data } = await api.get('/products', { params: { ids: missing.join(','), limit: missing.length } });
-      remember(data.items ?? data);
+      await fetchProducts({ ids: missing, limit: missing.length });
     } catch {
       /* fall through: treated as unavailable for this session */
     } finally {

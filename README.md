@@ -41,6 +41,7 @@ Settings come from environment variables in `.env`. Vite only exposes variables 
 | Promo codes | `NOVA10` (10% off), `WELCOME15` (15% off orders over $150), `FREESHIP` |
 | Successful payment | Any valid card number |
 | Declined payment | A card number ending in `0002` |
+| Password reset | Request a reset on `/forgot-password`. No email is sent, so the page shows the reset link instead. |
 
 Sample data lives only in your browser. To reset it, clear the site's storage in your browser's dev tools. All the keys start with `nova:`.
 
@@ -49,8 +50,7 @@ Sample data lives only in your browser. To reset it, clear the site's storage in
 ```
 src/
 ├── main.jsx         Entry point: mounts <App />
-├── App.jsx          All routes and lazy-loaded pages
-├── layouts/         Page shells: Main, Auth, Checkout, Account
+├── App.jsx          All routes and lazy-loaded pages├── layouts/         Page shells: Main, Auth, Checkout, Account
 ├── pages/           One file per route
 ├── components/      Grouped by feature (cart, checkout, pdp, shop…) plus ui/ primitives
 ├── context/         App-wide state: auth, cart, wishlist, UI overlays, toasts
@@ -65,4 +65,9 @@ src/
 
 ## Deployment
 
-The site is deployed on Vercel. Each pull request gets a preview deployment. `npm run build` produces a static site in `dist/` that any static host can serve. Because routing happens in the browser, the host must send every unknown path back to `index.html`.
+The site is deployed on Vercel. Each pull request gets a preview deployment.
+
+`npm run build` produces a static site in `dist/` that any static host can serve. Routing happens in the browser, so the host must answer every path that isn't a real file with `index.html`. Otherwise, refreshing a page like `/shop` gives a 404.
+
+- **Vercel:** [vercel.json](vercel.json) already does this with a rewrite.
+- **Other hosts:** add the equivalent "SPA fallback" rule. On Netlify, for example, that's a `_redirects` file containing `/* /index.html 200`.

@@ -56,7 +56,11 @@ This matters most. The goal is the *simplest best* fix: the smallest change that
 | "Undo" restores the wrong item | A callback read state that was captured earlier | Read from a ref, as `WishlistContext` does with `idsRef` |
 | Totals differ between the drawer, cart and checkout | Someone calculated totals outside `computeTotals` | Use `computeTotals` from `src/utils/pricing.js` everywhere |
 | Sign-in keeps redirecting, or sign-out lands on `/login` | `RequireAuth` / `exitTo` logic, or a `redirect` param that isn't a same-origin path | See `RequireAuth.jsx` and `useRedirectTarget` in `AuthLayout.jsx` |
-| Refreshing a deep link like `/shop` gives 404 in production | The host isn't sending unknown paths back to `index.html` | Add an SPA rewrite on the host (for Vercel, a `vercel.json` rewrite to `/index.html`) |
+| Refreshing a deep link like `/shop` gives 404 in production | The host isn't sending unknown paths back to `index.html` | On Vercel, check `vercel.json` (its rewrite to `/index.html`) is still there and deployed. On other hosts, add an SPA fallback rule. |
+| In API mode, a cart or wishlist item is missing, or the cart shows a blank placeholder | The product cache couldn't load it: `GET /products?ids=…` failed, or didn't return that id | Check that request in the Network tab. Missing ids are dropped on purpose (deleted products). See "The product cache" in `ARCHITECTURE.md`. |
+| The backend rejects or ignores a product filter | It doesn't follow the `GET /products` contract | Send parameters only through `fetchProducts` in `productService.js`, and match the contract table in `ARCHITECTURE.md` |
+| `err.code` is missing or an axios code like `ERR_BAD_REQUEST` | The API's error body isn't `{ message, code }` | Fix the backend response. The interceptor in `api.js` already copies `code`. |
+| The user is signed out with "Your session has ended" | The API returned 401 to a request that carried a token | Intended. If it happens too often, the backend is returning 401 for something that isn't an expired session. |
 | Form errors appear too early, or never appear | `useForm` shows an error only after the user leaves a field, or after the first submit | Spread `field(name)` onto the input so it gets `onBlur`. Call `submit()` before checking errors. |
 
 ### Intended behaviour (not bugs)
@@ -66,6 +70,7 @@ These look like bugs in sample-data mode but are deliberate:
 - Pages take 300–1600 ms to load. `mockDelay` adds this on purpose so loading states actually appear.
 - A card number ending in `0002` is always declined, so the payment error state can be tested.
 - Promo `WELCOME15` is kept in the cart but marked inactive under $150 (`promoShortfall`).
+- In sample-data mode, the forgot-password page shows the reset link, because no email is sent.
 - Free shipping is decided by the subtotal *before* discounts.
 - Only three toasts show at once.
 
@@ -81,7 +86,7 @@ src/
 │                      EmptyState, ErrorState, Skeleton, SmartImage, Price, Rating, Badge, Container…
 ├── context/           Auth, Cart, Wishlist, UI (overlays), Toast, all combined in AppProviders.jsx
 ├── services/          api.js (axios, USE_MOCK_DATA, mockDelay) plus one module per area
-├── hooks/             useAsync, useForm, useLocalStorage, useShopFilters, useDocumentTitle, useEscapeKey, useLockBodyScroll
+├── hooks/             useAsync, useForm, useLocalStorage, useProducts, useShopFilters, useDocumentTitle, useEscapeKey, useLockBodyScroll
 ├── data/              Sample catalogue and site content (same shape the API will return)
 ├── utils/             Pure helpers: pricing, validation, format, image, cn
 └── index.css          Tailwind import, @theme tokens, the can-hover variant
@@ -112,6 +117,8 @@ async getThing(id) {
 ```
 Reject with an `Error` that has a `userMessage` (and a `code` if callers need to tell errors apart). UI code shows `error.userMessage`. Add the endpoint to the "Connecting the real backend" table in `ARCHITECTURE.md`.
 
+**Products are special.** Every product list goes through `fetchProducts` in `productService.js`, which is the single `GET /products` contract. Add new filters there and to the contract table in `ARCHITECTURE.md`; don't call `api.get('/products')` directly. Screens that hold product ids (cart, wishlist, "Buy again") get products through `useProducts(ids)` or `productService.loadByIds`, and must handle its `loading` state. `findById` alone returns `null` in API mode until the product is loaded.
+
 **App-wide state**
 First ask whether it really needs to be global. Most state belongs in the page (`useState`) or the URL (`useSearchParams`, as `useShopFilters` does for filters). If it really is global, add it to the closest existing context. Create a new context only for a genuinely new area, and add it to `AppProviders.jsx` *below* any providers it uses. Expose a `useX()` hook that throws outside the provider. Save it with `useLocalStorage('nova:<name>', …)` if it should survive a page reload. Store IDs, not whole objects, as the cart does, so prices and details stay current.
 
@@ -136,7 +143,7 @@ Add products through the `p({...})` helper in `src/data/products.js`. It fills i
 ## 5. Accessibility, security and data handling
 
 - Keep the "Skip to content" link and `id="main"`. Give every input a label (`Field` does this). Hide decorative icons with `aria-hidden="true"`, and give `IconButton` an accessible label. Overlays use `useEscapeKey` and `useLockBodyScroll`. New colours must meet WCAG AA contrast.
-- Never store a full card number. `orderService` keeps only `last4`. Post-login redirects must stay same-origin (`useRedirectTarget`).
+- Never send or store a full card number. The checkout sends only `{ method, brand, last4 }`. Post-login redirects must stay same-origin (`useRedirectTarget`).
 - Sample-data authentication (SHA-256 hashes in `localStorage`) is for development only. Don't build on it as if it were real security, and point that out if a task depends on it.
 - Never commit `.env`. Put new variables in `.env.example`, documented, with names starting with `VITE_`. Anything named `VITE_` ends up in the public bundle, so never put secrets there.
 

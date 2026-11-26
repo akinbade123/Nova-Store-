@@ -31,12 +31,16 @@ All routes are defined in [src/App.jsx](src/App.jsx). Three layouts wrap them:
 | Layout | Routes | What it provides |
 |---|---|---|
 | `MainLayout` | `/`, `/shop`, `/product/:slug`, `/cart`, `/wishlist`, `/collections/*`, `/about`, `/help`, `/legal/:doc`, `/account/*`, 404 | Announcement bar, navbar, footer, cart drawer, search panel, mobile menu. Resets scroll and closes overlays on navigation. |
-| `AuthLayout` | `/login`, `/register`, `/forgot-password` | A split-screen sign-in shell. Redirects visitors who are already signed in. |
+| `AuthLayout` | `/login`, `/register`, `/forgot-password`, `/reset-password?token=…` | A split-screen sign-in shell. Redirects visitors who are already signed in. |
 | `CheckoutLayout` | `/checkout`, `/checkout/confirmation/:orderId` | A distraction-free shell with no navigation, search or cart drawer. |
 
 **Code splitting.** `HomePage` is bundled with the main app so the first page loads quickly. Every other page is loaded with `React.lazy`, and a single `<Suspense>` boundary shows a blank placeholder while a page loads.
 
 **Protected routes.** `/account/*` is wrapped in [`RequireAuth`](src/components/account/RequireAuth.jsx). It sends signed-out visitors to `/login?redirect=<path>`, and they come back to that page after signing in. `useRedirectTarget` in `AuthLayout` only accepts same-origin paths (starting with `/` but not `//`), which prevents open redirects. If a user signs out on purpose, they're sent to `exitTo` instead of the sign-in page.
+
+**Expired sessions.** When the API answers 401 to a request that carried a token, the session has expired or been revoked. `api.js` fires a `nova:session-expired` event on `window`. `AuthProvider` listens for it, clears the stored session and shows "Your session has ended". `RequireAuth` then sends the user to sign in and back to the page they were on. A 401 on a request *without* a token, such as a wrong password at sign-in, doesn't fire the event.
+
+**Deep links in production.** Routing happens in the browser, so the host must answer every path with `index.html`. On Vercel, [vercel.json](vercel.json) does this with a rewrite. Vercel serves real files (`/assets/*`, `/favicon.svg`) before applying rewrites, so those are unaffected.
 
 **URL as state.** Shop filters (search, category, price, rating, stock, sale, sort) are stored in the query string by [`useShopFilters`](src/hooks/useShopFilters.js). This makes filtered views shareable, bookmarkable and friendly to the back button.
 
@@ -53,20 +57,21 @@ The order matters: a provider can use the contexts above it, but not the ones be
 | Context | Holds | Persisted to |
 |---|---|---|
 | `ToastContext` | Notification queue (at most 3 at once, auto-dismissed, optional action such as "Undo") | — |
-| `AuthContext` | Signed-in user; `signIn`, `register`, `signOut`, `updateProfile` | `localStorage` if "remember me" is on, otherwise `sessionStorage` |
+| `AuthContext` | Signed-in user; `signIn`, `register`, `signOut`, `updateProfile`, `requestPasswordReset`, `resetPassword`. Ends the session when the API reports it expired. | `localStorage` if "remember me" is on, otherwise `sessionStorage` |
 | `UIContext` | Which overlay is open: `cart`, `search`, `menu` or none. Only one can be open at a time. | — |
 | `WishlistContext` | Product IDs, with `toggle` / `remove` / `restore` (undo puts an item back in its original position) | `localStorage` |
-| `CartContext` | Cart lines, promo code, computed totals | `localStorage` |
+| `CartContext` | Cart lines, promo code, computed totals, and `loading` while product details are fetched | `localStorage` |
 
 Each context exposes a `useX()` hook that throws if it's used outside its provider.
 
-**The cart stores IDs, not products.** Each cart line saves only `{ key, productId, quantity, color, size }`. Product details and prices are looked up when the cart is read. Once prices come from the API, carts left in browsers therefore always show current prices instead of stale ones. A line's `key` is `productId|color|size`, so the same product in a different variant becomes a separate line. Quantities are capped at the stock count, and at 10 per line.
+**The cart stores IDs, not products.** Each cart line saves only `{ key, productId, quantity, color, size }`. Product details and prices are looked up through the [product cache](#the-product-cache) when the cart is read, so carts left in browsers always show current prices instead of stale ones. While those details load (API mode only), `loading` is `true`, and the cart page, cart drawer and checkout show a blank placeholder rather than "Your bag is empty". The wishlist works the same way. A line's `key` is `productId|color|size`, so the same product in a different variant becomes a separate line. Quantities are capped at the stock count, and at 10 per line.
 
 **Local state** is managed by small hooks in [src/hooks/](src/hooks/):
 
 - `useAsync(loader, deps)` tracks `{ data, loading, error, retry }` and ignores responses that arrive after the component has unmounted. Pages use it for every data load, and `retry` powers the error states.
 - `useForm(initial, validate)` handles form values and validation. An error appears once the user leaves a field, or for every field after the first submit attempt. `field(name)` returns props you can spread onto an input.
 - `useLocalStorage(key, initial)` is `useState` with JSON persistence. If storage is unavailable (private mode, full quota), it keeps the state in memory instead.
+- `useProducts(ids)` turns a list of product IDs (cart lines, wishlist) into products, in the same order, and reports `loading` until they're all fetched. See [the product cache](#the-product-cache).
 
 ## Data layer
 
@@ -98,25 +103,57 @@ async getThing(id) {
 
 `mockDelay` adds a short artificial delay (about 300–1600 ms) and returns a deep copy of the data. The delay means loading states actually appear during development, and the copy stops components from accidentally changing the sample data.
 
+### Product queries: one contract for `GET /products`
+
+Every product list in the app comes from `GET /products`: homepage rails, the shop page, cart and wishlist suggestions, the search panel, and lookups by ID. All of them go through one helper, `fetchProducts` in [productService.js](src/services/productService.js), so the backend sees one set of parameter names and always returns the same shape:
+
+| Parameter | Meaning |
+|---|---|
+| `q` | Search text |
+| `categories` | Comma-separated category slugs |
+| `ids` | Comma-separated product IDs |
+| `featured`, `bestSeller`, `inStock`, `onSale` | `true` when the filter is on; left out otherwise |
+| `minPrice`, `maxPrice`, `minRating` | Numeric filters |
+| `sort` | One of `SORT_OPTIONS` in [useShopFilters.js](src/hooks/useShopFilters.js): `featured`, `popular`, `newest`, `price-asc`, `price-desc`, `rating`, `discount` |
+| `limit` | Maximum number of items |
+
+The response is always `{ items, total, facets }`. `total` is the number of matches before `limit`. `facets.categories` maps each category slug to a count that ignores the category filter itself, so each option shows how many results selecting it would give. `productService.list()` returns just `items`, for callers that only need an array.
+
+### The product cache
+
+Some screens hold product IDs, not products: the cart, the wishlist and "Buy again". They need product details without waiting for a page-level request. `productService` keeps a cache for them:
+
+- **Sample-data mode:** the cache starts with the whole catalogue, so lookups are instant.
+- **API mode:** every product the API returns is added to the cache, and newer responses overwrite older entries, so prices and stock stay current. `loadByIds(ids)` fetches anything missing in one request (`GET /products?ids=a,b,c`). IDs the API doesn't return are marked unavailable, and lists drop them instead of loading forever.
+- `findById(id)` reads the cache synchronously. `useProducts(ids)` re-renders when the cache changes.
+
+The search panel calls `productService.search(term, 5)`, which is `GET /products?q=…&limit=5`. It waits for a 200 ms pause in typing, so each keystroke isn't a request.
+
 ### The axios client
 
 [src/services/api.js](src/services/api.js) configures the client:
 
 - `baseURL` comes from `VITE_API_URL` (default `/api`). Requests time out after 15 seconds.
 - **A request interceptor** adds `Authorization: Bearer <token>` using `nova:token` from local or session storage.
-- **A response interceptor** attaches a readable `error.userMessage`. It uses the server's `message` if there is one, otherwise a message for timeouts, otherwise a generic one.
+- **A response interceptor** attaches `error.userMessage` and `error.code` from the server's response (see below). If the server didn't send a message, it uses one for timeouts, otherwise a generic one. On a 401 for a request that carried a token, it also fires `nova:session-expired` (see [Expired sessions](#routing)).
 
 ### Errors
 
-Services reject with an `Error` that carries `userMessage` (text that's safe to show to the user) and, when relevant, a `code` such as `invalid_credentials` or `card_declined`. Errors from sample data and from the API look the same, so UI code handles both with `error.userMessage`.
+API error responses are JSON shaped `{ message, code }`:
+
+- `message` is text that's safe to show the user. It becomes `error.userMessage`.
+- `code` is a stable identifier the UI can branch on. It becomes `error.code`.
+
+The UI checks these codes today: `email_taken` on register and in settings, and `invalid_token` on the reset-password page. Sample-data services reject with errors of exactly the same shape, for example `invalid_credentials`, `card_declined` and `not_cancellable`. So UI code handles both modes the same way.
 
 ### Sample-data mode
 
 When `VITE_USE_MOCK_DATA` isn't `false`:
 
 - **Catalogue**: products, categories, collections, reviews and testimonials come from [src/data/](src/data/). Filtering, sorting and facet counts are done in `productService`. The results match the expected `GET /products` response shape, `{ items, total, facets }`.
-- **Accounts**: stored in `nova:users`, with passwords hashed using SHA-256. A demo account is created automatically. Tokens are random `mock.<uuid>` strings.
-- **Orders**: stored in `nova:orders` (the 50 most recent). Only the card brand and last four digits are kept. A card number ending in `0002` is declined, so you can test the error state.
+- **Accounts**: stored in `nova:users`, with passwords hashed using SHA-256. A demo account is created automatically. Tokens are random `mock.<uuid>` strings. Saved addresses are stored per user in `nova:addresses:<userId>`.
+- **Password reset**: no email is sent. `requestPasswordReset` stores a token in `nova:password-resets` and returns `devResetPath`, which the forgot-password page shows as a link. Like a real link, it expires after 1 hour and works once.
+- **Orders**: stored in `nova:orders` (the 50 most recent). A card ending in `0002` is declined, so you can test the error state.
 
 This mode is for development only. Hashing passwords in the browser and storing them in `localStorage` isn't secure. All authentication has to move to the backend before launch.
 
@@ -130,12 +167,15 @@ This mode is for development only. Hashing passwords in the browser and storing 
 | `nova:checkout-draft` | session | Checkout form progress, kept across page reloads |
 | `nova:announcement-dismissed` | local | ID of the dismissed announcement banner |
 | `nova:users`, `nova:orders` | local | Sample-data mode only: fake accounts and orders |
+| `nova:addresses:<userId>` | local | Sample-data mode only: each user's saved addresses |
+| `nova:password-resets` | local | Sample-data mode only: password reset tokens and their expiry times |
 
 ## Checkout and pricing
 
 - [`computeTotals`](src/utils/pricing.js) is the single function that calculates order totals. The cart drawer, cart page and checkout all use it. Prices include tax. Free-shipping thresholds are checked against the subtotal **before** discounts. A promo with a minimum spend is kept but marked inactive (`promoShortfall`) until the subtotal reaches the minimum.
 - Checkout validation rules live in [checkoutSchema.js](src/components/checkout/checkoutSchema.js). They're built from helpers in [src/utils/validation.js](src/utils/validation.js): email, phone, postal code by country, card number (Luhn check), expiry and CVC.
-- The full card number is only kept until `placeOrder` sends it. The stored order keeps only `last4`. With the real backend, card data should go to a payment provider's hosted fields instead of through this app.
+- The full card number never leaves the checkout form. The order sends `payment: { method, brand, last4 }`, and the checkout draft saved in `sessionStorage` leaves out all card fields. With the real backend, the card fields should be replaced by a payment provider's hosted fields, and the payment token they return sent instead.
+- The order sends item prices and totals worked out in the browser. The backend must **not** trust them: it should recalculate everything from product IDs, quantities, the promo code and the shipping method.
 
 ## Styling
 
@@ -158,13 +198,15 @@ This mode is for development only. Hashing passwords in the browser and storing 
 
    | Area | Endpoints |
    |---|---|
-   | Auth | `POST /auth/login`, `/auth/register`, `/auth/logout`, `/auth/forgot-password` — login and register return `{ user, token }` |
+   | Auth | `POST /auth/login`, `/auth/register`, `/auth/logout`, `/auth/forgot-password`, `/auth/reset-password` (`{ token, password }`). Login and register return `{ user, token }`. The reset email links to `/reset-password?token=…`. |
    | Profile | `PATCH /me`, `DELETE /me`, `POST /me/password` |
    | Addresses | `GET /me/addresses`, `POST /me/addresses`, `PUT /me/addresses/:id`, `DELETE /me/addresses/:id`, `POST /me/addresses/:id/default` |
-   | Catalogue | `GET /products` (returns `{ items, total, facets }`), `GET /products/:slug`, `/products/:id/reviews`, `/products/:id/related`, `GET /categories`, `GET /collections/:slug`, `GET /reviews/featured` |
+   | Catalogue | `GET /products` (see [the contract](#product-queries-one-contract-for-get-products)), `GET /products/:slug` (with `?include=details` for the product page), `/products/:id/reviews`, `/products/:id/related`, `GET /categories`, `GET /collections/:slug`, `GET /reviews/featured` |
    | Orders | `POST /orders`, `GET /orders/:id`, `GET /me/orders`, `POST /orders/:id/cancel` |
    | Other | `POST /cart/promo`, `POST /newsletter`, `POST /support/messages` |
 
-3. Make error responses include a `message` field, so the response interceptor can show it to users.
-4. Remove the sample-data branches from the services, and stop using the `nova:users` and `nova:orders` keys.
-5. Check the methods that look products up synchronously from the local catalogue (`productService.findById` and `searchLocal`). They're used by the cart, the search panel, the wishlist grid, the account overview and "Buy again", so they need an API-backed replacement or a cache.
+3. Return errors as `{ message, code }` (see [Errors](#errors)), using the codes the UI already checks. Return 401 only when a session is missing, expired or revoked, because the app signs the user out when it gets one.
+4. Follow these response shapes the UI relies on:
+   - The address calls that change something (save, remove, set default) return the **whole updated address list**.
+   - `GET /orders/:id` is used by the order confirmation page, including for guest orders. Protect it, for example with a secret token returned with the order, because orders contain names and addresses.
+5. Remove the sample-data branches from the services, and stop using the sample-only storage keys (`nova:users`, `nova:orders`, `nova:addresses:<userId>`, `nova:password-resets`).
