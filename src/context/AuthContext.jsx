@@ -84,8 +84,8 @@ export function AuthProvider({ children }) {
     [user],
   );
 
-  /** Deletes the account on the server. Follow with signOut({ to: '/' }). */
-  const deleteAccount = useCallback(() => authService.deleteAccount(user.id), [user]);
+  /** Deletes the account on the server; needs the password. Follow with signOut({ to: '/' }). */
+  const deleteAccount = useCallback((password) => authService.deleteAccount(user.id, password), [user]);
 
   /** `to`: where protected pages should go after this sign-out (defaults to the home page). */
   const signOut = useCallback(async ({ to = '/' } = {}) => {

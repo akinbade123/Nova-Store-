@@ -6,7 +6,7 @@ import { addresses, newsletterSubscribers, orders, passwordResets, users } from 
 import { hashPassword, newToken, verifyPassword } from '../../lib/crypto.ts';
 import { ApiError } from '../../lib/errors.ts';
 import { fields, readBody } from '../../lib/validate.ts';
-import type { AppEnv, Deps } from '../../types.ts';
+import type { AppEnv, Deps, UserRow } from '../../types.ts';
 import { newPassword } from './auth.ts';
 import { requireAuth, revokeUserSessions, toPublicUser } from './sessions.ts';
 
@@ -15,12 +15,29 @@ const profileBody = z.object({
   lastName: fields.name('last name').optional(),
   email: fields.email().optional(),
   marketing: z.boolean().optional(),
+  /** Required only when `email` changes. */
+  currentPassword: z.string().max(200).optional(),
 });
+
+const deleteBody = z.object({
+  password: z.string({ error: 'Enter your password to confirm' }).min(1, 'Enter your password to confirm').max(200),
+});
+
+const wrongPassword = () => new ApiError(400, 'wrong_password', 'Your current password is incorrect.');
 
 const passwordBody = z.object({
   currentPassword: z.string({ error: 'Enter your current password' }).min(1, 'Enter your current password').max(200),
   newPassword: newPassword(),
 });
+
+/**
+ * For actions a stolen session mustn't be able to do. A missing password is a 422 on `field`;
+ * a wrong one is 400 wrong_password, never 401, which would sign the storefront out.
+ */
+async function confirmPassword(user: UserRow, password: string | undefined, missingMessage: string, field = 'currentPassword') {
+  if (!password) throw new ApiError(422, 'validation_failed', missingMessage, { fields: { [field]: missingMessage } });
+  if (!(await verifyPassword(password, user.passwordHash))) throw wrongPassword();
+}
 
 export function profileRoutes(deps: Deps) {
   const { db } = deps;
@@ -30,8 +47,12 @@ export function profileRoutes(deps: Deps) {
 
   app.patch('/me', async (c) => {
     const user = c.get('user');
-    const patch = await readBody(c, profileBody);
+    const { currentPassword, ...patch } = await readBody(c, profileBody);
     if (patch.email && patch.email !== user.email) {
+      // The email is where password resets go, so changing it needs the password: otherwise anyone with
+      // a stolen session could point it at themselves and reset the password. Checked before email_taken,
+      // so this can't be used to find out which emails have accounts.
+      await confirmPassword(user, currentPassword, 'Enter your current password to change your email');
       // v1 changes the email straight away. v1.1 should confirm the new address first (docs/API.md).
       const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.email, patch.email), ne(users.id, user.id))).limit(1);
       if (taken) throw new ApiError(409, 'email_taken', 'Another account already uses this email.');
@@ -49,9 +70,7 @@ export function profileRoutes(deps: Deps) {
   app.post('/me/password', async (c) => {
     const user = c.get('user');
     const body = await readBody(c, passwordBody);
-    if (!(await verifyPassword(body.currentPassword, user.passwordHash))) {
-      throw new ApiError(400, 'wrong_password', 'Your current password is incorrect.');
-    }
+    if (!(await verifyPassword(body.currentPassword, user.passwordHash))) throw wrongPassword();
     await db.update(users).set({ passwordHash: await hashPassword(body.newPassword), updatedAt: new Date() }).where(eq(users.id, user.id));
     await revokeUserSessions(db, user.id, c.get('sessionId')); // other devices are signed out; this one stays in
     return c.json({ changed: true });
@@ -63,6 +82,8 @@ export function profileRoutes(deps: Deps) {
    */
   app.delete('/me', async (c) => {
     const user = c.get('user');
+    const { password } = await readBody(c, deleteBody);
+    await confirmPassword(user, password, 'Enter your password to confirm', 'password');
     const placeholderEmail = `deleted+${user.id}@nova.invalid`;
     await db.transaction(async (tx) => {
       await revokeUserSessions(tx, user.id);

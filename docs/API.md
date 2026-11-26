@@ -54,7 +54,7 @@ Every error response has this body:
 | `unauthorized` | 401 | Token missing, expired or revoked | **Yes**: signs the user out |
 | `forbidden` | 403 | Signed in but not allowed, e.g. a non-admin calling `/admin/*` | |
 | `email_taken` | 409 | Register, or a profile email change, uses an existing email | **Yes**: register page and settings page |
-| `wrong_password` | 400 | Current password wrong on password change | |
+| `wrong_password` | 400 | Current password wrong: changing the password or email, deleting the account | |
 | `invalid_token` | 400 | Reset token unknown, used or expired | **Yes**: reset-password page |
 | `not_found` | 404 | Resource doesn't exist, or the caller can't see it | See [11](#11-frontend-changes-these-require), item 1 |
 | `invalid_promo` | 404 | Promo code unknown, expired or used up | |
@@ -248,7 +248,8 @@ All profile endpoints require auth.
 
 ### `PATCH /me`
 - Takes any subset of `{ firstName, lastName, email, marketing }`. Returns **200** with the updated User.
-- Errors: `email_taken`.
+- **Changing the email needs `currentPassword`** in the same body, because password resets go to that address: without it, a stolen session could redirect the email and take the account over. Sending your own unchanged email needs no password. The password is checked before whether the new email is taken, so a wrong password can't be used to discover accounts.
+- Errors: `validation_failed` (no `currentPassword` when the email changes, in `fields.currentPassword`), `wrong_password` (400, never 401, so the storefront doesn't sign the user out), `email_taken`.
 - Changing the email should require confirming the new address before it takes effect. That's v1.1; v1 may change it directly.
 
 ### `POST /me/password`
@@ -259,7 +260,8 @@ All profile endpoints require auth.
 - Errors: `wrong_password`, `validation_failed`.
 
 ### `DELETE /me`
-- Returns **200** `{ "deleted": true }`.
+- Body: `{ "password" }`. Returns **200** `{ "deleted": true }`.
+- Errors: `validation_failed` (missing, in `fields.password`), `wrong_password`.
 - Revoke all sessions and delete addresses.
 - **Don't delete orders**: they're needed for accounting. Anonymise the user instead (see "Account deletion" in DATA_MODEL.md).
 

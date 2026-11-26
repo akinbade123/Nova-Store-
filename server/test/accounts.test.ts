@@ -35,10 +35,32 @@ describe('profile', () => {
   });
 
   it('refuses an email another account uses', async () => {
-    const { token } = await api.register();
-    const res = await api.call('PATCH', '/me', { body: { email: DEMO_ACCOUNT.email }, token });
+    const { token, password } = await api.register();
+    const res = await api.call('PATCH', '/me', { body: { email: DEMO_ACCOUNT.email, currentPassword: password }, token });
     assert.equal(res.status, 409);
     assert.equal(res.body.code, 'email_taken');
+  });
+
+  it('needs the current password to change the email, checked before whether the email is taken', async () => {
+    const { token, user, password } = await api.register();
+    const missing = await api.call('PATCH', '/me', { body: { email: 'new@example.com' }, token });
+    assert.equal(missing.status, 422);
+    assert.ok(missing.body.fields.currentPassword);
+    // A wrong password gets the same answer for a free email and a taken one, so it reveals nothing.
+    for (const email of ['new@example.com', DEMO_ACCOUNT.email]) {
+      const wrong = await api.call('PATCH', '/me', { body: { email, currentPassword: 'Nope2026x' }, token });
+      assert.equal(wrong.status, 400);
+      assert.equal(wrong.body.code, 'wrong_password');
+    }
+    assert.equal((await api.call('GET', '/me/addresses', { token })).status, 200, 'a wrong password never signs the user out');
+    const ok = await api.call('PATCH', '/me', { body: { email: 'new@example.com', currentPassword: password }, token });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.email, 'new@example.com');
+    assert.equal(ok.body.currentPassword, undefined);
+    // Sending your own unchanged email, as the settings form does, needs no password.
+    const same = await api.call('PATCH', '/me', { body: { firstName: 'Ada', email: 'new@example.com' }, token });
+    assert.equal(same.status, 200);
+    assert.notEqual(user.email, 'new@example.com');
   });
 
   it('changes the password: wrong current password is rejected, other sessions are signed out, this one stays', async () => {
@@ -55,10 +77,23 @@ describe('profile', () => {
     assert.equal((await api.call('PATCH', '/me', { body: {}, token: elsewhere })).status, 401);
   });
 
+  it('needs the password to delete the account', async () => {
+    const { token } = await api.register();
+    const missing = await api.call('DELETE', '/me', { token });
+    assert.equal(missing.status, 400, 'no body at all is invalid JSON');
+    const empty = await api.call('DELETE', '/me', { body: {}, token });
+    assert.equal(empty.status, 422);
+    assert.ok(empty.body.fields.password);
+    const wrong = await api.call('DELETE', '/me', { body: { password: 'Nope2026x' }, token });
+    assert.equal(wrong.status, 400);
+    assert.equal(wrong.body.code, 'wrong_password');
+    assert.equal((await api.call('GET', '/me/addresses', { token })).status, 200, 'the account is still there');
+  });
+
   it('deletes the account: signs out, removes addresses, frees the email, anonymises the row', async () => {
     const { token, user, password } = await api.register();
     await api.call('POST', '/me/addresses', { body: address(), token });
-    const res = await api.call('DELETE', '/me', { token });
+    const res = await api.call('DELETE', '/me', { body: { password }, token });
     assert.deepEqual(res.body, { deleted: true });
     assert.equal((await api.call('GET', '/me/addresses', { token })).status, 401);
     assert.equal((await api.call('POST', '/auth/login', { body: { email: user.email, password } })).status, 401);
