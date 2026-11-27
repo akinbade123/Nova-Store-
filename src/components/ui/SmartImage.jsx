@@ -30,8 +30,12 @@ export function SmartImage({ src, alt, ratio, zoom, x, y, sizes = '100vw', width
           onLoad={() => setStatus('loaded')}
           onError={() => setStatus('error')}
           className={cn(
-            'size-full object-cover transition-opacity duration-500',
-            status === 'loaded' ? 'opacity-100' : 'opacity-0',
+            'size-full object-cover',
+            // Priority images are the page's main content (and its LCP): show them as soon as they
+            // arrive. Fading in from transparent would hold back the paint until React has handled
+            // onLoad and the fade has started, which on a slow phone adds about half a second.
+            !priority && 'transition-opacity duration-500',
+            !priority && (status === 'loaded' ? 'opacity-100' : 'opacity-0'),
             imgClassName,
           )}
         />
