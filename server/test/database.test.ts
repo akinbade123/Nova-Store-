@@ -71,8 +71,8 @@ describe('allowed values are enforced by the database', () => {
 describe('duplicates the database refuses', () => {
   it('treats emails case-insensitively: a second account can’t differ only in capitals', async () => {
     await refusedBy('users_email_check', sql`INSERT INTO users (id, email, password_hash, first_name, last_name) VALUES ('u-caps', 'Demo@Nova.Store', 'x', 'A', 'B')`);
-    await refusedBy('users_email_check', sql`INSERT INTO users (id, email, password_hash, first_name, last_name) VALUES ('u-space', ' demo@nova.store', 'x', 'A', 'B')`);
-    await refusedBy('users_email_unique', sql`INSERT INTO users (id, email, password_hash, first_name, last_name) VALUES ('u-same', 'demo@nova.store', 'x', 'A', 'B')`);
+    await refusedBy('users_email_check', sql`INSERT INTO users (id, email, password_hash, first_name, last_name) VALUES ('u-space', ' demo@example.com', 'x', 'A', 'B')`);
+    await refusedBy('users_email_unique', sql`INSERT INTO users (id, email, password_hash, first_name, last_name) VALUES ('u-same', 'demo@example.com', 'x', 'A', 'B')`);
     await refusedBy('newsletter_subscribers_email_check', sql`INSERT INTO newsletter_subscribers (email, source) VALUES ('Ada@X.com', 't')`);
     await refusedBy('orders_email_check', order({ email: `'Guest@Example.com'` }));
   });

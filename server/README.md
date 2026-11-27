@@ -26,7 +26,7 @@ npm install
 npm run dev          # http://localhost:4000/api, restarts when files change
 ```
 
-Nothing else needs installing. Without `DATABASE_URL`, the API uses an embedded PostgreSQL (PGlite) in `server/.data/dev`. On first start, it applies the migrations and loads the storefront's sample catalogue and the demo account (`demo@nova.store` / `Nova2026!`).
+Nothing else needs installing. Without `DATABASE_URL`, the API uses an embedded PostgreSQL (PGlite) in `server/.data/dev`. On first start, it applies the migrations and loads the storefront's sample catalogue and the demo account (`demo@example.com` / `Nova2026!`).
 
 To run the storefront against it, use a second terminal at the repo root:
 

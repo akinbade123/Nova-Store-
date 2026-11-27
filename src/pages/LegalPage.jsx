@@ -7,6 +7,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import NotFoundPage from './NotFoundPage';
 import { cn } from '../utils/cn';
 import { formatDate } from '../utils/format';
+import { contactEmail } from '../data/site';
 
 
 export default function LegalPage() {
@@ -89,7 +90,7 @@ export default function LegalPage() {
             <Link to="/help#contact" className="font-medium text-ink underline underline-offset-4">
               Help centre
             </Link>{' '}
-            or email legal@nova.store.
+            or email {contactEmail.legal}.
           </p>
         </article>
       </div>

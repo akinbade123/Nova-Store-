@@ -131,7 +131,7 @@ function demoOrder({ id, createdAt, status, shippedAt, deliveredAt, tracking, it
     shippedAt,
     deliveredAt,
     tracking,
-    contact: { email: 'demo@nova.store', phone: '+234 803 555 0142', marketing: true },
+    contact: { email: 'demo@example.com', phone: '+234 803 555 0142', marketing: true },
     shippingAddress: DEMO_ADDRESS,
     billingAddress: DEMO_ADDRESS,
     shippingMethod: { id: 'express', label: 'Express', eta: '1–2 business days' },

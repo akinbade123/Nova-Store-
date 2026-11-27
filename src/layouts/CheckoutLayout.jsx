@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { Logo } from '../components/ui/Logo';
 import { Toaster } from '../components/ui/Toaster';
+import { contactEmail } from '../data/site';
 
 /** Distraction-free shell for checkout: no main navigation, search or bag drawer. */
 export function CheckoutLayout() {
@@ -41,7 +42,7 @@ export function CheckoutLayout() {
             <li><Link to="/legal/terms" className="hover:text-ink">Terms of service</Link></li>
           </ul>
           <p>
-            Need help? <a href="mailto:support@nova.store" className="font-medium text-ink hover:underline">support@nova.store</a>
+            Need help? <a href={`mailto:${contactEmail.support}`} className="font-medium text-ink hover:underline">{contactEmail.support}</a>
           </p>
         </div>
       </footer>

@@ -169,7 +169,7 @@ bash .claude/skills/nova-storefront/scripts/smoke.sh "/shop?sale=1"   # plus ext
 
 The smoke script starts the dev server, visits every route twice (signed out, then signed in with items in the cart) and lists console errors, page errors and failed requests for each page. It exits with a non-zero status if any page failed. It needs Google Chrome; set `CHROME_PATH` if Chrome isn't in the default macOS location. It installs `puppeteer-core` in a temporary folder, never into the project. When you add a route, add it to the lists in `scripts/smoke.mjs`.
 
-The smoke script checks that pages *load*. It doesn't click through flows. For changes to the cart, checkout, auth or forms, also try the flow by hand in `npm run dev`, or write a short puppeteer check modelled on `smoke.mjs`. The demo account is `demo@nova.store` / `Nova2026!`, and the promo codes are `NOVA10`, `WELCOME15` and `FREESHIP`.
+The smoke script checks that pages *load*. It doesn't click through flows. For changes to the cart, checkout, auth or forms, also try the flow by hand in `npm run dev`, or write a short puppeteer check modelled on `smoke.mjs`. The demo account is `demo@example.com` / `Nova2026!`, and the promo codes are `NOVA10`, `WELCOME15` and `FREESHIP`.
 
 The project has no unit tests or linter yet. If a change touches pure logic (`utils/pricing.js`, `utils/validation.js`, `checkoutSchema.js`), check it with a quick `node -e` script, and suggest adding Vitest.
 

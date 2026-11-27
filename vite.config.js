@@ -20,6 +20,10 @@ export default defineConfig(({ command, mode }) => {
         'Production build refused: VITE_DEMO_SITE=true tells shoppers their orders aren’t real, but VITE_USE_MOCK_DATA=false sends them to the real API. Remove VITE_DEMO_SITE from .env.production for the launch.',
       );
     }
+    // Until then, the contact addresses use the reserved placeholder example.com, which reaches no one.
+    if (!demo && !env.VITE_SITE_DOMAIN) {
+      throw new Error('Production build refused: set VITE_SITE_DOMAIN in Vercel (Production) to your domain, for example novashop.com. The support, privacy and legal email addresses use it.');
+    }
   }
 
   return {

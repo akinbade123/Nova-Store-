@@ -55,7 +55,7 @@ const productId = await (async () => {
 })();
 await page.evaluate((id) => {
   localStorage.setItem('nova:session', JSON.stringify({
-    user: { id: 'u-demo', firstName: 'Ada', lastName: 'Okafor', email: 'demo@nova.store', marketing: true, createdAt: '2025-03-14T10:00:00.000Z' },
+    user: { id: 'u-demo', firstName: 'Ada', lastName: 'Okafor', email: 'demo@example.com', marketing: true, createdAt: '2025-03-14T10:00:00.000Z' },
   }));
   localStorage.setItem('nova:token', 'mock.smoke-test');
   if (id) localStorage.setItem('nova:cart', JSON.stringify([{ key: `${id}||`, productId: id, quantity: 2 }]));

@@ -16,6 +16,7 @@ import { countryByCode } from '../../utils/validation';
 import { formatDate, formatShortDate, formatPrice } from '../../utils/format';
 import { imageUrl } from '../../utils/image';
 import { cn } from '../../utils/cn';
+import { contactEmail } from '../../data/site';
 
 function timeline(order) {
   if (order.status === 'Cancelled') {
@@ -272,7 +273,7 @@ export default function OrderDetailPage() {
           <div className="rounded-3xl bg-surface p-6">
             <p className="font-semibold text-ink">Need help with this order?</p>
             <p className="mt-1">Our team replies within a few hours, Monday to Saturday.</p>
-            <a href={`mailto:support@nova.store?subject=Order%20${order.id}`} className="mt-3 inline-block font-medium text-ink underline underline-offset-4">
+            <a href={`mailto:${contactEmail.support}?subject=Order%20${order.id}`} className="mt-3 inline-block font-medium text-ink underline underline-offset-4">
               Contact support
             </a>
           </div>

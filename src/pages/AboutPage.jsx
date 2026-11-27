@@ -4,6 +4,7 @@ import { Breadcrumbs } from '../components/ui/Breadcrumbs';
 import { Button } from '../components/ui/Button';
 import { SmartImage } from '../components/ui/SmartImage';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { contactEmail } from '../data/site';
 
 const values = [
   { Icon: Sparkles, title: 'Fewer, better things', text: 'We test hundreds of products to stock a few dozen. If we wouldn’t use it every day, we don’t sell it.' },
@@ -167,7 +168,7 @@ export default function AboutPage() {
               {roles.map((role) => (
                 <li key={role.title}>
                   <a
-                    href={`mailto:careers@nova.store?subject=${encodeURIComponent(`Application: ${role.title}`)}`}
+                    href={`mailto:${contactEmail.careers}?subject=${encodeURIComponent(`Application: ${role.title}`)}`}
                     className="group flex items-center justify-between gap-4 py-5"
                   >
                     <span>

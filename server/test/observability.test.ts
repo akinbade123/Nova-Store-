@@ -103,7 +103,7 @@ describe('secrets never reach the logs', () => {
 
   it('keeps sign-in passwords and tokens out of request logs', async () => {
     lines.length = 0;
-    await api.call('POST', '/auth/login', { body: { email: 'demo@nova.store', password: 'Nova2026!' } });
+    await api.call('POST', '/auth/login', { body: { email: 'demo@example.com', password: 'Nova2026!' } });
     await api.call('POST', '/auth/reset-password', { body: { token: 'some-reset-token', password: 'Hunter2026x' } });
     const all = JSON.stringify(lines);
     assert.ok(!/Nova2026!|Hunter2026x|some-reset-token/.test(all));
@@ -152,7 +152,7 @@ describe('storefront error reports', () => {
         message: "Cannot read properties of undefined (reading 'price')",
         stack: 'TypeError: …\n    at ProductCard (ProductCard.jsx:42)',
         componentStack: '\n    at ProductCard\n    at ShopPage',
-        url: 'https://nova.store/reset-password?token=leaky',
+        url: 'https://shop.example.com/reset-password?token=leaky',
         requestId: 'req_failedcall1',
       },
     });
@@ -161,7 +161,7 @@ describe('storefront error reports', () => {
     assert.equal(line!.kind, 'render');
     assert.equal(line!.failedRequestId, 'req_failedcall1');
     assert.match(line!.requestId, /^req_/, 'the report has its own id too');
-    assert.equal(line!.url, 'https://nova.store/reset-password?token=[redacted]');
+    assert.equal(line!.url, 'https://shop.example.com/reset-password?token=[redacted]');
   });
 
   it('refuses reports that aren’t reports', async () => {

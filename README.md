@@ -43,13 +43,14 @@ Settings come from environment variables in `.env`. Vite only exposes variables 
 |---|---|---|
 | `VITE_USE_MOCK_DATA` | `true` | Set it to `false` to send every request to the real API instead of using sample data. |
 | `VITE_API_URL` | `/api` | The backend's base URL, for example `http://localhost:4000/api`. |
+| `VITE_SITE_DOMAIN` | `example.com` | The domain the shop's email addresses use (`support@…`, `privacy@…`, `legal@…`, `careers@…`). `example.com` is a placeholder that reaches no one. Required for a production launch. |
 | `VITE_DEMO_SITE` | unset (`true` in [.env.production](.env.production)) | Shows a "Demo store" banner on every page. On while the live site runs on sample data. |
 
 ## Trying it out in sample-data mode
 
 | What | How |
 |---|---|
-| Sign in | `demo@nova.store` / `Nova2026!`, or register a new account |
+| Sign in | `demo@example.com` / `Nova2026!`, or register a new account |
 | Promo codes | `NOVA10` (10% off), `WELCOME15` (15% off orders over $150), `FREESHIP` |
 | Successful payment | Any valid card number |
 | Declined payment | A card number ending in `0002` |
@@ -89,7 +90,13 @@ The site is deployed on Vercel. Each pull request gets a preview deployment.
 **Production is a labelled demo until the API is hosted.** [.env.production](.env.production) sets `VITE_DEMO_SITE=true`, so every build shows a "Demo store: orders, payments and accounts aren't real" banner, and the site runs on sample data. A production build on sample data *without* that banner is refused on purpose: accounts and orders would live only in each shopper's browser, with nothing telling them.
 
 **At launch**, once the API is hosted:
-1. In Vercel → Settings → Environment Variables (Production), set `VITE_USE_MOCK_DATA=false` and `VITE_API_URL` if the API isn't served at `/api`.
+1. In Vercel → Settings → Environment Variables (Production), set `VITE_USE_MOCK_DATA=false`, `VITE_SITE_DOMAIN` (see "Custom domain" below), and `VITE_API_URL` if the API isn't served at `/api`.
 2. Delete `VITE_DEMO_SITE` from `.env.production`. The build refuses a demo banner on a site that takes real orders.
+
+**Custom domain.** The site has none yet; it runs at the `vercel.app` address. Don't use `nova.store`: it belongs to someone else. Once you've bought a domain:
+1. In Vercel → Settings → Domains, add both `yourdomain.com` and `www.yourdomain.com`, and set one to redirect to the other. Redirect one way only, so there's no loop.
+2. At your registrar, add the records Vercel lists. Usually that's an `A` record for `@` pointing to Vercel's IP, and a `CNAME` for `www` pointing to Vercel's DNS target. Vercel issues the HTTPS certificate once DNS resolves, usually within minutes.
+3. Set `VITE_SITE_DOMAIN=yourdomain.com` (Vercel, Production) and, for the API, `APP_URL=https://yourdomain.com` and `SUPPORT_EMAIL=support@yourdomain.com`. The API won't start in production without the last two.
+4. Set up the mailboxes (`support@`, `privacy@`, `legal@`, `careers@`) and SPF and DKIM for the address emails are sent from.
 
 **Security headers.** [vercel.json](vercel.json) also sends a Content-Security-Policy and the usual protective headers. The policy allows scripts and API calls only from the site itself, styles and fonts from Google Fonts, and images from Unsplash. If you add a script, font, image host or API on another domain (a payment provider's checkout, a CDN for product photos, a `VITE_API_URL` on another origin), add it to the policy, or the browser will block it.

@@ -4,7 +4,7 @@ import { ChevronDown, Mail, Phone } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 import { Container } from '../ui/Container';
 import { FacebookIcon, InstagramIcon, PaymentIcons, TikTokIcon, XIcon, YouTubeIcon } from '../ui/BrandIcons';
-import { footerLinks } from '../../data/site';
+import { contactEmail, footerLinks } from '../../data/site';
 import { cn } from '../../utils/cn';
 
 const socials = [
@@ -88,9 +88,9 @@ export function Footer() {
             <p className="mt-5 text-sm leading-relaxed text-white/65">Our team is here Monday to Saturday, 8am – 8pm.</p>
             <ul className="mt-4 space-y-3 text-sm">
               <li>
-                <a href="mailto:support@nova.store" className="inline-flex items-center gap-2.5 text-white/85 hover:text-white">
+                <a href={`mailto:${contactEmail.support}`} className="inline-flex items-center gap-2.5 text-white/85 hover:text-white">
                   <Mail className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                  support@nova.store
+                  {contactEmail.support}
                 </a>
               </li>
               <li>

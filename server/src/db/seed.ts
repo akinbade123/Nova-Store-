@@ -43,7 +43,7 @@ const PROMOTIONS = [
 ] as const;
 
 /** Same as DEMO_ACCOUNT in src/services/authService.js. */
-export const DEMO_ACCOUNT = { id: 'u-demo', email: 'demo@nova.store', password: 'Nova2026!', firstName: 'Ada', lastName: 'Okafor' };
+export const DEMO_ACCOUNT = { id: 'u-demo', email: 'demo@example.com', password: 'Nova2026!', firstName: 'Ada', lastName: 'Okafor' };
 
 // The sample catalogue's default gallery when a product doesn't set its own crops (src/services/productService.js).
 const DEFAULT_CROPS = [

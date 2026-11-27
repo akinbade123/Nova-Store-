@@ -13,6 +13,7 @@ import { BRAND_LABELS, countryByCode } from '../utils/validation';
 import { formatPrice } from '../utils/format';
 import { imageUrl } from '../utils/image';
 import { cn } from '../utils/cn';
+import { contactEmail } from '../data/site';
 
 const paymentLabel = (payment) => {
   if (payment.method === 'paypal') return 'PayPal';
@@ -217,7 +218,7 @@ export default function OrderConfirmationPage() {
       </div>
       <p className="mt-8 text-center text-sm text-muted">
         Questions about your order?{' '}
-        <a href="mailto:support@nova.store" className="font-medium text-ink underline underline-offset-4">
+        <a href={`mailto:${contactEmail.support}`} className="font-medium text-ink underline underline-offset-4">
           Contact support
         </a>
       </p>

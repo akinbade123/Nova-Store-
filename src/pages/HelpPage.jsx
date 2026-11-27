@@ -13,6 +13,7 @@ import { supportService } from '../services/supportService';
 import { faqSections } from '../data/faqs';
 import { EMAIL_PATTERN } from '../utils/validation';
 import { cn } from '../utils/cn';
+import { contactEmail } from '../data/site';
 
 const ICONS = { orders: Package, shipping: Truck, returns: RotateCcw, payments: CreditCard, account: User };
 
@@ -250,7 +251,7 @@ export default function HelpPage() {
               <ul className="mt-8 space-y-3">
                 {[
                   { Icon: MessageCircle, title: 'Send a message', text: 'Use the form — fastest for order questions', href: '#contact-form' },
-                  { Icon: Mail, title: 'support@nova.store', text: 'We reply within 4 hours', href: 'mailto:support@nova.store' },
+                  { Icon: Mail, title: contactEmail.support, text: 'We reply within 4 hours', href: `mailto:${contactEmail.support}` },
                   { Icon: Phone, title: '+1 (800) 555-0199', text: 'Mon–Sat, 8am–8pm', href: 'tel:+18005550199' },
                 ].map(({ Icon, title, text, href }) => (
                   <li key={title}>
