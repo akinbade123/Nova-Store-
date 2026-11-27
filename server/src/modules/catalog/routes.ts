@@ -1,5 +1,6 @@
 /** docs/API.md, section 7: the catalogue. All public. */
 import { Hono } from 'hono';
+import { etag } from 'hono/etag';
 import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../../db/client.ts';
@@ -22,8 +23,21 @@ const findProduct = async (db: Db, column: 'slug' | 'id', value: string) => {
   return row;
 };
 
+/**
+ * Everything here is public and the same for every shopper, so a CDN in front of the API may keep a
+ * copy for a minute and serve it while it fetches a fresh one in the background. Browsers always
+ * check back (max-age=0), and the ETag lets them do that with a 304 instead of the whole response.
+ * Changes to products show up within about a minute. Errors and 404s are never cached.
+ */
+export const CATALOG_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=300';
+
 export function catalogRoutes({ db }: Deps) {
   const app = new Hono<AppEnv>();
+
+  app.use('*', etag(), async (c, next) => {
+    await next();
+    if (c.req.method === 'GET' && c.res.status === 200) c.header('Cache-Control', CATALOG_CACHE);
+  });
 
   app.get('/products', async (c) => c.json(await queryProducts(db, readQuery(c, productQuery))));
 

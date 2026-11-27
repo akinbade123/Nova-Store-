@@ -24,6 +24,10 @@ export const env = {
   appUrl: (process.env.APP_URL ?? 'http://localhost:5173').replace(/\/$/, ''),
   /** Where support messages are sent, and the address emails tell shoppers to contact. Required in production. */
   supportEmail: process.env.SUPPORT_EMAIL ?? 'support@example.com',
+  /** Most PostgreSQL connections each API instance opens (see PoolOptions in src/db/client.ts). */
+  dbPoolMax: Number(process.env.DB_POOL_MAX ?? 10),
+  /** Longest a query may run, in ms, before PostgreSQL cancels it. */
+  dbStatementTimeoutMs: Number(process.env.DB_STATEMENT_TIMEOUT_MS ?? 15_000),
   /** How many proxies sit in front of the API (e.g. 1 behind a Vercel rewrite). 0: ignore X-Forwarded-For. */
   trustProxyHops: Number(process.env.TRUST_PROXY_HOPS ?? 0),
 };

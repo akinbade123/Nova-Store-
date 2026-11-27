@@ -34,7 +34,7 @@ type Options = {
 /** Builds the API. Everything is under /api, matching the storefront's VITE_API_URL default. */
 export function createApp({ db, mailer, appUrl = 'http://localhost:5173', supportEmail = 'support@example.com', rateLimits = true, trustProxyHops = 0, logger = rootLogger }: Options) {
   // rateLimits: false is for tests that make many requests from one client.
-  const limiter = rateLimits ? createRateLimiter({ trustProxyHops }) : noRateLimits;
+  const limiter = rateLimits ? createRateLimiter({ db, trustProxyHops }) : noRateLimits;
   const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter };
 
   const api = new Hono<AppEnv>();

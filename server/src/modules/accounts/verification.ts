@@ -77,10 +77,10 @@ export function verificationRoutes(deps: Deps) {
     const user = c.get('user');
     if (user.emailVerifiedAt) return c.json({ sent: false, alreadyVerified: true });
     const key = `verify-resend:${user.id}`;
-    if (limiter.count(key) >= RESENDS_PER_ACCOUNT) {
+    if ((await limiter.count(key)) >= RESENDS_PER_ACCOUNT) {
       throw tooManyAttempts('We’ve sent a few links already. Check your inbox and spam folder, or try again in 15 minutes.');
     }
-    limiter.hit(key, 15 * MINUTE);
+    await limiter.hit(key, 15 * MINUTE);
     await sendVerification(deps, db, user);
     return c.json({ sent: true, alreadyVerified: false }, 202);
   });

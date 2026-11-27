@@ -178,3 +178,37 @@ describe('categories, collections, testimonials', () => {
     assert.equal(body[0].product, 'Aura Wireless Headphones');
   });
 });
+
+describe('caching and query cost', () => {
+  it('lets a CDN cache public catalogue answers, and browsers revalidate with an ETag', async () => {
+    for (const path of ['/products', '/products/moto-leather-jacket', '/categories', '/reviews/featured']) {
+      const res = await api.app.request(`/api${path}`);
+      assert.equal(res.status, 200, path);
+      assert.equal(res.headers.get('cache-control'), 'public, max-age=0, s-maxage=60, stale-while-revalidate=300', path);
+      const etag = res.headers.get('etag');
+      assert.ok(etag, path);
+      const again = await api.app.request(`/api${path}`, { headers: { 'If-None-Match': etag } });
+      assert.equal(again.status, 304, `${path} revalidates without resending the body`);
+    }
+  });
+
+  it('never marks errors or personal answers as cacheable', async () => {
+    const missing = await api.app.request('/api/products/no-such-product');
+    assert.equal(missing.status, 404);
+    assert.equal(missing.headers.get('cache-control'), null);
+    const { token } = await api.register();
+    const mine = await api.app.request('/api/me', { headers: { Authorization: `Bearer ${token}` } });
+    assert.equal(mine.status, 200);
+    assert.ok(!/public|s-maxage/.test(mine.headers.get('cache-control') ?? ''), 'account data is never shared');
+  });
+
+  it('skips the category counts when asked', async () => {
+    const res = await api.call('GET', '/products?featured=true&limit=4&facets=false');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.items.length, 4);
+    assert.deepEqual(res.body.facets, { categories: {} });
+    assert.equal(typeof res.body.total, 'number');
+    const full = await api.call('GET', '/products?featured=true&limit=4');
+    assert.ok(Object.keys(full.body.facets.categories).length > 0, 'counts are still the default');
+  });
+});

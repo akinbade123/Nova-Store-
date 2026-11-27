@@ -299,7 +299,13 @@ Errors: `not_found` (including another user's address), `validation_failed`.
 
 ## 7. Catalogue
 
-All catalogue endpoints are public.
+All catalogue endpoints are public, and the same for every shopper, so successful answers can be cached:
+
+- `Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=300`. A CDN in front of the API keeps a copy for a minute, then serves it for up to 5 more while it fetches a fresh one. Browsers always check back.
+- An `ETag`, so a browser checking back gets `304 Not Modified` instead of the whole response.
+- Errors, including 404s, carry no cache header. Nothing outside this section is marked cacheable.
+
+A product change therefore reaches shoppers within about a minute. Prices and stock shown from a cached answer are for display only: checkout must read them from the database.
 
 ### `GET /products`
 
@@ -316,6 +322,7 @@ The single contract for every product list. All frontend calls go through `fetch
 | `sort` | enum | `featured` (default: featured first, then by review count), `popular` (review count), `newest`, `price-asc`, `price-desc`, `rating`, `discount` (largest % off) |
 | `limit` | int | Default 12, maximum 100 |
 | `offset` | int | Matches to skip, for the next page. Default 0, maximum 10,000 |
+| `facets` | `false` | Skips the per-category counts (`facets.categories` is then `{}`), saving two queries. Product rails and search suggestions send it. |
 
 Returns:
 
