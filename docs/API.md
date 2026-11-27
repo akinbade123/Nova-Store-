@@ -560,6 +560,7 @@ Send through a transactional email provider from a background job, so a slow ema
 
 - `GET /health` → **200** `{ "status": "ok", "uptimeSeconds" }`. Liveness: the process is answering. Doesn't touch the database, so it's cheap enough for an uptime monitor to poll every few seconds.
 - `GET /health/ready` → **200** or **503** `{ "status": "ok" | "unavailable", "checks": { "database": { "ok", "ms" }, "migrations": { "ok" }, "email": { "ok", "detail" } }, "memoryMb", "uptimeSeconds" }`. Readiness: can this instance serve shoppers? 503 when the database is unreachable (2 s timeout) or migrations are missing, so a load balancer stops routing to it and a monitor alerts. Email is reported but doesn't fail the check. No hostnames, versions or data, because it's public; the reason for a failure is in the logs.
+- `POST /csp-reports` → **204**. Content-Security-Policy violation reports from browsers, in either format (`application/csp-report`, or the Reporting API's list). Logged as `CSP violation` warnings with the page, what was blocked, the directive and a sample, tokens redacted. Not stored. 20 per minute per IP.
 - `POST /client-errors` → **204**. The storefront reports crashes here: `{ kind: "render" | "error" | "unhandledrejection" | "request", message, name?, stack?, componentStack?, url?, requestId?, reference? }`. `requestId` is the failed API call it followed; `reference` is the one shown to the shopper. Logged, not stored. 20 per minute per IP.
 
 ## 11. Frontend changes these require

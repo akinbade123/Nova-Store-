@@ -99,6 +99,7 @@ describe('secrets never reach the logs', () => {
     assert.ok(!/Hunter2026|abc|xyz/.test(out[0]!), out[0]);
     assert.match(out[0]!, /"password":"\[redacted\]"/);
     assert.equal(redactUrl('/reset-password?token=abc123&x=1'), '/reset-password?token=[redacted]&x=1');
+    assert.equal(redactUrl('/login?redirect=%2Freset-password%3Ftoken%3Dabc123%26x%3D1'), '/login?redirect=%2Freset-password%3Ftoken%3D[redacted]%26x%3D1');
   });
 
   it('keeps sign-in passwords and tokens out of request logs', async () => {
@@ -167,5 +168,41 @@ describe('storefront error reports', () => {
   it('refuses reports that aren’t reports', async () => {
     assert.equal((await api.call('POST', '/client-errors', { body: { message: '' } })).status, 422);
     assert.equal((await api.call('POST', '/client-errors', { body: { message: 'x'.repeat(2000) } })).status, 422);
+  });
+});
+
+describe('Content-Security-Policy reports', () => {
+  const post = (body: unknown, type: string) =>
+    api.app.request('/api/csp-reports', { method: 'POST', headers: { 'Content-Type': type }, body: JSON.stringify(body) });
+
+  it('logs a blocked script from either report format, with tokens removed', async () => {
+    lines.length = 0;
+    const legacy = await post(
+      { 'csp-report': { 'document-uri': 'https://shop.example.com/reset-password?token=secret1', 'blocked-uri': 'https://evil.example/x.js', 'effective-directive': 'script-src-elem' } },
+      'application/csp-report',
+    );
+    const modern = await post(
+      [{ type: 'csp-violation', body: { documentURL: 'https://shop.example.com/account', blockedURL: 'inline', effectiveDirective: 'script-src-elem', sample: 'alert(1)' } }],
+      'application/reports+json',
+    );
+    assert.deepEqual([legacy.status, modern.status], [204, 204]);
+    const logged = lines.filter((line) => line.msg === 'CSP violation');
+    assert.equal(logged.length, 2);
+    assert.equal(logged[0]!.level, 'warn');
+    assert.equal(logged[0]!.page, 'https://shop.example.com/reset-password?token=[redacted]');
+    assert.equal(logged[0]!.blocked, 'https://evil.example/x.js');
+    assert.equal(logged[1]!.sample, 'alert(1)');
+  });
+
+  it('ignores junk quietly', async () => {
+    const res = await api.app.request('/api/csp-reports', { method: 'POST', headers: { 'Content-Type': 'application/csp-report' }, body: 'not json' });
+    assert.equal(res.status, 204);
+  });
+});
+
+describe('the API’s own headers', () => {
+  it('allows nothing to load or run from an API response, and no framing', async () => {
+    const res = await api.app.request('/api/categories');
+    assert.match(res.headers.get('content-security-policy') ?? '', /default-src 'none'.*frame-ancestors 'none'/);
   });
 });

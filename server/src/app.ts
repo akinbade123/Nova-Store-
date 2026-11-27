@@ -39,7 +39,8 @@ export function createApp({ db, mailer, appUrl = 'http://localhost:5173', suppor
 
   const api = new Hono<AppEnv>();
   // Standard protective headers on every API response (nosniff, no framing, HSTS, no referrer…).
-  api.use('*', secureHeaders());
+  // The API only returns JSON, so its own policy allows nothing to load or run, and no framing.
+  api.use('*', secureHeaders({ contentSecurityPolicy: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } }));
   // The largest real request (a support message) is a few KB. Anything far bigger is refused before it's read.
   api.use(
     '*',

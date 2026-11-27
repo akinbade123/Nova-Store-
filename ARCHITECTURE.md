@@ -134,7 +134,7 @@ The search panel calls `productService.search(term, 5)`, which is `GET /products
 [src/services/api.js](src/services/api.js) configures the client:
 
 - `baseURL` comes from `VITE_API_URL` (default `/api`). Requests time out after 15 seconds.
-- **A request interceptor** adds `Authorization: Bearer <token>` using `nova:token` from local or session storage.
+- **A request interceptor** adds `Authorization: Bearer <token>` using `nova:token` from local or session storage. Scripts on the page can read that storage, so an injected script could steal the token. The production CSP (scripts only from the site, Trusted Types) is what prevents injection, and violations are reported to the API (README, "Security headers"). Planned with checkout: move the session to an `HttpOnly`, `Secure`, `SameSite=Lax` cookie that scripts can't read, with CSRF protection (an `Origin` check on every non-GET request).
 - **A response interceptor** attaches `error.userMessage` and `error.code` from the server's response (see below). If the server didn't send a message, it uses one for timeouts, otherwise a generic one. On a 401 for a request that carried a token, it also fires `nova:session-expired` (see [Expired sessions](#routing)).
 
 ### Errors
