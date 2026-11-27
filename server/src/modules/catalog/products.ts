@@ -48,6 +48,11 @@ export const productQuery = z.object({
   minRating: z.coerce.number().min(0).max(5).optional(),
   sort: z.enum(SORTS, { error: `sort must be one of: ${SORTS.join(', ')}` }).default('featured'),
   limit: z.coerce.number().int().min(1).max(100).default(12),
+  /** `false` skips the per-category counts: product rails and search suggestions don't show them. */
+  facets: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value !== 'false'),
   /** How many matches to skip: "Load more" asks for the next page instead of everything again. */
   offset: z.coerce.number().int().min(0).max(10_000).default(0),
 });
@@ -76,8 +81,9 @@ function conditions(query: ProductQuery, { withCategories = true } = {}) {
 /** GET /products: `{ items, total, facets }`. */
 export async function queryProducts(db: Db, query: ProductQuery) {
   const where = conditions(query);
-  // Looking products up by id (the cart, the wishlist) needs no category counts, so skip those queries.
-  const wantsFacets = query.ids.length === 0;
+  // Rails, search suggestions and lookups by id (the cart, the wishlist) show no category counts,
+  // so skip those two queries for them.
+  const wantsFacets = query.facets && query.ids.length === 0;
   const [rows, [{ total } = { total: 0 }], facetRows, categoryRows] = await Promise.all([
     db.select().from(products).where(where).orderBy(...ORDER_BY[query.sort]).limit(query.limit).offset(query.offset),
     db.select({ total: count() }).from(products).where(where),

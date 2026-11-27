@@ -44,7 +44,7 @@ const sampleReady = USE_MOCK_DATA ? sample().then((mock) => remember(mock.produc
 const joinList = (values) => (values?.length ? values.join(',') : undefined);
 const flag = (value) => (value ? 'true' : undefined);
 
-async function fetchProducts({ q, category, categories, ids, featured, bestSeller, inStock, onSale, minPrice, maxPrice, minRating, sort, limit, offset } = {}) {
+async function fetchProducts({ q, category, categories, ids, featured, bestSeller, inStock, onSale, minPrice, maxPrice, minRating, sort, limit, offset, facets = true } = {}) {
   const { data } = await api.get('/products', {
     params: {
       q: q?.trim() || undefined,
@@ -60,6 +60,8 @@ async function fetchProducts({ q, category, categories, ids, featured, bestSelle
       sort,
       limit,
       offset: offset || undefined,
+      // Lists without filters don't need the per-category counts; skipping them saves two queries.
+      facets: facets ? undefined : 'false',
     },
   });
   remember(data.items);
@@ -71,7 +73,7 @@ export const productService = {
   async list(params = {}) {
     if (USE_MOCK_DATA) return mockDelay((await sample()).list(params));
     const { search, ...rest } = params;
-    return (await fetchProducts({ ...rest, q: search })).items;
+    return (await fetchProducts({ ...rest, q: search, facets: false })).items;
   },
 
   /** Filtered, sorted and paginated catalogue: { items, total, facets }. */
@@ -126,7 +128,7 @@ export const productService = {
     const q = term.trim();
     if (!q) return [];
     if (USE_MOCK_DATA) return (await sample()).list({ search: q, limit });
-    return (await fetchProducts({ q, limit })).items;
+    return (await fetchProducts({ q, limit, facets: false })).items;
   },
 
   /** Synchronous cache lookup. Returns null until the product has been loaded (see loadByIds). */
