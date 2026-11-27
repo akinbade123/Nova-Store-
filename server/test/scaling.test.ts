@@ -67,3 +67,16 @@ describe('search', () => {
     assert.ok(res.body.items.some((product: { slug: string }) => product.slug === 'moto-leather-jacket'));
   });
 });
+
+describe('search limit', () => {
+  it('limits searches per IP but never plain browsing, and never caches the refusal', async () => {
+    const statuses: number[] = [];
+    for (let i = 0; i < 61; i++) statuses.push((await api.app.request(`/api/products?q=term${i}&facets=false`)).status);
+    // 60 a minute in total: the trigram test above already made one search from this client.
+    assert.deepEqual([statuses.filter((s) => s === 200).length, statuses.at(-1)], [59, 429]);
+    const refused = await api.app.request('/api/products?q=one-more');
+    assert.equal(refused.status, 429);
+    assert.equal(refused.headers.get('cache-control'), null, 'a CDN must not keep the 429');
+    assert.equal((await api.app.request('/api/products?limit=4')).status, 200, 'browsing still works');
+  });
+});

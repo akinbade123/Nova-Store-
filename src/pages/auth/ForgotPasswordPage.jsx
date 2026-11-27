@@ -7,6 +7,7 @@ import { TextField, fieldId } from '../../components/ui/Field';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useForm } from '../../hooks/useForm';
+import { waitLabel } from '../../hooks/useCooldown';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { EMAIL_PATTERN } from '../../utils/validation';
 
@@ -46,6 +47,7 @@ export default function ForgotPasswordPage() {
     } catch (err) {
       setStatus('idle');
       setError(err.userMessage ?? 'We couldn’t send the email right now. Please try again in a moment.');
+      if (err.retryAfter) setCooldown(Math.ceil(err.retryAfter));
       return false;
     }
   };
@@ -123,8 +125,8 @@ export default function ForgotPasswordPage() {
         <fieldset disabled={status === 'sending'}>
           <TextField label="Email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" {...form.field('email')} />
         </fieldset>
-        <Button type="submit" size="lg" fullWidth loading={status === 'sending'} className="!mt-8">
-          Send reset link
+        <Button type="submit" size="lg" fullWidth loading={status === 'sending'} disabled={cooldown > 0} className="!mt-8">
+          {cooldown > 0 ? `Try again in ${waitLabel(cooldown)}` : 'Send reset link'}
         </Button>
       </form>
       <Link to="/login" className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline">
