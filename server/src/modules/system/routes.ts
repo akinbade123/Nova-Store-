@@ -94,5 +94,37 @@ export function systemRoutes(deps: Deps) {
     return c.body(null, 204);
   });
 
+  /**
+   * Content-Security-Policy violation reports, sent by browsers when the storefront's policy blocks
+   * something (vercel.json: report-uri and report-to). A burst of them can mean someone is trying to
+   * inject a script, which is how a session token would be stolen. Logged, not stored.
+   * Accepts both formats: the older `application/csp-report` and the Reporting API's list.
+   */
+  app.post('/csp-reports', rateLimit('csp-reports', 20, MINUTE), async (c) => {
+    let payload: unknown;
+    try {
+      payload = JSON.parse(await c.req.text());
+    } catch {
+      return c.body(null, 204); // browsers don't act on the answer; ignore junk quietly
+    }
+    const text = (value: unknown, max = 300) => (typeof value === 'string' ? redactUrl(value).slice(0, max) : undefined);
+    const reports: Record<string, unknown>[] = Array.isArray(payload)
+      ? payload.filter((item) => item?.type === 'csp-violation').map((item) => item.body ?? {})
+      : [((payload as { 'csp-report'?: Record<string, unknown> })?.['csp-report'] ?? {})];
+    for (const report of reports.slice(0, 10)) {
+      c.get('log').warn('CSP violation', {
+        page: text(report.documentURL ?? report['document-uri']),
+        blocked: text(report.blockedURL ?? report['blocked-uri']),
+        directive: text(report.effectiveDirective ?? report['effective-directive'] ?? report['violated-directive'], 100),
+        source: text(report.sourceFile ?? report['source-file']),
+        line: typeof (report.lineNumber ?? report['line-number']) === 'number' ? (report.lineNumber ?? report['line-number']) : undefined,
+        sample: text(report.sample ?? report['script-sample'], 100),
+        disposition: text(report.disposition, 20),
+        userAgent: c.req.header('user-agent')?.slice(0, 300),
+      });
+    }
+    return c.body(null, 204);
+  });
+
   return app;
 }

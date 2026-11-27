@@ -22,11 +22,25 @@ export const SESSION_EXPIRED_EVENT = 'nova:session-expired';
 /*
  * Error contract: the API responds with { message, code }. `userMessage` is safe to show;
  * `code` (e.g. 'email_taken') lets callers handle specific cases, the same as in sample-data mode.
+ * After a 429, `retryAfter` is the number of seconds to wait (see useCooldown).
  */
+/** Reads (GET) refused with 429 are retried once by themselves when the wait is this short or less. */
+const AUTO_RETRY_MAX_SECONDS = 5;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const body = error.response?.data;
+    // 429: the API says how long to wait, in the body and the Retry-After header. A read is safe to
+    // repeat, so a short wait is retried once without bothering the shopper. Anything else (sign-in,
+    // forms) is never retried automatically: repeating it would just use up the limit again.
+    const retryAfter = error.response?.status === 429 ? Number(body?.retryAfter ?? error.response.headers?.['retry-after']) || undefined : undefined;
+    const config = error.config;
+    if (retryAfter && retryAfter <= AUTO_RETRY_MAX_SECONDS && config && config.method === 'get' && !config.retriedAfter429) {
+      await wait(retryAfter * 1000);
+      return api.request({ ...config, retriedAfter429: true });
+    }
     const message =
       body?.message ??
       (error.code === 'ECONNABORTED' ? 'The request timed out. Please try again.' : 'Something went wrong. Please try again.');
@@ -39,7 +53,7 @@ api.interceptors.response.use(
     const requestId = body?.requestId ?? error.response?.headers?.['x-request-id'];
     // No response at all (network down, API unreachable, timeout): the server never saw it, so report it.
     if (!error.response) reportError({ kind: 'request', error, message: `${error.config?.method?.toUpperCase()} ${error.config?.url}: ${error.message}` });
-    return Promise.reject(Object.assign(error, { userMessage: message, code: body?.code ?? error.code, requestId }));
+    return Promise.reject(Object.assign(error, { userMessage: message, code: body?.code ?? error.code, requestId, retryAfter }));
   },
 );
 

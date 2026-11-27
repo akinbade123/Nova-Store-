@@ -6,9 +6,11 @@ import { createDb } from './db/client.ts';
 import { products } from './db/schema.ts';
 import { seed } from './db/seed.ts';
 import { purgeExpired } from './db/purge.ts';
+import { loginCanBypassRestrictions } from './db/roles.ts';
 import { env } from './env.ts';
 import { createConsoleMailer, createProductionMailer } from './lib/email.ts';
 import { logger } from './lib/logger.ts';
+import { createUsageMeter } from './lib/usage.ts';
 
 // Emails carry reset and confirmation links, so production must send them, never print them to the logs.
 // Checked before anything else, so a misconfigured deploy stops straight away with this message.
@@ -30,9 +32,14 @@ async function step<T>(name: string, run: () => Promise<T>): Promise<T> {
 }
 
 const database = await step('connecting to the database', () =>
-  createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } }),
+  createDb({ url: env.databaseUrl, migrationUrl: env.databaseMigrationUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } }),
 );
 await step('applying migrations', () => database.migrate());
+if (env.isProduction && (await loginCanBypassRestrictions(database.db))) {
+  logger.warn(
+    'DATABASE_URL logs in as the tables’ owner. The API still runs as the restricted role nova_app, but a SQL injection could switch back. Log in as a role that is only a member of nova_app, and put the owner in DATABASE_MIGRATION_URL (server/README.md, "Database roles").',
+  );
+}
 
 // Development convenience: an empty embedded database is filled with the storefront's sample data.
 if (!env.databaseUrl) {
@@ -43,7 +50,20 @@ if (!env.databaseUrl) {
   }
 }
 
-const app = createApp({ db: database.db, mailer, appUrl: env.appUrl, supportEmail: env.supportEmail, trustProxyHops: env.trustProxyHops });
+// Requests and emails, logged as one "Usage summary" line per hour (docs/COSTS.md has the dashboard queries).
+const usage = createUsageMeter();
+const usageTimer = setInterval(() => logger.info('Usage summary', usage.flush()), 60 * 60 * 1000);
+usageTimer.unref();
+
+const app = createApp({
+  usage,
+  db: database.db,
+  mailer,
+  appUrl: env.appUrl,
+  supportEmail: env.supportEmail,
+  trustProxyHops: env.trustProxyHops,
+  emailLimits: { perDay: env.emailDailyLimit, perRecipientPerHour: env.emailPerAddressPerHour },
+});
 
 // Clear out ended sessions and spent links now and every 6 hours. A failure is logged, never fatal.
 const purge = () =>
@@ -67,6 +87,8 @@ const server = serve({ fetch: app.fetch, port: env.port }, ({ port }) => {
 const shutdown = (signal: string) => {
   logger.info('Shutting down', { signal });
   clearInterval(purgeTimer);
+  clearInterval(usageTimer);
+  logger.info('Usage summary', usage.flush()); // the partial hour, so a deploy or restart doesn't lose it
   server.close();
   database.close().finally(() => process.exit(0));
 };

@@ -68,7 +68,7 @@ Stay calm and don't write to the damaged database while you work.
    - *Host PITR (usual case)*: use the host's "restore to point in time" or "branch from time" to create a new database at that moment.
    - *Our dump*: create an empty PostgreSQL 17 database, then `pg_restore --no-owner --no-privileges --exit-on-error -d "<new database url>" nova-<time>.dump`.
 3. **Check the new database**: row counts against the census file (or against yesterday's numbers), and a few known recent orders and accounts.
-4. **Switch over**: put the storefront in maintenance mode, point `DATABASE_URL` at the new database, run `npm run db:migrate` (harmless if nothing's pending), restart the API, and check the shop, sign-in and order history.
+4. **Switch over**: put the storefront in maintenance mode, point `DATABASE_URL` and `DATABASE_MIGRATION_URL` at the new database, create the API's login role there (server/README.md, "Database roles"; roles aren't part of a database's backup), run `npm run db:migrate` (harmless if nothing's pending; it also restores the `nova_app` grants, which backups leave out), restart the API, and check the shop, sign-in and order history.
 5. **Recover anything written after the restore point** from the old database if it's still readable (for example orders placed after the bad deploy), then keep the old database for a week before deleting it.
 6. **Write down** what happened, the restore point and how long it took.
 

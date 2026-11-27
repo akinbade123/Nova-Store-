@@ -25,7 +25,7 @@ describe('password hashing', () => {
     const salt = randomBytes(16);
     const key = scryptSync(password, salt, 64, { N: 2 ** 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
     const oldHash = `scrypt$32768$8$1$${salt.toString('base64url')}$${key.toString('base64url')}`;
-    await api.db.update(users).set({ passwordHash: oldHash }).where(eq(users.id, user.id));
+    await api.asOwner((db) => db.update(users).set({ passwordHash: oldHash }).where(eq(users.id, user.id)));
     assert.equal(needsRehash(oldHash), true);
 
     assert.equal((await api.call('POST', '/auth/login', { body: { email: user.email, password } })).status, 200);

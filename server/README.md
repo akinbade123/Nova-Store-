@@ -87,10 +87,27 @@ server/
 4. Serve the API at `/api` on the storefront's domain, for example with a Vercel rewrite to the API's host. The storefront calls `/api` by default, so no CORS setup is needed.
 5. If the API runs behind a proxy (a Vercel rewrite, a load balancer), set `TRUST_PROXY_HOPS` to the number of proxies, usually `1`. Otherwise every request looks like it comes from the proxy, and all shoppers share one rate limit. Never set it when clients reach the API directly: they could then fake their IP to dodge the limits.
 6. **Host the API on a long-running server** (Render, Railway, Fly.io or similar), not serverless functions: it runs a cleanup job every 6 hours and keeps a connection pool. You can run several instances: rate limits are kept in PostgreSQL, so they hold across all of them. Keep `instances × DB_POOL_MAX` below your database plan's connection limit; past that, add a pooler such as PgBouncer. The database needs the `pg_trgm` extension (migration 0004 creates it); every major managed PostgreSQL offers it.
-7. Set `APP_URL` (the storefront's public URL, used in email links) and `SUPPORT_EMAIL` (an address on your own domain). The API refuses to start in production without them.
+7. Set `APP_URL` (the storefront's public `https://` URL, used in email links) and `SUPPORT_EMAIL` (an address on your own domain). Add `sslmode=verify-full` to both database URLs, so the connection is encrypted and the database's certificate checked; if the host uses its own certificate authority (Amazon RDS, for example), also add `sslrootcert=<its CA file>`. The API refuses to start in production without any of these, and lists everything missing at once.
 8. Set a budget with alerts on the API host and the database as you sign up, and cap autoscaling: see [docs/COSTS.md](../docs/COSTS.md).
 9. Make each migration safe to roll back from, and take a backup before releasing one: see [docs/ROLLBACK.md](../docs/ROLLBACK.md).
 10. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
+
+## Database roles
+
+The API never runs as the tables' owner. Every connection switches to **`nova_app`**, a role that can read and write rows but owns nothing: it can't change the schema, drop or truncate tables, delete accounts or orders, or switch off row-level security. Migrations create the role and grant it (`src/db/roles.ts`), and re-grant it on every run, since backups leave privileges out.
+
+**Row-level security** (migration 0005) is a second lock behind the code's ownership checks. Each request says who it acts for (`withAccess` in `src/db/access.ts`), and the database then returns only that user's addresses and orders, and lets an account change only itself, even if a query has no `WHERE` clause. A query that doesn't say who it acts for sees no private rows. Tables reached before anyone is signed in (sessions, reset and verification links) store only token hashes and aren't covered; docs/DATA_MODEL.md has the details.
+
+**When you write code that touches `addresses`, `orders`, `order_items` or updates `users`**, run it inside `withAccess(db, accessFor(user), tx => …)`. Without it, reads come back empty and updates change nothing, silently. Tests run with the same role, so a missing `withAccess` shows up as a failing test. Test setup that writes rows the API can't (orders, until checkout exists) uses `api.asOwner`.
+
+**In production, use two logins:**
+
+```sql
+-- As the owner, after the first `npm run db:migrate` has created nova_app:
+CREATE ROLE nova_api LOGIN PASSWORD '<long random password>' IN ROLE nova_app;
+```
+
+Then set `DATABASE_URL` to log in as `nova_api`, and `DATABASE_MIGRATION_URL` as the owner. With a single owner login the API still runs as `nova_app`, but a SQL injection could switch back with `RESET ROLE`; the API logs a warning at startup in that case. If a connection pooler rejects startup options (some PgBouncer setups), the two-login setup is required.
 
 ## Logs, errors and health
 

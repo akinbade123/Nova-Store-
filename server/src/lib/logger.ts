@@ -24,8 +24,14 @@ export type Logger = {
 const ORDER: Record<Level | 'silent', number> = { debug: 10, info: 20, warn: 30, error: 40, silent: 100 };
 const SECRET_KEY = /pass(word)?|token|secret|authorization|cookie|api[-_]?key|card(number)?|cvc/i;
 
-/** Removes ?token=… and similar from URLs, so reset and confirmation links in a path never get logged. */
-export const redactUrl = (url: string) => url.replace(/([?&](?:token|key|secret|password)=)[^&#]*/gi, '$1[redacted]');
+/**
+ * Removes ?token=… and similar from URLs, so reset and confirmation links never get logged, including
+ * when the link is itself URL-encoded inside another parameter (?redirect=%2Freset%3Ftoken%3D…).
+ */
+export const redactUrl = (url: string) =>
+  url
+    .replace(/([?&](?:token|key|secret|password)=)[^&#]*/gi, '$1[redacted]')
+    .replace(/((?:%3F|%26)(?:token|key|secret|password)%3D)(?:(?!%26|%23)[^&#])*/gi, '$1[redacted]');
 
 /** An Error as plain fields: name, message, PostgreSQL details (code, constraint, table…), stack and causes. */
 export function serializeError(error: unknown, depth = 0): Fields {

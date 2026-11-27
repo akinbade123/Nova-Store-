@@ -35,13 +35,13 @@ describe('rate limits shared by every instance', () => {
 
   it('starts a new window once the old one has ended, and purges ended windows', async () => {
     const limiter = createRateLimiter({ db: api.db });
-    await limiter.hit('test:window', 60_000);
-    await limiter.hit('test:window', 60_000);
-    assert.equal(await limiter.count('test:window'), 2);
+    await limiter.take('test:window', 60_000);
+    await limiter.take('test:window', 60_000);
+    assert.equal((await limiter.status('test:window')).count, 2);
     await api.db.execute(sql`UPDATE rate_limits SET reset_at = now() - interval '1 second' WHERE key = 'test:window'`);
-    assert.equal(await limiter.count('test:window'), 0, 'an ended window no longer counts');
-    await limiter.hit('test:window', 60_000);
-    assert.equal(await limiter.count('test:window'), 1, 'and the next hit starts again at 1');
+    assert.equal((await limiter.status('test:window')).count, 0, 'an ended window no longer counts');
+    await limiter.take('test:window', 60_000);
+    assert.equal((await limiter.status('test:window')).count, 1, 'and the next hit starts again at 1');
 
     await api.db.execute(sql`UPDATE rate_limits SET reset_at = now() - interval '1 second' WHERE key = 'test:window'`);
     const removed = await purgeExpired(api.db);
@@ -65,5 +65,18 @@ describe('search', () => {
     assert.match(plan, /products_search_idx/, plan);
     const res = await api.call('GET', '/products?q=leather&facets=false');
     assert.ok(res.body.items.some((product: { slug: string }) => product.slug === 'moto-leather-jacket'));
+  });
+});
+
+describe('search limit', () => {
+  it('limits searches per IP but never plain browsing, and never caches the refusal', async () => {
+    const statuses: number[] = [];
+    for (let i = 0; i < 61; i++) statuses.push((await api.app.request(`/api/products?q=term${i}&facets=false`)).status);
+    // 60 a minute in total: the trigram test above already made one search from this client.
+    assert.deepEqual([statuses.filter((s) => s === 200).length, statuses.at(-1)], [59, 429]);
+    const refused = await api.app.request('/api/products?q=one-more');
+    assert.equal(refused.status, 429);
+    assert.equal(refused.headers.get('cache-control'), null, 'a CDN must not keep the 429');
+    assert.equal((await api.app.request('/api/products?limit=4')).status, 200, 'browsing still works');
   });
 });

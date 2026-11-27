@@ -1,12 +1,13 @@
 /** docs/API.md, section 4: register, login, logout, forgot and reset password. */
 import { Hono } from 'hono';
+import { setAccess, withAccess } from '../../db/access.ts';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { passwordResets, users } from '../../db/schema.ts';
 import { hashPassword, needsRehash, newId, newToken, passwordProblem, sha256, timingDummyHash, verifyPassword } from '../../lib/crypto.ts';
 import { sendInBackground } from '../../lib/email.ts';
 import { ApiError } from '../../lib/errors.ts';
-import { tooManyAttempts } from '../../lib/rateLimit.ts';
+import { refuse } from '../../lib/rateLimit.ts';
 import { fields, readBody } from '../../lib/validate.ts';
 import type { AppEnv, Deps } from '../../types.ts';
 import { authenticate, createSession, revokeSession, revokeUserSessions, toPublicUser } from './sessions.ts';
@@ -79,19 +80,21 @@ export function authRoutes(deps: Deps) {
   app.post('/auth/login', rateLimit('login', 10, MINUTE), async (c) => {
     const body = await readBody(c, loginBody);
     const failuresKey = `login-failures:${body.email}`;
-    if ((await limiter.count(failuresKey)) >= LOGIN_FAILURES_PER_EMAIL) {
-      throw tooManyAttempts('Too many sign-in attempts for this account. Wait 15 minutes, or reset your password.');
+    const failures = await limiter.status(failuresKey);
+    if (failures.count >= LOGIN_FAILURES_PER_EMAIL) {
+      refuse(c, failures.resetAt, 'Too many sign-in attempts for this account. You can reset your password now.');
     }
     const [user] = await db.select().from(users).where(and(eq(users.email, body.email), isNull(users.deletedAt))).limit(1);
     // Check a password even when there's no account, so response times don't reveal which emails exist.
     const valid = await verifyPassword(body.password, user?.passwordHash ?? (await timingDummyHash()));
     if (!user || !valid) {
-      await limiter.hit(failuresKey, LOGIN_FAILURE_WINDOW_MS);
+      await limiter.take(failuresKey, LOGIN_FAILURE_WINDOW_MS);
       throw invalidCredentials();
     }
     // The only moment the plain password is available: upgrade a hash made with older settings.
     if (needsRehash(user.passwordHash)) {
-      await db.update(users).set({ passwordHash: await hashPassword(body.password) }).where(eq(users.id, user.id));
+      const passwordHash = await hashPassword(body.password);
+      await withAccess(db, { userId: user.id }, (tx) => tx.update(users).set({ passwordHash }).where(eq(users.id, user.id)));
     }
     const token = await createSession(db, user.id);
     return c.json({ user: toPublicUser(user), token });
@@ -138,6 +141,8 @@ export function authRoutes(deps: Deps) {
         .where(and(eq(passwordResets.tokenHash, sha256(body.token)), isNull(passwordResets.usedAt), gt(passwordResets.expiresAt, new Date())))
         .returning({ userId: passwordResets.userId });
       if (!row) return null;
+      // The link proves who this is: act as that account for the change.
+      await setAccess(tx, { userId: row.userId });
       const [user] = await tx
         .update(users)
         .set({ passwordHash, updatedAt: new Date() })

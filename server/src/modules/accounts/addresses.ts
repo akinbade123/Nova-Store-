@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import { and, asc, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../../db/client.ts';
+import { accessFor, withAccess } from '../../db/access.ts';
 import { addresses } from '../../db/schema.ts';
 import { newId } from '../../lib/crypto.ts';
 import { ApiError, notFound } from '../../lib/errors.ts';
@@ -84,12 +85,14 @@ export function addressRoutes(deps: Deps) {
   app.use('/me/addresses', requireAuth(deps));
   app.use('/me/addresses/*', requireAuth(deps));
 
-  app.get('/me/addresses', async (c) => c.json(await listFor(db, c.get('user').id)));
+  // Each handler runs as the signed-in user, so the database's row-level policies also limit it to
+  // their addresses (the WHERE clauses below already do; the policies are the second lock).
+  app.get('/me/addresses', async (c) => c.json(await withAccess(db, accessFor(c.get('user')), (tx) => listFor(tx, c.get('user').id))));
 
   app.post('/me/addresses', async (c) => {
     const userId = c.get('user').id;
     const { isDefault, ...address } = await readBody(c, addressBody);
-    const list = await db.transaction(async (tx) => {
+    const list = await withAccess(db, accessFor(c.get('user')), async (tx) => {
       const existing = await listFor(tx, userId);
       if (existing.length >= MAX_ADDRESSES) {
         throw new ApiError(422, 'validation_failed', `You can save up to ${MAX_ADDRESSES} addresses. Delete one to add another.`);
@@ -107,7 +110,7 @@ export function addressRoutes(deps: Deps) {
     const userId = c.get('user').id;
     const id = c.req.param('id');
     const { isDefault, ...address } = await readBody(c, addressBody);
-    const list = await db.transaction(async (tx) => {
+    const list = await withAccess(db, accessFor(c.get('user')), async (tx) => {
       const changes = isDefault ? address : { ...address, isDefault: false };
       const [updated] = await tx
         .update(addresses)
@@ -123,7 +126,7 @@ export function addressRoutes(deps: Deps) {
 
   app.delete('/me/addresses/:id', async (c) => {
     const userId = c.get('user').id;
-    const list = await db.transaction(async (tx) => {
+    const list = await withAccess(db, accessFor(c.get('user')), async (tx) => {
       const [deleted] = await tx
         .delete(addresses)
         .where(and(eq(addresses.id, c.req.param('id')), eq(addresses.userId, userId)))
@@ -138,7 +141,7 @@ export function addressRoutes(deps: Deps) {
   app.post('/me/addresses/:id/default', async (c) => {
     const userId = c.get('user').id;
     const id = c.req.param('id');
-    const list = await db.transaction(async (tx) => {
+    const list = await withAccess(db, accessFor(c.get('user')), async (tx) => {
       const [found] = await tx.select({ id: addresses.id }).from(addresses).where(and(eq(addresses.id, id), eq(addresses.userId, userId)));
       if (!found) throw addressNotFound();
       await normaliseDefault(tx, userId, id);

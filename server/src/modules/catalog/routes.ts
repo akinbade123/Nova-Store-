@@ -11,6 +11,8 @@ import type { AppEnv, Deps } from '../../types.ts';
 import { ORDER_BY, SORTS, productQuery, queryProducts, toImage, toProduct, withImages } from './products.ts';
 
 const REVIEWS_SHOWN = 8;
+const MINUTE = 60 * 1000;
+const SEARCHES_PER_MINUTE = 60;
 const FEATURED_REVIEWS_MAX = 12; // the homepage shows a handful; marking more as featured mustn't slow it down
 
 const findProduct = async (db: Db, column: 'slug' | 'id', value: string) => {
@@ -31,7 +33,7 @@ const findProduct = async (db: Db, column: 'slug' | 'id', value: string) => {
  */
 export const CATALOG_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=300';
 
-export function catalogRoutes({ db }: Deps) {
+export function catalogRoutes({ db, rateLimit }: Deps) {
   const app = new Hono<AppEnv>();
 
   app.use('*', etag(), async (c, next) => {
@@ -39,7 +41,15 @@ export function catalogRoutes({ db }: Deps) {
     if (c.req.method === 'GET' && c.res.status === 200) c.header('Cache-Control', CATALOG_CACHE);
   });
 
-  app.get('/products', async (c) => c.json(await queryProducts(db, readQuery(c, productQuery))));
+  // Browsing is cacheable and unlimited. Each new search term misses the cache and runs a query, so
+  // searches are limited per IP: generous for a person typing (the storefront waits for a pause),
+  // tight enough to stop a bot cycling through terms.
+  const searchLimit = rateLimit('search', SEARCHES_PER_MINUTE, MINUTE);
+  app.get(
+    '/products',
+    (c, next) => (c.req.query('q') ? searchLimit(c, next) : next()),
+    async (c) => c.json(await queryProducts(db, readQuery(c, productQuery))),
+  );
 
   // GET /products/:slug, with ?include=details for the product page.
   app.get('/products/:slug', async (c) => {

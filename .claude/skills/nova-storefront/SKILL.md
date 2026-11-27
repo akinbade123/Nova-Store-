@@ -155,6 +155,7 @@ Components never import `src/data/products.js` directly; they go through `produc
 - Keep the "Skip to content" link and `id="main"`. Give every input a label (`Field` does this). Hide decorative icons with `aria-hidden="true"`, and give `IconButton` an accessible label. Overlays use `useEscapeKey` and `useLockBodyScroll`. New colours must meet WCAG AA contrast.
 - Never send or store a full card number. The checkout sends only `{ method, brand, last4 }`. Post-login redirects must stay same-origin (`useRedirectTarget`).
 - Sample-data authentication (SHA-256 hashes in `localStorage`) is for development only. Don't build on it as if it were real security, and point that out if a task depends on it.
+- Never write HTML from strings: no `dangerouslySetInnerHTML`, `innerHTML` or injected `<script>` tags, in our code or a library's. The production CSP enforces Trusted Types and blocks them, though `npm run dev` doesn't, so the breakage only shows after deploying. Render with JSX instead.
 - Never commit `.env`. Put new variables in `.env.example`, documented, with names starting with `VITE_`. Anything named `VITE_` ends up in the public bundle, so never put secrets there.
 
 ## 6. Verifying a change

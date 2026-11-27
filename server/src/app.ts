@@ -4,9 +4,10 @@ import { secureHeaders } from 'hono/secure-headers';
 import { errorHandler } from './lib/errors.ts';
 import { type Logger, logger as rootLogger } from './lib/logger.ts';
 import { requestContext } from './lib/requestContext.ts';
+import type { UsageMeter } from './lib/usage.ts';
 import { systemRoutes } from './modules/system/routes.ts';
 import { createRateLimiter, noRateLimits } from './lib/rateLimit.ts';
-import type { Mailer } from './lib/email.ts';
+import { type EmailLimits, type Mailer, withSendingLimits } from './lib/email.ts';
 import type { Db } from './db/client.ts';
 import type { AppEnv, Deps } from './types.ts';
 import { authRoutes } from './modules/accounts/auth.ts';
@@ -29,17 +30,40 @@ type Options = {
   trustProxyHops?: number;
   /** Where request and error logs go. Tests pass their own to read what was logged. */
   logger?: Logger;
+  /** Email spending limits (see withSendingLimits). Defaults: 5 per address per hour, 2000 a day. */
+  emailLimits?: Partial<Pick<EmailLimits, 'perRecipientPerHour' | 'perDay'>>;
+  /** Counts requests and emails for the hourly "Usage summary" log line (src/index.ts). */
+  usage?: UsageMeter;
 };
 
 /** Builds the API. Everything is under /api, matching the storefront's VITE_API_URL default. */
-export function createApp({ db, mailer, appUrl = 'http://localhost:5173', supportEmail = 'support@example.com', rateLimits = true, trustProxyHops = 0, logger = rootLogger }: Options) {
+export function createApp({
+  db,
+  mailer: provider,
+  appUrl = 'http://localhost:5173',
+  supportEmail = 'support@example.com',
+  rateLimits = true,
+  trustProxyHops = 0,
+  logger = rootLogger,
+  emailLimits = {},
+  usage,
+}: Options) {
   // rateLimits: false is for tests that make many requests from one client.
   const limiter = rateLimits ? createRateLimiter({ db, trustProxyHops }) : noRateLimits;
+  // Every email the API sends goes through the spending limits.
+  const mailer = withSendingLimits(
+    provider,
+    limiter,
+    { perRecipientPerHour: emailLimits.perRecipientPerHour ?? 5, perDay: emailLimits.perDay ?? 2000, uncapped: [supportEmail] },
+    logger,
+    usage,
+  );
   const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter };
 
   const api = new Hono<AppEnv>();
   // Standard protective headers on every API response (nosniff, no framing, HSTS, no referrer…).
-  api.use('*', secureHeaders());
+  // The API only returns JSON, so its own policy allows nothing to load or run, and no framing.
+  api.use('*', secureHeaders({ contentSecurityPolicy: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } }));
   // The largest real request (a support message) is a few KB. Anything far bigger is refused before it's read.
   api.use(
     '*',
@@ -57,7 +81,7 @@ export function createApp({ db, mailer, appUrl = 'http://localhost:5173', suppor
 
   const app = new Hono<AppEnv>();
   // First, so every request (including 404s and errors) gets an id, a logger and a summary log line.
-  app.use('*', requestContext(logger));
+  app.use('*', requestContext(logger, usage));
   app.route('/api', api);
   app.notFound((c) => {
     c.set('errorCode', 'not_found');

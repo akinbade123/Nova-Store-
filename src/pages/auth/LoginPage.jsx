@@ -9,6 +9,7 @@ import { useForm } from '../../hooks/useForm';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useRedirectTarget } from '../../layouts/AuthLayout';
 import { useAsync } from '../../hooks/useAsync';
+import { useCooldown, waitLabel } from '../../hooks/useCooldown';
 import { USE_MOCK_DATA } from '../../services/api';
 import { EMAIL_PATTERN } from '../../utils/validation';
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const form = useForm({ email: '', password: '', remember: true }, validate);
   const [submitting, setSubmitting] = useState(false);
+  const cooldown = useCooldown();
   const [formError, setFormError] = useState('');
   const alertRef = useRef(null);
   // Sample-data mode only: the demo login is loaded on demand, so it isn't in API builds.
@@ -60,6 +62,7 @@ export default function LoginPage() {
     } catch (err) {
       setSubmitting(false);
       setFormError(err.userMessage ?? 'We couldn’t sign you in. Please try again.');
+      if (err.retryAfter) cooldown.start(err.retryAfter);
       requestAnimationFrame(() => alertRef.current?.focus());
     }
   };
@@ -106,8 +109,8 @@ export default function LoginPage() {
             onChange={(event) => form.setField('remember', event.target.checked)}
           />
         </fieldset>
-        <Button type="submit" size="lg" fullWidth loading={submitting} className="!mt-8">
-          Sign in
+        <Button type="submit" size="lg" fullWidth loading={submitting} disabled={cooldown.secondsLeft > 0} className="!mt-8">
+          {cooldown.secondsLeft > 0 ? `Try again in ${waitLabel(cooldown.secondsLeft)}` : 'Sign in'}
         </Button>
       </form>
 

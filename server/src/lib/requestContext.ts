@@ -1,7 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import type { MiddlewareHandler } from 'hono';
+import { matchedRoutes } from 'hono/route';
 import type { AppEnv } from '../types.ts';
 import type { Logger } from './logger.ts';
+import type { UsageMeter } from './usage.ts';
 
 /** Requests slower than this are logged as warnings. */
 export const SLOW_REQUEST_MS = 1000;
@@ -16,7 +18,7 @@ export const newRequestId = () => `req_${randomBytes(9).toString('base64url')}`;
  * The id is returned in the X-Request-Id header and in error bodies, so a shopper's "reference"
  * or a failed request in the browser's network tab leads straight to the server's log lines.
  */
-export function requestContext(baseLogger: Logger): MiddlewareHandler<AppEnv> {
+export function requestContext(baseLogger: Logger, usage?: UsageMeter): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const incoming = c.req.header('x-request-id');
     const requestId = incoming && VALID_ID.test(incoming) ? incoming : newRequestId();
@@ -30,6 +32,8 @@ export function requestContext(baseLogger: Logger): MiddlewareHandler<AppEnv> {
 
     const durationMs = Math.round(performance.now() - started);
     const status = c.res.status;
+    // The route's pattern (/api/products/:slug), not its path, so ids don't split the counts.
+    usage?.request(matchedRoutes(c).filter((route) => route.method !== 'ALL').at(-1)?.path ?? 'unmatched', status, durationMs);
     const fields = {
       method: c.req.method,
       path: c.req.path, // never the query string: reset and confirmation tokens can travel there

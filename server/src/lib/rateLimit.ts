@@ -4,17 +4,52 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { ApiError } from './errors.ts';
 
-export const tooManyAttempts = (message = 'Too many attempts. Please wait a moment and try again.') =>
-  new ApiError(429, 'rate_limited', message);
+/** "45 seconds", "1 minute", "12 minutes": how long to wait, in words a shopper can act on. */
+export const waitPhrase = (seconds: number) =>
+  seconds < 60 ? `${seconds} second${seconds === 1 ? '' : 's'}` : `${Math.ceil(seconds / 60)} minute${Math.ceil(seconds / 60) === 1 ? '' : 's'}`;
+
+/**
+ * 429 rate_limited. With `retryAfter` (seconds), the message says how long to wait and the body
+ * carries `retryAfter`, so the storefront can count down and re-enable the button.
+ */
+export const tooManyAttempts = (message = 'Too many attempts.', retryAfter?: number) =>
+  new ApiError(
+    429,
+    'rate_limited',
+    retryAfter ? `${message} Please try again in ${waitPhrase(retryAfter)}.` : `${message} Please wait a moment and try again.`,
+    retryAfter ? { retryAfter } : undefined,
+  );
+
+const secondsUntil = (time: number) => Math.max(1, Math.ceil((time - Date.now()) / 1000));
 
 export type RateLimiter = {
   /** Middleware: at most `limit` requests per client IP per window for the route named `name`. */
   perIp: (name: string, limit: number, windowMs: number) => MiddlewareHandler;
-  /** How many times `key` has been recorded in its current window. */
-  count: (key: string) => Promise<number>;
-  /** Records one hit for `key`, starting a window of `windowMs` if none is open. */
-  hit: (key: string, windowMs: number) => Promise<void>;
+  /** `key`'s count in its current window and when that window ends (ms), or count 0 if none is open. */
+  status: (key: string) => Promise<{ count: number; resetAt: number }>;
+  /** Records one hit for `key`, starting a window of `windowMs` if none is open. Returns the new status. */
+  take: (key: string, windowMs: number) => Promise<{ count: number; resetAt: number }>;
 };
+
+/**
+ * Records a hit on `key` and, past `limit` in the window, answers 429 with Retry-After and the
+ * wait in the message. For limits per account or per address rather than per IP.
+ */
+export async function enforce(c: Context, limiter: RateLimiter, key: string, limit: number, windowMs: number, message?: string) {
+  const { count, resetAt } = await limiter.take(key, windowMs);
+  if (count > limit) {
+    const retryAfter = secondsUntil(resetAt);
+    c.header('Retry-After', String(retryAfter));
+    throw tooManyAttempts(message, retryAfter);
+  }
+}
+
+/** 429 for a limit that was checked with `status` (counted elsewhere, e.g. only failures). */
+export function refuse(c: Context, resetAt: number, message?: string): never {
+  const retryAfter = secondsUntil(resetAt);
+  c.header('Retry-After', String(retryAfter));
+  throw tooManyAttempts(message, retryAfter);
+}
 
 /**
  * The client's IP address. `X-Forwarded-For` can be sent by anyone, so it's only used when
@@ -58,27 +93,23 @@ export function createRateLimiter({ db, trustProxyHops = 0 }: { db: Db; trustPro
   return {
     perIp: (name, limit, windowMs) => async (c, next) => {
       const entry = await hit(`${name}:${clientIp(c, trustProxyHops)}`, windowMs);
-      if (entry.count > limit) {
-        c.header('Retry-After', String(Math.max(1, Math.ceil((entry.resetAt - Date.now()) / 1000))));
-        throw tooManyAttempts();
-      }
+      if (entry.count > limit) refuse(c, entry.resetAt);
       await next();
     },
-    count: async (key) => {
+    status: async (key) => {
       const result = (await db.execute(
-        sql`SELECT count FROM rate_limits WHERE key = ${key} AND reset_at > now()`,
-      )) as unknown as { rows: { count: number }[] };
-      return result.rows[0]?.count ?? 0;
+        sql`SELECT count, reset_at FROM rate_limits WHERE key = ${key} AND reset_at > now()`,
+      )) as unknown as { rows: { count: number; reset_at: Date | string }[] };
+      const row = result.rows[0];
+      return row ? { count: row.count, resetAt: new Date(row.reset_at).getTime() } : { count: 0, resetAt: Date.now() };
     },
-    hit: async (key, windowMs) => {
-      await hit(key, windowMs);
-    },
+    take: hit,
   };
 }
 
 /** Used when rate limits are off (tests that make many requests from one client). */
 export const noRateLimits: RateLimiter = {
   perIp: () => async (_c, next) => next(),
-  count: async () => 0,
-  hit: async () => {},
+  status: async () => ({ count: 0, resetAt: Date.now() }),
+  take: async () => ({ count: 0, resetAt: Date.now() }),
 };
