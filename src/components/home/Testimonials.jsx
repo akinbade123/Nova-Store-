@@ -12,8 +12,8 @@ function TestimonialCard({ review }) {
   return (
     <figure className={`${cardWidth} flex flex-col rounded-2xl bg-white p-6 ring-1 ring-line sm:p-7`}>
       <Rating value={review.rating} size="md" />
-      <p className="mt-5 font-display text-[17px] font-semibold leading-snug tracking-[-0.01em]">“{review.title}”</p>
-      <blockquote className="mt-3 flex-1 text-[14.5px] leading-relaxed text-ink/75">
+      <p className="mt-5 font-display text-lg font-semibold leading-snug tracking-[-0.01em]">“{review.title}”</p>
+      <blockquote className="mt-3 flex-1 text-body leading-relaxed text-ink/75">
         <p>{review.quote}</p>
       </blockquote>
       <figcaption className="mt-7 flex items-center gap-3 border-t border-line pt-5">
@@ -28,7 +28,7 @@ function TestimonialCard({ review }) {
             {review.name}
             <BadgeCheck className="size-4 text-accent" strokeWidth={1.75} aria-label="Verified buyer" />
           </p>
-          <p className="truncate text-[13px] text-muted">
+          <p className="truncate text-caption text-muted">
             {review.location} · Bought {review.product}
           </p>
         </div>
@@ -63,8 +63,8 @@ export function Testimonials() {
       <Container>
         <div className="mb-10 flex flex-col gap-6 sm:mb-12 md:flex-row md:items-end md:justify-between">
           <div className="max-w-xl">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Customer reviews</p>
-            <h2 id="reviews-heading" className="text-[28px] font-semibold leading-[1.1] sm:text-4xl">
+            <p className="mb-3 eyebrow text-muted">Customer reviews</p>
+            <h2 id="reviews-heading" className="text-heading font-semibold leading-[1.1] sm:text-4xl">
               Loved by 120,000+ customers
             </h2>
           </div>
@@ -72,12 +72,17 @@ export function Testimonials() {
             <p className="font-display text-5xl font-bold tracking-tight">4.9</p>
             <div>
               <Rating value={4.9} size="md" />
-              <p className="mt-1 text-[13px] text-muted">Based on 12,480 verified reviews</p>
+              <p className="mt-1 text-caption text-muted">Based on 12,480 verified reviews</p>
             </div>
           </div>
         </div>
 
-        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:scroll-px-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 xl:grid-cols-4">
+        <div
+          // Scrolls sideways on phones, so keyboard users need to be able to focus it to scroll.
+          tabIndex={0}
+          role="region"
+          aria-label="Customer reviews"
+          className="no-scrollbar -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:scroll-px-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 xl:grid-cols-4">
           {loading
             ? Array.from({ length: 4 }, (_, i) => <TestimonialSkeleton key={i} />)
             : data.map((review) => <TestimonialCard key={review.id} review={review} />)}

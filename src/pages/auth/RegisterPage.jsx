@@ -58,8 +58,8 @@ export default function RegisterPage() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Create your account</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted">
+      <h1 className="text-title font-bold leading-tight tracking-tight sm:text-4xl">Create your account</h1>
+      <p className="mt-3 text-body leading-relaxed text-muted">
         Already a member?{' '}
         <Link to={`/login${search}`} className="font-medium text-ink underline underline-offset-4 hover:no-underline">
           Sign in

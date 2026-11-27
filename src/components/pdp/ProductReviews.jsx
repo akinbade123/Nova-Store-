@@ -24,14 +24,14 @@ function ReviewItem({ review }) {
     <article className="border-b border-line py-7 first:pt-0">
       <div className="flex items-start justify-between gap-4">
         <Rating value={review.rating} />
-        <time dateTime={review.date} className="shrink-0 text-[13px] text-muted">
+        <time dateTime={review.date} className="shrink-0 text-caption text-muted">
           {formatDate(review.date)}
         </time>
       </div>
-      <h3 className="mt-3 font-sans text-[15px] font-semibold tracking-normal">{review.title}</h3>
-      <p className="mt-2 text-[14.5px] leading-relaxed text-ink/75">{review.body}</p>
+      <h3 className="mt-3 font-sans text-body font-semibold tracking-normal">{review.title}</h3>
+      <p className="mt-2 text-body leading-relaxed text-ink/75">{review.body}</p>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
           <span className="font-medium text-ink">{review.name}</span>
           <span aria-hidden="true">·</span>
           <span>{review.location}</span>
@@ -53,7 +53,7 @@ function ReviewItem({ review }) {
           onClick={() => setVoted((value) => !value)}
           aria-pressed={voted}
           className={cn(
-            'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] ring-1 ring-inset transition-colors',
+            'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-caption ring-1 ring-inset transition-colors',
             voted ? 'bg-ink text-white ring-ink' : 'text-muted ring-line-strong hover:text-ink hover:ring-ink',
           )}
         >
@@ -95,14 +95,14 @@ export function ProductReviews({ product }) {
       <div className="grid gap-10 lg:grid-cols-[340px_1fr] lg:gap-16">
         {/* Summary */}
         <div>
-          <h2 id="reviews-title" className="text-[28px] font-semibold leading-tight sm:text-3xl">
+          <h2 id="reviews-title" className="text-heading font-semibold leading-tight sm:text-3xl">
             Customer reviews
           </h2>
           <div className="mt-6 flex items-center gap-4">
             <p className="font-display text-6xl font-bold tracking-tight">{product.rating.toFixed(1)}</p>
             <div>
               <Rating value={product.rating} size="md" />
-              <p className="mt-1.5 text-[13px] text-muted">Based on {product.reviewCount.toLocaleString()} reviews</p>
+              <p className="mt-1.5 text-caption text-muted">Based on {product.reviewCount.toLocaleString()} reviews</p>
             </div>
           </div>
 
@@ -125,7 +125,7 @@ export function ProductReviews({ product }) {
                         }}
                         aria-pressed={active}
                         className={cn(
-                          'grid w-full grid-cols-[44px_1fr_52px] items-center gap-3 rounded-lg px-2 py-1.5 text-[13px] transition-colors',
+                          'grid w-full grid-cols-[44px_1fr_52px] items-center gap-3 rounded-lg px-2 py-1.5 text-caption transition-colors',
                           active ? 'bg-surface' : 'hover:bg-surface',
                         )}
                       >
@@ -163,7 +163,7 @@ export function ProductReviews({ product }) {
               <select
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="h-9 cursor-pointer appearance-none rounded-full bg-white pl-4 pr-9 text-[13px] font-medium ring-1 ring-inset ring-line-strong outline-none hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink"
+                className="h-9 cursor-pointer appearance-none rounded-full bg-white pl-4 pr-9 text-caption font-medium ring-1 ring-inset ring-line-strong outline-none hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink"
               >
                 {Object.entries(SORTS).map(([value, option]) => (
                   <option key={value} value={value}>

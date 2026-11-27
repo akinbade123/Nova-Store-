@@ -4,7 +4,7 @@ import { ChevronDown, Mail, Phone } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 import { Container } from '../ui/Container';
 import { FacebookIcon, InstagramIcon, PaymentIcons, TikTokIcon, XIcon, YouTubeIcon } from '../ui/BrandIcons';
-import { footerLinks } from '../../data/site';
+import { contactEmail, footerLinks } from '../../data/site';
 import { cn } from '../../utils/cn';
 
 const socials = [
@@ -88,9 +88,9 @@ export function Footer() {
             <p className="mt-5 text-sm leading-relaxed text-white/65">Our team is here Monday to Saturday, 8am – 8pm.</p>
             <ul className="mt-4 space-y-3 text-sm">
               <li>
-                <a href="mailto:support@nova.store" className="inline-flex items-center gap-2.5 text-white/85 hover:text-white">
+                <a href={`mailto:${contactEmail.support}`} className="inline-flex items-center gap-2.5 text-white/85 hover:text-white">
                   <Mail className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                  support@nova.store
+                  {contactEmail.support}
                 </a>
               </li>
               <li>
@@ -105,7 +105,7 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col gap-6 border-t border-white/10 pt-8 lg:mt-16 lg:flex-row lg:items-center lg:justify-between">
           <PaymentIcons className="flex flex-wrap items-center gap-2" />
-          <div className="flex flex-col gap-3 text-[13px] text-white/50 sm:flex-row sm:items-center sm:gap-6">
+          <div className="flex flex-col gap-3 text-caption text-white/50 sm:flex-row sm:items-center sm:gap-6">
             <ul className="flex flex-wrap gap-x-5 gap-y-2">
               <li><Link to="/legal/privacy" className="hover:text-white">Privacy</Link></li>
               <li><Link to="/legal/terms" className="hover:text-white">Terms</Link></li>

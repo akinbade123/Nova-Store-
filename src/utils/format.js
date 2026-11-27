@@ -35,6 +35,12 @@ export function deliveryWindow(minDays = 2, maxDays = 4, from = new Date()) {
   return `${shortDate.format(addBusinessDays(from, minDays))} – ${shortDate.format(addBusinessDays(from, maxDays))}`;
 }
 
+/** "12 November 2026" */
 export function formatDate(value) {
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value));
+}
+
+/** "12 Nov" */
+export function formatShortDate(value) {
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(value));
 }

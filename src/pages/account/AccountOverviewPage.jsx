@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Heart, MapPin, Package } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Skeleton';
-import { OrderStatusBadge, itemCount, orderDate } from '../../components/account/orderUtils';
+import { OrderStatusBadge } from '../../components/account/OrderStatusBadge';
+import { itemCount } from '../../utils/orders';
 import { AccountSection } from '../../layouts/AccountLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -12,14 +13,14 @@ import { orderService } from '../../services/orderService';
 import { addressService } from '../../services/addressService';
 import { useProducts } from '../../hooks/useProducts';
 import { countryByCode } from '../../utils/validation';
-import { formatPrice } from '../../utils/format';
+import { formatDate, formatPrice } from '../../utils/format';
 import { imageUrl } from '../../utils/image';
 
 function Card({ title, action, children, className = '' }) {
   return (
     <div className={`rounded-3xl p-6 ring-1 ring-inset ring-line sm:p-7 ${className}`}>
       <div className="mb-5 flex items-center justify-between gap-4">
-        <h3 className="font-sans text-[15px] font-semibold tracking-normal">{title}</h3>
+        <h3 className="font-sans text-body font-semibold tracking-normal">{title}</h3>
         {action}
       </div>
       {children}
@@ -28,7 +29,7 @@ function Card({ title, action, children, className = '' }) {
 }
 
 const cardLink = (to, label) => (
-  <Link to={to} className="inline-flex items-center gap-1 text-[13px] font-medium text-muted underline-offset-4 hover:text-ink hover:underline">
+  <Link to={to} className="inline-flex items-center gap-1 text-caption font-medium text-muted underline-offset-4 hover:text-ink hover:underline">
     {label}
     <ArrowRight className="size-3.5" aria-hidden="true" />
   </Link>
@@ -38,15 +39,16 @@ export default function AccountOverviewPage() {
   useDocumentTitle('My account');
   const { user } = useAuth();
   const { ids: wishlistIds, count: wishlistCount } = useWishlist();
-  const orders = useAsync(() => orderService.listOrders(user), [user.id, user.email]);
+  // Only the latest order is shown; `counts.All` gives the total without loading the rest.
+  const orders = useAsync(() => orderService.listOrders(user, { limit: 1 }), [user.id, user.email]);
   const addresses = useAsync(() => addressService.list(user.id), [user.id]);
 
-  const latest = orders.data?.[0];
+  const latest = orders.data?.items[0];
   const defaultAddress = addresses.data?.find((address) => address.isDefault);
   const { products: saved } = useProducts([...wishlistIds].reverse().slice(0, 4));
 
   const stats = [
-    { label: 'Orders', value: orders.data?.length, to: '/account/orders', Icon: Package },
+    { label: 'Orders', value: orders.data?.counts.All, to: '/account/orders', Icon: Package },
     { label: 'Wishlist', value: wishlistCount, to: '/account/wishlist', Icon: Heart },
     { label: 'Addresses', value: addresses.data?.length, to: '/account/addresses', Icon: MapPin },
   ];
@@ -62,7 +64,7 @@ export default function AccountOverviewPage() {
                 <div className="font-display text-2xl font-bold tabular-nums sm:text-3xl">
                   {value ?? <Skeleton className="h-8 w-8" />}
                 </div>
-                <p className="mt-0.5 text-[13px] text-muted">{label}</p>
+                <p className="mt-0.5 text-caption text-muted">{label}</p>
               </div>
             </Link>
           </li>
@@ -94,8 +96,8 @@ export default function AccountOverviewPage() {
                     {latest.id}
                     <OrderStatusBadge status={latest.status} />
                   </p>
-                  <p className="mt-1 text-[13px] text-muted">
-                    {orderDate(latest.createdAt)} · {itemCount(latest)} {itemCount(latest) === 1 ? 'item' : 'items'} · {formatPrice(latest.totals.total)}
+                  <p className="mt-1 text-caption text-muted">
+                    {formatDate(latest.createdAt)} · {itemCount(latest)} {itemCount(latest) === 1 ? 'item' : 'items'} · {formatPrice(latest.totals.total)}
                   </p>
                 </div>
               </div>
@@ -173,8 +175,8 @@ export default function AccountOverviewPage() {
                         className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                       />
                     </div>
-                    <p className="mt-2 truncate text-[13px] font-medium">{product.name}</p>
-                    <p className="text-[13px] tabular-nums text-muted">{formatPrice(product.price)}</p>
+                    <p className="mt-2 truncate text-caption font-medium">{product.name}</p>
+                    <p className="text-caption tabular-nums text-muted">{formatPrice(product.price)}</p>
                   </Link>
                 </li>
               ))}

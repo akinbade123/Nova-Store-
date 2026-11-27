@@ -7,7 +7,7 @@ export function PromoBanner() {
   return (
     <section aria-labelledby="promo-heading" className="pb-16 lg:pb-24">
       <Container className="px-3 sm:px-6 lg:px-10">
-        <div className="relative isolate flex min-h-[560px] items-end overflow-hidden rounded-[24px] bg-ink sm:min-h-[520px] lg:min-h-[600px] lg:items-center lg:rounded-[32px]">
+        <div className="relative isolate flex min-h-140 items-end overflow-hidden rounded-3xl bg-ink sm:min-h-130 lg:min-h-150 lg:items-center lg:rounded-4xl">
           <SmartImage
             src="1445205170230-053b83016050"
             alt="Warm-toned knitwear and coats on a boutique rail"
@@ -16,18 +16,18 @@ export function PromoBanner() {
             imgClassName="object-[60%_center]"
           />
           <div
-            className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/5 lg:bg-gradient-to-r lg:from-black/75 lg:via-black/35 lg:to-transparent"
+            className="absolute inset-0 bg-linear-to-t from-black/80 via-black/35 to-black/5 lg:bg-linear-to-r lg:from-black/75 lg:via-black/35 lg:to-transparent"
             aria-hidden="true"
           />
 
           <div className="relative z-10 max-w-xl px-6 pb-8 sm:px-10 sm:pb-12 lg:px-16 lg:pb-0 xl:px-20">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">The Autumn Edit</p>
-            <h2 id="promo-heading" className="mt-4 text-[34px] font-bold leading-[1.05] text-white sm:text-5xl lg:text-[56px]">
+            <p className="eyebrow text-white/75">The Autumn Edit</p>
+            <h2 id="promo-heading" className="mt-4 text-title font-bold leading-[1.05] text-white sm:text-5xl lg:text-[56px]">
               Layers worth
               <br />
               living in.
             </h2>
-            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-white/80 sm:text-base">
+            <p className="mt-5 max-w-md text-body leading-relaxed text-white/80 sm:text-base">
               Up to 30% off knitwear, outerwear and everyday essentials — cut from softer fabrics for the colder months.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">

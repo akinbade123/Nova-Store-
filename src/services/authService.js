@@ -7,7 +7,6 @@ import { api, mockDelay, USE_MOCK_DATA } from './api';
  */
 
 const USERS_KEY = 'nova:users';
-export const DEMO_ACCOUNT = { email: 'demo@nova.store', password: 'Nova2026!' };
 
 const reject = (code, message) => Promise.reject(Object.assign(new Error(message), { code, userMessage: message }));
 
@@ -23,6 +22,7 @@ async function readUsers() {
   } catch {
     users = [];
   }
+  const { DEMO_ACCOUNT } = await import('./mock/demoAccount.js');
   if (!users.some((user) => user.email === DEMO_ACCOUNT.email)) {
     users.push({
       id: 'u-demo',
@@ -51,7 +51,8 @@ const readResets = () => {
   }
 };
 
-const toPublicUser =({ passwordHash, ...user }) => user;
+// Sample-data mode sends no emails, so its accounts count as confirmed.
+const toPublicUser = ({ passwordHash, ...user }) => ({ ...user, emailVerified: true });
 const newToken = () => `mock.${crypto.randomUUID()}`;
 
 export const authService = {
@@ -131,18 +132,54 @@ export const authService = {
     return { reset: true };
   },
 
+  /** Confirms an email address with the token from the confirmation email (docs/API.md). */
+  async verifyEmail(token) {
+    if (!USE_MOCK_DATA) {
+      const { data } = await api.post('/auth/verify-email', { token });
+      return data; // { verified: true, email }
+    }
+    return reject('invalid_token', 'Sample-data mode doesn’t send confirmation emails, so there’s nothing to confirm.');
+  },
+
+  /** Sends a new confirmation link to the signed-in user's email: { sent, alreadyVerified }. */
+  async resendVerification() {
+    if (!USE_MOCK_DATA) {
+      const { data } = await api.post('/me/email-verification');
+      return data;
+    }
+    return mockDelay({ sent: false, alreadyVerified: true }, 300);
+  },
+
+  /** The signed-in user as the server sees it now. */
+  async getMe(userId) {
+    if (!USE_MOCK_DATA) {
+      const { data } = await api.get('/me');
+      return data;
+    }
+    const user = (await readUsers()).find((item) => item.id === userId);
+    return user ? toPublicUser(user) : null;
+  },
+
   async signOut() {
     if (!USE_MOCK_DATA) await api.post('/auth/logout').catch(() => {});
   },
 
-  async updateProfile(userId, patch) {
+  /** `currentPassword` is required when the email changes (docs/API.md, PATCH /me). */
+  async updateProfile(userId, { currentPassword, ...patch }) {
     if (!USE_MOCK_DATA) {
-      const { data } = await api.patch('/me', patch);
+      const { data } = await api.patch('/me', currentPassword ? { ...patch, currentPassword } : patch);
       return data;
     }
     await mockDelay(null, 700);
     const users = await readUsers();
     const email = patch.email?.trim().toLowerCase();
+    const current = users.find((item) => item.id === userId);
+    if (email && current && email !== current.email) {
+      if (!currentPassword) return reject('validation_failed', 'Enter your current password to change your email');
+      if (current.passwordHash !== (await hashPassword(currentPassword))) {
+        return reject('wrong_password', 'Your current password is incorrect.');
+      }
+    }
     if (email && users.some((item) => item.email === email && item.id !== userId)) {
       return reject('email_taken', 'Another account already uses this email.');
     }
@@ -179,13 +216,17 @@ export const authService = {
     return { changed: true };
   },
 
-  async deleteAccount(userId) {
+  async deleteAccount(userId, password) {
     if (!USE_MOCK_DATA) {
-      await api.delete('/me');
+      await api.delete('/me', { data: { password } });
       return { deleted: true };
     }
     await mockDelay(null, 900);
     const users = await readUsers();
+    const user = users.find((item) => item.id === userId);
+    if (!user || user.passwordHash !== (await hashPassword(password ?? ''))) {
+      return reject('wrong_password', 'Your current password is incorrect.');
+    }
     writeUsers(users.filter((item) => item.id !== userId));
     localStorage.removeItem(`nova:addresses:${userId}`);
     return { deleted: true };

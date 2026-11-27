@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { reportError } from './errorReporter';
 
 export const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
 
@@ -34,9 +35,23 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && error.config?.headers?.Authorization) {
       window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
     }
-    return Promise.reject(Object.assign(error, { userMessage: message, code: body?.code ?? error.code }));
+    // The server's id for this request (also in its logs), so an error can be traced end to end.
+    const requestId = body?.requestId ?? error.response?.headers?.['x-request-id'];
+    // No response at all (network down, API unreachable, timeout): the server never saw it, so report it.
+    if (!error.response) reportError({ kind: 'request', error, message: `${error.config?.method?.toUpperCase()} ${error.config?.url}: ${error.message}` });
+    return Promise.reject(Object.assign(error, { userMessage: message, code: body?.code ?? error.code, requestId }));
   },
 );
+
+/**
+ * For lookups where "doesn't exist" is a normal answer: `.catch(nullIfNotFound)` turns a 404
+ * into `null`, the same as sample-data mode, so pages show their "not found" state.
+ * Every other error is re-thrown, so pages show their error state with "Try again".
+ */
+export function nullIfNotFound(error) {
+  if (error.response?.status === 404) return null;
+  throw error;
+}
 
 /** Simulates network latency for sample data so loading states are exercised during development. */
 export const mockDelay = (data, ms = 650) => new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), ms));

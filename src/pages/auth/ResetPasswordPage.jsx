@@ -44,8 +44,8 @@ export default function ResetPasswordPage() {
   if (!token) {
     return (
       <div className="animate-fade-in">
-        <h1 className="text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">This link is incomplete</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted">
+        <h1 className="text-title font-bold leading-tight tracking-tight sm:text-4xl">This link is incomplete</h1>
+        <p className="mt-3 text-body leading-relaxed text-muted">
           Open the link from your reset email again, or request a new one.
         </p>
         <Button to="/forgot-password" size="lg" fullWidth className="mt-8">
@@ -78,8 +78,8 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Choose a new password</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted">Pick a password you don’t use anywhere else.</p>
+      <h1 className="text-title font-bold leading-tight tracking-tight sm:text-4xl">Choose a new password</h1>
+      <p className="mt-3 text-body leading-relaxed text-muted">Pick a password you don’t use anywhere else.</p>
 
       <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
         {formError && (
@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
         <Button type="submit" size="lg" fullWidth loading={submitting} className="mt-8!">
           Update password
         </Button>
-      </form>
+      </form> 
       <BackToSignIn />
     </div>
   );

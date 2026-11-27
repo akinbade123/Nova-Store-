@@ -87,7 +87,7 @@ function WishlistItem({ product }) {
 
       <div className="flex flex-1 flex-col pt-4">
         <p className="text-xs text-muted">{categoryName(product.category)}</p>
-        <h3 className="mt-1 font-sans text-[15px] font-medium leading-snug tracking-normal">
+        <h3 className="mt-1 font-sans text-body font-medium leading-snug tracking-normal">
           <Link to={href} className="line-clamp-1 underline-offset-4 hover:underline">
             {product.name}
           </Link>
@@ -112,7 +112,7 @@ function WishlistItem({ product }) {
                   aria-invalid={sizeError}
                   aria-describedby={sizeError ? `${selectId}-error` : undefined}
                   className={cn(
-                    'h-10 w-full cursor-pointer appearance-none rounded-full bg-white pl-4 pr-9 text-[13px] font-medium outline-none ring-1 ring-inset focus-visible:ring-2',
+                    'h-10 w-full cursor-pointer appearance-none rounded-full bg-white pl-4 pr-9 text-caption font-medium outline-none ring-1 ring-inset focus-visible:ring-2',
                     sizeError ? 'ring-danger' : 'ring-line-strong hover:ring-ink focus-visible:ring-ink',
                     !size && 'text-muted',
                   )}

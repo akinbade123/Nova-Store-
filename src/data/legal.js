@@ -1,3 +1,4 @@
+import { contactEmail } from './site';
 /**
  * SAMPLE legal copy for the storefront design. It is not legal advice and must be
  * replaced with policies reviewed by a qualified lawyer before launch.
@@ -37,7 +38,7 @@ export const legalDocs = {
         id: 'your-rights',
         title: 'Your rights',
         body: [
-          'Depending on where you live, you may have the right to access, correct, delete or export your information, and to object to certain processing. Most of this can be done from your account; for anything else, email privacy@nova.store.',
+          `Depending on where you live, you may have the right to access, correct, delete or export your information, and to object to certain processing. Most of this can be done from your account; for anything else, email ${contactEmail.privacy}.`,
         ],
       },
       {
@@ -50,7 +51,7 @@ export const legalDocs = {
       {
         id: 'contact',
         title: 'Contact',
-        body: ['Questions about this policy can be sent to privacy@nova.store.'],
+        body: [`Questions about this policy can be sent to ${contactEmail.privacy}.`],
       },
     ],
   },

@@ -67,6 +67,31 @@ export function AuthProvider({ children }) {
     return session.user;
   }, []);
 
+  /** Replaces the stored user in place (same storage the session was saved in). */
+  const storeUser = useCallback((updated) => {
+    const store = localStorage.getItem(SESSION_KEY) ? localStorage : sessionStorage;
+    store.setItem(SESSION_KEY, JSON.stringify({ user: updated }));
+    setUser(updated);
+  }, []);
+
+  /** Re-reads the signed-in user from the server, e.g. after the email was confirmed in another tab. */
+  const refreshUser = useCallback(async () => {
+    if (!userRef.current) return null;
+    const fresh = await authService.getMe(userRef.current.id);
+    if (fresh) storeUser(fresh);
+    return fresh;
+  }, [storeUser]);
+
+  /** Confirms an email from its link; if someone is signed in, refreshes them so banners update. */
+  const verifyEmail = useCallback(
+    async (token) => {
+      const result = await authService.verifyEmail(token);
+      if (userRef.current) await refreshUser().catch(() => {});
+      return result;
+    },
+    [refreshUser],
+  );
+
   /** Saves profile changes and refreshes the stored session in place. */
   const updateProfile = useCallback(
     async (patch) => {
@@ -84,8 +109,8 @@ export function AuthProvider({ children }) {
     [user],
   );
 
-  /** Deletes the account on the server. Follow with signOut({ to: '/' }). */
-  const deleteAccount = useCallback(() => authService.deleteAccount(user.id), [user]);
+  /** Deletes the account on the server; needs the password. Follow with signOut({ to: '/' }). */
+  const deleteAccount = useCallback((password) => authService.deleteAccount(user.id, password), [user]);
 
   /** `to`: where protected pages should go after this sign-out (defaults to the home page). */
   const signOut = useCallback(async ({ to = '/' } = {}) => {
@@ -108,8 +133,11 @@ export function AuthProvider({ children }) {
       deleteAccount,
       requestPasswordReset: authService.requestPasswordReset,
       resetPassword: authService.resetPassword,
+      verifyEmail,
+      resendVerification: authService.resendVerification,
+      refreshUser,
     }),
-    [user, exitTo, signIn, register, signOut, updateProfile, changePassword, deleteAccount],
+    [user, exitTo, signIn, register, signOut, updateProfile, changePassword, deleteAccount, verifyEmail, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

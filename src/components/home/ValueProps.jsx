@@ -29,8 +29,8 @@ export function ValueProps() {
     <section aria-labelledby="values-heading" className="border-y border-line bg-surface/50">
       <Container className="py-14 lg:py-20">
         <div className="mb-10 max-w-xl lg:mb-14">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted">The NOVA promise</p>
-          <h2 id="values-heading" className="text-[28px] font-semibold leading-[1.1] sm:text-4xl">
+          <p className="mb-3 eyebrow text-muted">The NOVA promise</p>
+          <h2 id="values-heading" className="text-heading font-semibold leading-[1.1] sm:text-4xl">
             Why shop with us
           </h2>
         </div>
@@ -41,7 +41,7 @@ export function ValueProps() {
                 <Icon className="size-[22px]" strokeWidth={1.5} aria-hidden="true" />
               </span>
               <div>
-                <h3 className="font-sans text-[15px] font-semibold tracking-normal">{title}</h3>
+                <h3 className="font-sans text-body font-semibold tracking-normal">{title}</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted">{text}</p>
               </div>
             </li>

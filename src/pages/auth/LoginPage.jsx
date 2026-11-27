@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { useForm } from '../../hooks/useForm';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useRedirectTarget } from '../../layouts/AuthLayout';
-import { DEMO_ACCOUNT } from '../../services/authService';
+import { useAsync } from '../../hooks/useAsync';
 import { USE_MOCK_DATA } from '../../services/api';
 import { EMAIL_PATTERN } from '../../utils/validation';
 
@@ -31,12 +31,17 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const alertRef = useRef(null);
+  // Sample-data mode only: the demo login is loaded on demand, so it isn't in API builds.
+  const { data: demo } = useAsync(
+    () => (USE_MOCK_DATA ? import('../../services/mock/demoAccount.js').then((m) => m.DEMO_ACCOUNT) : Promise.resolve(null)),
+    [],
+  );
 
   const fillDemo = useCallback(() => {
-    form.setField('email', DEMO_ACCOUNT.email);
-    form.setField('password', DEMO_ACCOUNT.password);
+    form.setField('email', demo.email);
+    form.setField('password', demo.password);
     setFormError('');
-  }, [form]);
+  }, [form, demo]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -61,15 +66,15 @@ export default function LoginPage() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Welcome back</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted">
+      <h1 className="text-title font-bold leading-tight tracking-tight sm:text-4xl">Welcome back</h1>
+      <p className="mt-3 text-body leading-relaxed text-muted">
         Sign in to track orders, see your wishlist and check out faster.
       </p>
 
-      {USE_MOCK_DATA && (
+      {demo && (
         <Alert tone="info" className="mt-8">
-          Demo account: <span className="font-medium">{DEMO_ACCOUNT.email}</span> /{' '}
-          <span className="font-medium">{DEMO_ACCOUNT.password}</span>
+          Demo account: <span className="font-medium">{demo.email}</span> /{' '}
+          <span className="font-medium">{demo.password}</span>
           <button type="button" onClick={fillDemo} className="ml-2 font-semibold underline underline-offset-4 hover:no-underline">
             Use it
           </button>
@@ -87,7 +92,7 @@ export default function LoginPage() {
           <PasswordField
             autoComplete="current-password"
             labelAside={
-              <Link to="/forgot-password" className="text-[13px] font-medium text-muted underline-offset-4 hover:text-ink hover:underline">
+              <Link to="/forgot-password" className="text-caption font-medium text-muted underline-offset-4 hover:text-ink hover:underline">
                 Forgot password?
               </Link>
             }

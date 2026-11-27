@@ -14,9 +14,9 @@ const variants = {
 };
 
 const sizes = {
-  sm: 'h-9 px-4 text-[13px] gap-1.5',
+  sm: 'h-9 px-4 text-caption gap-1.5',
   md: 'h-11 px-6 text-sm gap-2',
-  lg: 'h-13 px-8 text-[15px] gap-2',
+  lg: 'h-13 px-8 text-body gap-2',
 };
 
 /**

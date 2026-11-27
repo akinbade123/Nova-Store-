@@ -20,7 +20,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, children, confi
         </div>
       }
     >
-      <div className="px-5 py-6 text-[15px] leading-relaxed text-ink/75 sm:px-6">{children}</div>
+      <div className="px-5 py-6 text-body leading-relaxed text-ink/75 sm:px-6">{children}</div>
     </Sheet>
   );
 }

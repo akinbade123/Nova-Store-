@@ -1,0 +1,168 @@
+/**
+ * docs/API.md, section 8: reading orders. Placing and cancelling orders need the payment provider,
+ * so they answer 501 until the next phase (quote, payment hand-off, webhook).
+ */
+import { Hono } from 'hono';
+import { and, asc, count, desc, eq, inArray, notInArray, or, sql } from 'drizzle-orm';
+import { z } from 'zod';
+import type { Db } from '../../db/client.ts';
+import { orderItems, orders } from '../../db/schema.ts';
+import { sha256 } from '../../lib/crypto.ts';
+import { ApiError, notFound } from '../../lib/errors.ts';
+import { readQuery } from '../../lib/validate.ts';
+import { toDollars } from '../../lib/money.ts';
+import type { AppEnv, Deps, UserRow } from '../../types.ts';
+import { authenticate, requireAuth } from '../accounts/sessions.ts';
+
+type OrderRow = typeof orders.$inferSelect;
+type ItemRow = typeof orderItems.$inferSelect;
+
+/**
+ * The storefront shows exactly four labels (docs/DATA_MODEL.md, "Statuses").
+ * pending_payment and payment_failed are only seen by the buyer looking at that one order.
+ */
+const STATUS_LABEL: Record<OrderRow['status'], 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled'> = {
+  pending_payment: 'Processing',
+  payment_failed: 'Cancelled',
+  paid: 'Processing',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+  refunded: 'Cancelled',
+};
+const HIDDEN_FROM_HISTORY: OrderRow['status'][] = ['pending_payment', 'payment_failed'];
+type Label = (typeof STATUS_LABEL)[OrderRow['status']];
+const LABELS = ['Processing', 'Shipped', 'Delivered', 'Cancelled'] as const satisfies readonly Label[];
+/** The stored statuses behind each label, leaving out the ones history never shows. */
+const statusesFor = (label: Label) =>
+  (Object.keys(STATUS_LABEL) as OrderRow['status'][]).filter((status) => STATUS_LABEL[status] === label && !HIDDEN_FROM_HISTORY.includes(status));
+
+const historyQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  /** The id of the last order on the previous page. */
+  cursor: z.string().max(40).optional(),
+  status: z.enum(LABELS).optional(),
+});
+
+// The same short en-GB format the storefront uses (deliveryWindow in src/utils/format.js).
+const shortDate = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const deliveryWindow = (min: string, max: string) => `${shortDate.format(new Date(min))} – ${shortDate.format(new Date(max))}`;
+const iso = (value: Date | null) => value?.toISOString() ?? null;
+
+/** docs/API.md, "Order". */
+export const toOrder = (order: OrderRow, items: ItemRow[]) => ({
+  id: order.id,
+  userId: order.userId,
+  createdAt: order.createdAt.toISOString(),
+  status: STATUS_LABEL[order.status],
+  shippedAt: iso(order.shippedAt),
+  deliveredAt: iso(order.deliveredAt),
+  cancelledAt: iso(order.cancelledAt),
+  tracking: order.trackingCarrier && order.trackingNumber ? { carrier: order.trackingCarrier, number: order.trackingNumber } : null,
+  contact: { email: order.email, phone: order.phone, marketing: order.marketing },
+  shippingAddress: order.shippingAddress,
+  billingAddress: order.billingAddress,
+  shippingMethod: { id: order.shippingMethodId, label: order.shippingLabel, eta: order.shippingEta },
+  estimatedDelivery: deliveryWindow(order.deliveryMinDate, order.deliveryMaxDate),
+  payment: { method: order.paymentMethod, brand: order.paymentBrand, last4: order.paymentLast4 },
+  items: items.map((item) => ({
+    productId: item.productId,
+    slug: item.slug,
+    name: item.name,
+    image: item.imageUrl,
+    price: toDollars(item.unitPriceCents),
+    quantity: item.quantity,
+    color: item.color,
+    size: item.size,
+  })),
+  totals: {
+    subtotal: toDollars(order.subtotalCents),
+    discount: toDollars(order.discountCents),
+    shipping: toDollars(order.shippingCents),
+    total: toDollars(order.totalCents),
+  },
+  promo: order.promo,
+});
+
+async function withItems(db: Db, rows: OrderRow[]) {
+  if (!rows.length) return [];
+  const items = await db
+    .select()
+    .from(orderItems)
+    .where(inArray(orderItems.orderId, rows.map((row) => row.id)))
+    .orderBy(asc(orderItems.id));
+  const byOrder = Map.groupBy(items, (item) => item.orderId);
+  return rows.map((row) => toOrder(row, byOrder.get(row.id) ?? []));
+}
+
+/** A user's orders: placed while signed in, or as a guest with the same email once that email is verified. */
+const ownedBy = (user: UserRow) =>
+  user.emailVerifiedAt ? or(eq(orders.userId, user.id), eq(orders.email, user.email)) : eq(orders.userId, user.id);
+
+const notYet = () =>
+  new ApiError(501, 'not_implemented', 'Checkout isn’t available yet. Please try again soon.');
+
+export function orderRoutes(deps: Deps) {
+  const { db } = deps;
+  const app = new Hono<AppEnv>();
+
+  /**
+   * One page of order history, newest first: { items, nextCursor, counts }.
+   * The cursor is the last order's id; the next page continues from that order's position, using the
+   * database's own timestamp, so two orders placed in the same millisecond are never skipped or repeated.
+   * `counts` covers all of the user's orders (not just this page), for the status tabs.
+   */
+  app.get('/me/orders', requireAuth(deps), async (c) => {
+    const user = c.get('user');
+    const { limit, cursor, status } = readQuery(c, historyQuery);
+    const visible = and(ownedBy(user), notInArray(orders.status, HIDDEN_FROM_HISTORY));
+    const after = cursor
+      ? sql`(${orders.createdAt}, ${orders.id}) < (SELECT o.created_at, o.id FROM ${orders} o WHERE o.id = ${cursor})`
+      : undefined;
+    const [rows, grouped] = await Promise.all([
+      db
+        .select()
+        .from(orders)
+        .where(and(visible, status ? inArray(orders.status, statusesFor(status)) : undefined, after))
+        .orderBy(desc(orders.createdAt), desc(orders.id))
+        .limit(limit + 1), // one extra tells us whether there's another page
+      db.select({ status: orders.status, n: count() }).from(orders).where(visible).groupBy(orders.status),
+    ]);
+    const page = rows.slice(0, limit);
+    const counts: Record<'All' | Label, number> = { All: 0, Processing: 0, Shipped: 0, Delivered: 0, Cancelled: 0 };
+    for (const { status: stored, n } of grouped) {
+      counts[STATUS_LABEL[stored]] += n;
+      counts.All += n;
+    }
+    return c.json({
+      items: await withItems(db, page),
+      nextCursor: rows.length > limit ? page.at(-1)!.id : null,
+      counts,
+    });
+  });
+
+  // Owners see their own orders; guests need the order's access token. Anyone else gets not_found,
+  // never forbidden, so the API doesn't reveal that an order exists.
+  app.get('/orders/:id', async (c) => {
+    const missing = notFound('We couldn’t find that order.');
+    const [order] = await db.select().from(orders).where(eq(orders.id, c.req.param('id'))).limit(1);
+    if (!order) throw missing;
+    const token = c.req.query('token');
+    const auth = await authenticate(db, c);
+    const isGuest = Boolean(token && order.guestTokenHash && sha256(token) === order.guestTokenHash);
+    const isOwner =
+      auth != null && (order.userId === auth.user.id || (auth.user.emailVerifiedAt != null && order.email === auth.user.email));
+    if (!isGuest && !isOwner) throw missing;
+    const [result] = await withItems(db, [order]);
+    return c.json(result);
+  });
+
+  app.post('/orders', () => {
+    throw notYet();
+  });
+  app.post('/orders/:id/cancel', () => {
+    throw notYet();
+  });
+
+  return app;
+}

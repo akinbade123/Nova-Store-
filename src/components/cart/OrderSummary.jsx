@@ -35,7 +35,7 @@ export function OrderSummary({ totals, count, savings = 0, promo, shippingNote, 
       </dl>
       <p className="mt-1.5 text-xs text-muted">Including taxes. Duties calculated at checkout where applicable.</p>
       {savings + totals.discount > 0 && (
-        <p className="mt-4 rounded-xl bg-success/[0.07] px-3.5 py-2.5 text-[13px] font-medium text-success">
+        <p className="mt-4 rounded-xl bg-success/[0.07] px-3.5 py-2.5 text-caption font-medium text-success">
           You’re saving {formatPrice(savings + totals.discount)} on this order
         </p>
       )}

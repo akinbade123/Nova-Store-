@@ -33,7 +33,7 @@ export function ActiveFilters({ filters, update, clearFilters }) {
           key={chip.key}
           type="button"
           onClick={chip.remove}
-          className="group inline-flex h-8 animate-fade-in items-center gap-1.5 rounded-full bg-surface pl-3.5 pr-2.5 text-[13px] font-medium transition-colors hover:bg-line-strong"
+          className="group inline-flex h-8 animate-fade-in items-center gap-1.5 rounded-full bg-surface pl-3.5 pr-2.5 text-caption font-medium transition-colors hover:bg-line-strong"
           aria-label={`Remove filter: ${chip.label}`}
         >
           {chip.label}
@@ -43,7 +43,7 @@ export function ActiveFilters({ filters, update, clearFilters }) {
       <button
         type="button"
         onClick={() => clearFilters({ q: '' })}
-        className="ml-1 text-[13px] font-medium text-muted underline underline-offset-4 hover:text-ink"
+        className="ml-1 text-caption font-medium text-muted underline underline-offset-4 hover:text-ink"
       >
         Clear all
       </button>
