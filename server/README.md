@@ -87,7 +87,9 @@ server/
 4. Serve the API at `/api` on the storefront's domain, for example with a Vercel rewrite to the API's host. The storefront calls `/api` by default, so no CORS setup is needed.
 5. If the API runs behind a proxy (a Vercel rewrite, a load balancer), set `TRUST_PROXY_HOPS` to the number of proxies, usually `1`. Otherwise every request looks like it comes from the proxy, and all shoppers share one rate limit. Never set it when clients reach the API directly: they could then fake their IP to dodge the limits.
 6. The rate limiter keeps its counters in memory. That's fine for one instance; with several, move the counters to the database or Redis.
-7. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
+7. Set `APP_URL` (the storefront's public URL, used in email links) and `SUPPORT_EMAIL` (an address on your own domain). The API refuses to start in production without them.
+8. Make each migration safe to roll back from, and take a backup before releasing one: see [docs/ROLLBACK.md](../docs/ROLLBACK.md).
+9. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
 
 ## Logs, errors and health
 

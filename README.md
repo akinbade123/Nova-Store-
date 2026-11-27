@@ -80,7 +80,9 @@ src/
 
 ## Deployment
 
-The site is deployed on Vercel. Each pull request gets a preview deployment.
+The site is deployed on Vercel. Every push to `main` goes live, and each pull request gets a preview deployment. GitHub Actions ([ci.yml](.github/workflows/ci.yml)) builds the storefront and runs the API's type check and tests on every pull request; merge only when both are green.
+
+**Something broke after a deploy?** Roll back first, investigate second: [docs/ROLLBACK.md](docs/ROLLBACK.md) has the one-click and one-command steps.
 
 `npm run build` produces a static site in `dist/` that any static host can serve. Routing happens in the browser, so the host must answer every path that isn't a real file with `index.html`. Otherwise, refreshing a page like `/shop` gives a 404.
 
