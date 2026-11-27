@@ -88,8 +88,9 @@ server/
 5. If the API runs behind a proxy (a Vercel rewrite, a load balancer), set `TRUST_PROXY_HOPS` to the number of proxies, usually `1`. Otherwise every request looks like it comes from the proxy, and all shoppers share one rate limit. Never set it when clients reach the API directly: they could then fake their IP to dodge the limits.
 6. **Host the API on a long-running server** (Render, Railway, Fly.io or similar), not serverless functions: it runs a cleanup job every 6 hours and keeps a connection pool. You can run several instances: rate limits are kept in PostgreSQL, so they hold across all of them. Keep `instances × DB_POOL_MAX` below your database plan's connection limit; past that, add a pooler such as PgBouncer. The database needs the `pg_trgm` extension (migration 0004 creates it); every major managed PostgreSQL offers it.
 7. Set `APP_URL` (the storefront's public URL, used in email links) and `SUPPORT_EMAIL` (an address on your own domain). The API refuses to start in production without them.
-8. Make each migration safe to roll back from, and take a backup before releasing one: see [docs/ROLLBACK.md](../docs/ROLLBACK.md).
-9. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
+8. Set a budget with alerts on the API host and the database as you sign up, and cap autoscaling: see [docs/COSTS.md](../docs/COSTS.md).
+9. Make each migration safe to roll back from, and take a backup before releasing one: see [docs/ROLLBACK.md](../docs/ROLLBACK.md).
+10. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
 
 ## Logs, errors and health
 
