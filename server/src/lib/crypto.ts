@@ -20,11 +20,16 @@ export const sha256 = (value: string) => createHash('sha256').update(value).dige
 
 // ------------------------------------------------------------------ Passwords
 // scrypt from Node's standard library: memory-hard, recommended by OWASP alongside argon2id and bcrypt,
-// and no native dependency to install. The parameters are stored with each hash so they can be raised later.
+// and no native dependency to install. The parameters are stored with each hash, so they can be raised:
+// a hash made with weaker ones still verifies, and is upgraded at that user's next sign-in (needsRehash).
+//
+// N=2^15, r=8, p=3 is one of OWASP's equivalent minimum settings (Password Storage Cheat Sheet), as strong
+// as N=2^17, p=1, but needing 32 MiB per hash instead of 128 MiB, so a burst of sign-ins can't exhaust a
+// small server's memory. About 0.3 s per hash.
 
 const N = 2 ** 15;
 const R = 8;
-const P = 1;
+const P = 3;
 const KEYLEN = 64;
 const MAXMEM = 64 * 1024 * 1024;
 
@@ -45,6 +50,12 @@ export async function verifyPassword(password: string, stored: string) {
     maxmem: MAXMEM,
   });
   return timingSafeEqual(key, expected);
+}
+
+/** True when a stored hash was made with different (older) settings and should be replaced. */
+export function needsRehash(stored: string) {
+  const [scheme, n, r, p] = stored.split('$');
+  return scheme !== 'scrypt' || Number(n) !== N || Number(r) !== R || Number(p) !== P;
 }
 
 /** Hash checked when the email doesn't exist, so a login takes the same time either way. */

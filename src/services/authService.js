@@ -51,7 +51,8 @@ const readResets = () => {
   }
 };
 
-const toPublicUser =({ passwordHash, ...user }) => user;
+// Sample-data mode sends no emails, so its accounts count as confirmed.
+const toPublicUser = ({ passwordHash, ...user }) => ({ ...user, emailVerified: true });
 const newToken = () => `mock.${crypto.randomUUID()}`;
 
 export const authService = {
@@ -129,6 +130,34 @@ export const authService = {
     delete resets[token];
     localStorage.setItem(RESETS_KEY, JSON.stringify(resets));
     return { reset: true };
+  },
+
+  /** Confirms an email address with the token from the confirmation email (docs/API.md). */
+  async verifyEmail(token) {
+    if (!USE_MOCK_DATA) {
+      const { data } = await api.post('/auth/verify-email', { token });
+      return data; // { verified: true, email }
+    }
+    return reject('invalid_token', 'Sample-data mode doesn’t send confirmation emails, so there’s nothing to confirm.');
+  },
+
+  /** Sends a new confirmation link to the signed-in user's email: { sent, alreadyVerified }. */
+  async resendVerification() {
+    if (!USE_MOCK_DATA) {
+      const { data } = await api.post('/me/email-verification');
+      return data;
+    }
+    return mockDelay({ sent: false, alreadyVerified: true }, 300);
+  },
+
+  /** The signed-in user as the server sees it now. */
+  async getMe(userId) {
+    if (!USE_MOCK_DATA) {
+      const { data } = await api.get('/me');
+      return data;
+    }
+    const user = (await readUsers()).find((item) => item.id === userId);
+    return user ? toPublicUser(user) : null;
   },
 
   async signOut() {

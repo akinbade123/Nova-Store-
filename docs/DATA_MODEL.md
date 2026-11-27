@@ -45,7 +45,7 @@ Seventeen tables in five groups: accounts, catalogue, promotions and shipping, o
 | Money | `integer` **cents**, in columns named `*_cents`. The API converts to major units at the edge. One `currency` column per order, so a currency change later doesn't rewrite history. |
 | Time | `timestamptz`, stored in UTC. Every table has `created_at default now()`. Mutable tables also have `updated_at`. |
 | Email | `text`, lowercased and trimmed before saving. A CHECK (`email = lower(btrim(email))`, on `users`, `orders` and `newsletter_subscribers`) guarantees it, so a plain unique index is case-insensitive and every stored account can sign in. No `citext` extension is needed. |
-| Secrets | Tokens (sessions, password resets, guest order access) are stored **only as SHA-256 hashes**. Passwords use scrypt from Node's standard library (memory-hard, OWASP-recommended alongside argon2id and bcrypt), never plain SHA-256. |
+| Secrets | Tokens (sessions, password resets, email confirmations, guest order access) are stored **only as SHA-256 hashes**. Passwords use scrypt from Node's standard library at N=2^15, r=8, p=3: one of OWASP's equivalent minimum settings, as strong as N=2^17, p=1 but needing 32 MiB per hash instead of 128 MiB. Hashes made with older settings are upgraded at the user's next sign-in. |
 | Deletion | Hard-delete what's personal and not needed. Anonymise what accounting needs (orders). See [8](#8-rules-that-span-tables). |
 | JSON columns | Used only for data that's displayed but never queried: specs, address snapshots, the colours list |
 | Allowed values | Every status, type, kind, role and method column has a **CHECK constraint** listing its values (migration `0001`), so the database refuses anything else, whoever writes it. The lists live once, as constants in `server/src/db/schema.ts`, and drive both the TypeScript types and the checks. Money rules are checks too: amounts are never negative, an order's discount never exceeds its subtotal, and its total always equals subtotal − discount + shipping. Percent promotions are 1–100; free-shipping codes have value 0. |
@@ -73,7 +73,7 @@ Seventeen tables in five groups: accounts, catalogue, promotions and shipping, o
 | `user_id` | text FK → users, on delete cascade | |
 | `token_hash` | text unique not null | SHA-256 of the bearer token |
 | `created_at`, `last_used_at` | timestamptz | |
-| `expires_at` | timestamptz not null | 30 days, extended when used |
+| `expires_at` | timestamptz not null | 30 days, extended when used, never past `created_at` + 90 days |
 | `revoked_at` | timestamptz null | Set by logout, password change or reset, and deletion |
 
 A request is authenticated when its token's hash matches a row that hasn't expired and isn't revoked. Anything else is a 401 `unauthorized`.
@@ -85,6 +85,16 @@ A request is authenticated when its token's hash matches a row that hasn't expir
 | `user_id` | text FK → users, on delete cascade | |
 | `expires_at` | timestamptz not null | 1 hour after creation |
 | `used_at` | timestamptz null | Single use |
+
+### `email_verifications`
+| Column | Type | Notes |
+|---|---|---|
+| `token_hash` | text PK | SHA-256 of the link's token |
+| `user_id` | text FK → users, on delete cascade | Pending links are also deleted when an account is anonymised |
+| `email` | text not null, lowercase check | The address the link confirms. If the account's email has changed since, the link does nothing. |
+| `expires_at` | timestamptz not null | 24 hours after sending |
+| `used_at` | timestamptz null | Set when used; each link works once |
+| `created_at` | timestamptz not null default now() | |
 
 ### `addresses`
 | Column | Type | Notes |

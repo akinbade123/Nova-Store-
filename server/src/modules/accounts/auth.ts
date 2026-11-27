@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { passwordResets, users } from '../../db/schema.ts';
-import { hashPassword, newId, newToken, passwordProblem, sha256, timingDummyHash, verifyPassword } from '../../lib/crypto.ts';
+import { hashPassword, needsRehash, newId, newToken, passwordProblem, sha256, timingDummyHash, verifyPassword } from '../../lib/crypto.ts';
 import { sendInBackground } from '../../lib/email.ts';
 import { ApiError } from '../../lib/errors.ts';
 import { tooManyAttempts } from '../../lib/rateLimit.ts';
@@ -11,6 +11,7 @@ import { fields, readBody } from '../../lib/validate.ts';
 import type { AppEnv, Deps } from '../../types.ts';
 import { authenticate, createSession, revokeSession, revokeUserSessions, toPublicUser } from './sessions.ts';
 import { cancelResetLinks, notifyPasswordChanged } from './security.ts';
+import { sendVerification } from './verification.ts';
 
 const RESET_TTL_MS = 60 * 60 * 1000;
 const MINUTE = 60 * 1000;
@@ -71,6 +72,7 @@ export function authRoutes(deps: Deps) {
       .returning();
     if (!user) throw emailTaken();
     const token = await createSession(db, user.id);
+    await sendVerification(deps, db, user);
     return c.json({ user: toPublicUser(user), token }, 201);
   });
 
@@ -86,6 +88,10 @@ export function authRoutes(deps: Deps) {
     if (!user || !valid) {
       limiter.hit(failuresKey, LOGIN_FAILURE_WINDOW_MS);
       throw invalidCredentials();
+    }
+    // The only moment the plain password is available: upgrade a hash made with older settings.
+    if (needsRehash(user.passwordHash)) {
+      await db.update(users).set({ passwordHash: await hashPassword(body.password) }).where(eq(users.id, user.id));
     }
     const token = await createSession(db, user.id);
     return c.json({ user: toPublicUser(user), token });

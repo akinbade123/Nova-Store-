@@ -76,14 +76,15 @@ server/
 - **Errors** are thrown as `ApiError(status, code, message)` and returned as `{ message, code }`. `message` is shown to shoppers, so write it for them. Return 401 only for a missing or invalid session, because the storefront signs the user out on it.
 - **Money** is integer cents in the database, and dollars in the API. Convert with `toCents` and `toDollars` in `lib/money.ts`, and only at the edges.
 - **Validation** uses zod schemas through `readBody` and `readQuery`. Address, phone and email rules come from the storefront's own code through `shared.ts`, so both sides always agree.
-- **Secrets:** sessions, password resets and guest order tokens are stored only as SHA-256 hashes. Passwords use scrypt from Node's standard library.
+- **Secrets:** sessions, password resets and guest order tokens are stored only as SHA-256 hashes. Passwords use scrypt from Node's standard library (N=2^15, r=8, p=3; older hashes upgrade at sign-in). Sessions end after 30 days unused or 90 days after sign-in; `src/db/purge.ts` deletes ended sessions and spent links every 6 hours.
 - **Tests** call the API in-process with `app.request()`, so there's no network. Rate limits are off in tests except the one test that checks them.
 
 ## Before production
 
-1. Use a managed PostgreSQL 17 with automatic backups and point-in-time recovery turned on (checklist in [docs/BACKUPS.md](../docs/BACKUPS.md)). Set `DATABASE_URL` and `NODE_ENV=production`. Run `npm run db:migrate`, then `npm run db:seed` (without `--demo`). Then take a backup and run the restore test once before launch.
-2. Connect a transactional email provider in `src/lib/email.ts`.
-3. Serve the API at `/api` on the storefront's domain, for example with a Vercel rewrite to the API's host. The storefront calls `/api` by default, so no CORS setup is needed.
-4. If the API runs behind a proxy (a Vercel rewrite, a load balancer), set `TRUST_PROXY_HOPS` to the number of proxies, usually `1`. Otherwise every request looks like it comes from the proxy, and all shoppers share one rate limit. Never set it when clients reach the API directly: they could then fake their IP to dodge the limits.
-5. The rate limiter keeps its counters in memory. That's fine for one instance; with several, move the counters to the database or Redis.
-6. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
+1. Never run `db:seed -- --demo` against production: the demo password is public. It refuses on production and on any database not on this machine (set `ALLOW_DEMO_ACCOUNT=true` only for a test database).
+2. Use a managed PostgreSQL 17 with automatic backups and point-in-time recovery turned on (checklist in [docs/BACKUPS.md](../docs/BACKUPS.md)). Set `DATABASE_URL` and `NODE_ENV=production`. Run `npm run db:migrate`, then `npm run db:seed` (without `--demo`). Then take a backup and run the restore test once before launch.
+3. Connect a transactional email provider in `createProductionMailer` (`src/lib/email.ts`). Until you do, the API **refuses to start** with `NODE_ENV=production`: the development mailer prints emails, and with them working reset and confirmation links, to the logs.
+4. Serve the API at `/api` on the storefront's domain, for example with a Vercel rewrite to the API's host. The storefront calls `/api` by default, so no CORS setup is needed.
+5. If the API runs behind a proxy (a Vercel rewrite, a load balancer), set `TRUST_PROXY_HOPS` to the number of proxies, usually `1`. Otherwise every request looks like it comes from the proxy, and all shoppers share one rate limit. Never set it when clients reach the API directly: they could then fake their IP to dodge the limits.
+6. The rate limiter keeps its counters in memory. That's fine for one instance; with several, move the counters to the database or Redis.
+7. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.

@@ -79,6 +79,7 @@ The public user, returned by auth and profile endpoints. It never includes the p
   "lastName": "Okafor",
   "email": "demo@nova.store",
   "marketing": true,
+  "emailVerified": false,
   "createdAt": "2025-03-14T10:00:00.000Z"
 }
 ```
@@ -221,7 +222,7 @@ The product page asks for `GET /products/:slug?include=details`. It gets a Produ
 ```
 - Returns **200** `{ "user": User, "token": "…" }`.
 - Errors: `invalid_credentials`. Use the same message whether the email or the password was wrong.
-- "Remember me" is handled in the browser. A token should last 30 days, sliding: extend it each time it's used.
+- "Remember me" is handled in the browser. A token lasts 30 days without use, extended each time it's used, and ends **90 days after sign-in** regardless, so a stolen token can't be kept alive forever. Ended sessions are deleted every 6 hours.
 
 ### `POST /auth/logout` (auth)
 - Returns **204**. Revoke the session.
@@ -240,8 +241,20 @@ The product page asks for `GET /products/:slug?include=details`. It gets a Produ
 { "token": "…", "password": "NewPassword2026" }
 ```
 - Returns **200** `{ "reset": true }`.
-- Mark the token used, and **revoke all of the user's sessions**.
+- Mark the token used, **revoke all of the user's sessions**, and **cancel every other outstanding reset link** for the account.
+- Email the owner that the password was changed (no link in it), with what to do if it wasn't them.
 - Errors: `invalid_token`, `validation_failed`.
+
+**Security notices.** The owner is emailed after any reset or password change (`POST /me/password`), and the **old** address is emailed after an email change, with the new address partly hidden. A password change or email change also cancels outstanding reset links.
+
+### Email verification
+Registering, or changing the email, sends a link to `{appUrl}/verify-email?token=…`. It works once, expires in 24 hours, and only confirms the address it was sent to. Until then the account works normally, but guest orders placed with that email aren't linked to it.
+
+- `POST /auth/verify-email` `{ "token" }` → **200** `{ "verified": true, "email" }`. No session needed (the link is often opened on another device). Errors: `invalid_token`.
+- `POST /me/email-verification` (auth) → **202** `{ "sent": true, "alreadyVerified": false }`, or **200** `{ "sent": false, "alreadyVerified": true }`. At most 3 per account per 15 minutes (`rate_limited`).
+- `GET /me` (auth) → **200** User. Lets the storefront refresh `emailVerified` after confirming.
+
+**Production email.** The API refuses to start in production without an email provider (`createProductionMailer` in `server/src/lib/email.ts`), because the development mailer prints emails, and with them working reset and confirmation links, to the logs.
 
 ## 5. Profile
 

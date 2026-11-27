@@ -6,9 +6,13 @@ import { newId, newToken, sha256 } from '../../lib/crypto.ts';
 import { unauthorized } from '../../lib/errors.ts';
 import type { AppEnv, Deps, UserRow } from '../../types.ts';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** A session ends after 30 days without use… */
 const SESSION_DAYS = 30;
+/** …and 90 days after sign-in whatever happens, so a stolen token can't be kept alive forever by using it. */
+export const MAX_SESSION_DAYS = 90;
 const SLIDE_AFTER_MS = 60 * 60 * 1000; // extend a session at most once an hour, to limit writes
-const daysFromNow = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+const daysFromNow = (days: number) => new Date(Date.now() + days * DAY_MS);
 
 /** Starts a session and returns the bearer token. The token itself is never stored, only its hash. */
 export async function createSession(db: Db, userId: string) {
@@ -37,14 +41,25 @@ export async function authenticate(db: Db, c: Context): Promise<{ user: UserRow;
   const token = bearerToken(c);
   if (!token) return null;
   const [row] = await db
-    .select({ user: users, session: { id: sessions.id, lastUsedAt: sessions.lastUsedAt } })
+    .select({ user: users, session: { id: sessions.id, lastUsedAt: sessions.lastUsedAt, createdAt: sessions.createdAt } })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
-    .where(and(eq(sessions.tokenHash, sha256(token)), isNull(sessions.revokedAt), gt(sessions.expiresAt, new Date()), isNull(users.deletedAt)))
+    .where(
+      and(
+        eq(sessions.tokenHash, sha256(token)),
+        isNull(sessions.revokedAt),
+        gt(sessions.expiresAt, new Date()),
+        gt(sessions.createdAt, new Date(Date.now() - MAX_SESSION_DAYS * DAY_MS)),
+        isNull(users.deletedAt),
+      ),
+    )
     .limit(1);
   if (!row) return null;
   if (Date.now() - row.session.lastUsedAt.getTime() > SLIDE_AFTER_MS) {
-    await db.update(sessions).set({ lastUsedAt: new Date(), expiresAt: daysFromNow(SESSION_DAYS) }).where(eq(sessions.id, row.session.id));
+    // Slide the 30 days forward, but never past the 90-day maximum.
+    const cap = new Date(row.session.createdAt.getTime() + MAX_SESSION_DAYS * DAY_MS);
+    const slid = daysFromNow(SESSION_DAYS);
+    await db.update(sessions).set({ lastUsedAt: new Date(), expiresAt: slid < cap ? slid : cap }).where(eq(sessions.id, row.session.id));
   }
   return { user: row.user, sessionId: row.session.id };
 }
@@ -67,5 +82,6 @@ export const toPublicUser = (user: UserRow) => ({
   lastName: user.lastName,
   email: user.email,
   marketing: user.marketing,
+  emailVerified: user.emailVerifiedAt != null,
   createdAt: user.createdAt.toISOString(),
 });

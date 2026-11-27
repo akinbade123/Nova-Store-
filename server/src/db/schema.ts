@@ -90,6 +90,23 @@ export const passwordResets = pgTable('password_resets', {
   createdAt: ts('created_at').notNull().defaultNow(),
 });
 
+/**
+ * Links that confirm an email address. Tied to the exact address they were sent to, so a link stops
+ * mattering once the account's email changes. Only the token's hash is stored.
+ */
+export const emailVerifications = pgTable(
+  'email_verifications',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    expiresAt: ts('expires_at').notNull(),
+    usedAt: ts('used_at'),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('email_verifications_user_idx').on(t.userId), normalisedEmail('email_verifications_email_check', t.email)],
+);
+
 export const addresses = pgTable(
   'addresses',
   {

@@ -84,3 +84,7 @@ The site is deployed on Vercel. Each pull request gets a preview deployment.
 
 - **Vercel:** [vercel.json](vercel.json) already does this with a rewrite.
 - **Other hosts:** add the equivalent "SPA fallback" rule. On Netlify, for example, that's a `_redirects` file containing `/* /index.html 200`.
+
+**Production must use the real API.** Set `VITE_USE_MOCK_DATA=false` for the Production environment in Vercel's project settings. A production build without it is refused on purpose: in sample-data mode, accounts and orders live only in each shopper's browser. Preview deployments may leave it unset.
+
+**Security headers.** [vercel.json](vercel.json) also sends a Content-Security-Policy and the usual protective headers. The policy allows scripts and API calls only from the site itself, styles and fonts from Google Fonts, and images from Unsplash. If you add a script, font, image host or API on another domain (a payment provider's checkout, a CDN for product photos, a `VITE_API_URL` on another origin), add it to the policy, or the browser will block it.

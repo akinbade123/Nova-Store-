@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { secureHeaders } from 'hono/secure-headers';
 import { errorHandler } from './lib/errors.ts';
 import { createRateLimiter, noRateLimits } from './lib/rateLimit.ts';
 import type { Mailer } from './lib/email.ts';
@@ -8,6 +9,7 @@ import type { AppEnv, Deps } from './types.ts';
 import { authRoutes } from './modules/accounts/auth.ts';
 import { profileRoutes } from './modules/accounts/profile.ts';
 import { addressRoutes } from './modules/accounts/addresses.ts';
+import { verificationRoutes } from './modules/accounts/verification.ts';
 import { catalogRoutes } from './modules/catalog/routes.ts';
 import { engagementRoutes } from './modules/engagement/routes.ts';
 import { orderRoutes } from './modules/orders/routes.ts';
@@ -31,6 +33,8 @@ export function createApp({ db, mailer, appUrl = 'http://localhost:5173', suppor
   const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter };
 
   const api = new Hono<AppEnv>();
+  // Standard protective headers on every API response (nosniff, no framing, HSTS, no referrer…).
+  api.use('*', secureHeaders());
   // The largest real request (a support message) is a few KB. Anything far bigger is refused before it's read.
   api.use(
     '*',
@@ -40,7 +44,7 @@ export function createApp({ db, mailer, appUrl = 'http://localhost:5173', suppor
     }),
   );
   api.get('/health', (c) => c.json({ ok: true }));
-  for (const routes of [authRoutes, profileRoutes, addressRoutes, catalogRoutes, engagementRoutes, orderRoutes]) {
+  for (const routes of [authRoutes, verificationRoutes, profileRoutes, addressRoutes, catalogRoutes, engagementRoutes, orderRoutes]) {
     api.route('/', routes(deps));
   }
 

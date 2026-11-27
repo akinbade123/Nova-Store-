@@ -17,6 +17,7 @@ const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
 const AccountOverviewPage = lazy(() => import('./pages/account/AccountOverviewPage'));
 const OrdersPage = lazy(() => import('./pages/account/OrdersPage'));
@@ -66,6 +67,8 @@ export default function App() {
               <Route path="collections/:slug" element={<CollectionPage />} />
               <Route path="about" element={<AboutPage />} />
               <Route path="help" element={<HelpPage />} />
+              {/* Not under AuthLayout: it redirects signed-in users away, and this link is often opened signed in. */}
+              <Route path="verify-email" element={<VerifyEmailPage />} />
               <Route path="legal" element={<Navigate to="/legal/privacy" replace />} />
               <Route path="legal/:doc" element={<LegalPage />} />
               <Route path="*" element={<NotFoundPage />} />

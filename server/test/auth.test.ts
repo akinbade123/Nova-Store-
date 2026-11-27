@@ -12,7 +12,8 @@ describe('register', () => {
       body: { firstName: ' Ada ', lastName: 'Lovelace', email: ' Ada@Example.COM ', password: 'Password2026', marketing: true },
     });
     assert.equal(res.status, 201);
-    assert.deepEqual(Object.keys(res.body.user).sort(), ['createdAt', 'email', 'firstName', 'id', 'lastName', 'marketing']);
+    assert.deepEqual(Object.keys(res.body.user).sort(), ['createdAt', 'email', 'emailVerified', 'firstName', 'id', 'lastName', 'marketing']);
+    assert.equal(res.body.user.emailVerified, false, 'a new account starts unconfirmed');
     assert.equal(res.body.user.email, 'ada@example.com', 'email is trimmed and lowercased');
     assert.equal(res.body.user.firstName, 'Ada');
     const me = await api.call('PATCH', '/me', { body: {}, token: res.body.token });

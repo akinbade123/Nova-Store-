@@ -5,6 +5,7 @@ import { initials } from '../components/layout/AccountMenu';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cn } from '../utils/cn';
+import { EmailVerificationBanner } from '../components/account/EmailVerificationBanner';
 
 const nav = [
   { label: 'Overview', to: '/account', Icon: LayoutGrid, end: true },
@@ -38,6 +39,7 @@ export function AccountLayout() {
           <p className="mt-1 text-sm text-muted">Member since {memberSince(user.createdAt)}</p>
         </div>
       </header>
+      <EmailVerificationBanner />
 
       <div className="mt-8 lg:mt-12 lg:grid lg:grid-cols-[220px_1fr] lg:gap-12 xl:grid-cols-[240px_1fr] xl:gap-16">
         {/* Navigation: scrollable tabs on mobile, sidebar on desktop */}

@@ -2,7 +2,7 @@
 import { Hono } from 'hono';
 import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
-import { addresses, newsletterSubscribers, orders, passwordResets, users } from '../../db/schema.ts';
+import { addresses, emailVerifications, newsletterSubscribers, orders, passwordResets, users } from '../../db/schema.ts';
 import { hashPassword, newToken, verifyPassword } from '../../lib/crypto.ts';
 import { ApiError } from '../../lib/errors.ts';
 import { fields, readBody } from '../../lib/validate.ts';
@@ -10,6 +10,7 @@ import type { AppEnv, Deps, UserRow } from '../../types.ts';
 import { newPassword } from './auth.ts';
 import { requireAuth, revokeUserSessions, toPublicUser } from './sessions.ts';
 import { cancelResetLinks, notifyEmailChanged, notifyPasswordChanged } from './security.ts';
+import { sendVerification } from './verification.ts';
 
 const profileBody = z.object({
   firstName: fields.name('first name').optional(),
@@ -46,6 +47,9 @@ export function profileRoutes(deps: Deps) {
   app.use('/me', requireAuth(deps));
   app.use('/me/password', requireAuth(deps));
 
+  // The signed-in user, so the storefront can refresh what it shows (for example after confirming the email).
+  app.get('/me', (c) => c.json(toPublicUser(c.get('user'))));
+
   app.patch('/me', async (c) => {
     const user = c.get('user');
     const { currentPassword, ...patch } = await readBody(c, profileBody);
@@ -71,7 +75,10 @@ export function profileRoutes(deps: Deps) {
       if (emailChanged) await cancelResetLinks(tx, user.id);
       return row!;
     });
-    if (emailChanged) notifyEmailChanged(deps, user, user.email, updated.email);
+    if (emailChanged) {
+      notifyEmailChanged(deps, user, user.email, updated.email);
+      await sendVerification(deps, db, updated); // the new address needs confirming
+    }
     return c.json(toPublicUser(updated));
   });
 
@@ -103,6 +110,7 @@ export function profileRoutes(deps: Deps) {
       await revokeUserSessions(tx, user.id);
       await tx.delete(addresses).where(eq(addresses.userId, user.id));
       await tx.delete(passwordResets).where(eq(passwordResets.userId, user.id));
+      await tx.delete(emailVerifications).where(eq(emailVerifications.userId, user.id));
       await tx.delete(newsletterSubscribers).where(eq(newsletterSubscribers.email, user.email));
       await tx
         .update(orders)

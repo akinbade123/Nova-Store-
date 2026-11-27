@@ -202,7 +202,17 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   const { createDb } = await import('./client.ts');
   const { env } = await import('../env.ts');
   const demoAccount = process.argv.includes('--demo');
-  if (demoAccount && env.isProduction) throw new Error('Refusing to create the demo account in production.');
+  // The demo account's password is public (it's in the README), so it must never reach a real database.
+  // Refused in production, and for any database not on this machine unless explicitly allowed (e.g. staging).
+  const remote = env.databaseUrl && !['localhost', '127.0.0.1', '::1', '[::1]'].includes(new URL(env.databaseUrl).hostname);
+  if (demoAccount && (env.isProduction || (remote && process.env.ALLOW_DEMO_ACCOUNT !== 'true'))) {
+    console.error(
+      env.isProduction
+        ? 'Refusing to create the demo account in production: its password is public.'
+        : 'Refusing to create the demo account on a database that isn’t on this machine: its password is public. Set ALLOW_DEMO_ACCOUNT=true if this really is a test database.',
+    );
+    process.exit(1);
+  }
   const database = await createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir });
   await database.migrate();
   await seed(database.db, { demoAccount });
