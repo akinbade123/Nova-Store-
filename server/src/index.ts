@@ -49,7 +49,14 @@ if (!env.databaseUrl) {
   }
 }
 
-const app = createApp({ db: database.db, mailer, appUrl: env.appUrl, supportEmail: env.supportEmail, trustProxyHops: env.trustProxyHops });
+const app = createApp({
+  db: database.db,
+  mailer,
+  appUrl: env.appUrl,
+  supportEmail: env.supportEmail,
+  trustProxyHops: env.trustProxyHops,
+  emailLimits: { perDay: env.emailDailyLimit, perRecipientPerHour: env.emailPerAddressPerHour },
+});
 
 // Clear out ended sessions and spent links now and every 6 hours. A failure is logged, never fatal.
 const purge = () =>

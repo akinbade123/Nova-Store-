@@ -1,5 +1,6 @@
 /** docs/API.md, section 5: update profile, change password, delete account. */
 import { Hono } from 'hono';
+import { enforce } from '../../lib/rateLimit.ts';
 import { accessFor, withAccess } from '../../db/access.ts';
 import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
@@ -42,6 +43,10 @@ async function confirmPassword(user: UserRow, password: string | undefined, miss
   if (!(await verifyPassword(password, user.passwordHash))) throw wrongPassword();
 }
 
+const HOUR = 60 * 60 * 1000;
+/** Email and password changes each send email, so an account can make only a few an hour. */
+const ACCOUNT_CHANGES_PER_HOUR = 5;
+
 export function profileRoutes(deps: Deps) {
   const { db } = deps;
   const app = new Hono<AppEnv>();
@@ -59,6 +64,8 @@ export function profileRoutes(deps: Deps) {
       // a stolen session could point it at themselves and reset the password. Checked before email_taken,
       // so this can't be used to find out which emails have accounts.
       await confirmPassword(user, currentPassword, 'Enter your current password to change your email');
+      // Each change sends two emails (a notice to the old address, a link to the new one).
+      await enforce(c, deps.limiter, `email-change:${user.id}`, ACCOUNT_CHANGES_PER_HOUR, HOUR, 'You’ve changed your email several times recently.');
       // v1 changes the email straight away. v1.1 should confirm the new address first (docs/API.md).
       const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.email, patch.email), ne(users.id, user.id))).limit(1);
       if (taken) throw new ApiError(409, 'email_taken', 'Another account already uses this email.');
@@ -87,6 +94,8 @@ export function profileRoutes(deps: Deps) {
     const user = c.get('user');
     const body = await readBody(c, passwordBody);
     if (!(await verifyPassword(body.currentPassword, user.passwordHash))) throw wrongPassword();
+    // Each change sends a "password changed" email.
+    await enforce(c, deps.limiter, `password-change:${user.id}`, ACCOUNT_CHANGES_PER_HOUR, HOUR, 'You’ve changed your password several times recently.');
     const passwordHash = await hashPassword(body.newPassword);
     await withAccess(db, accessFor(user), async (tx) => {
       await tx.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, user.id));

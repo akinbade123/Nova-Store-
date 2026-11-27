@@ -12,7 +12,7 @@ import { emailVerifications, users } from '../../db/schema.ts';
 import { newToken, sha256 } from '../../lib/crypto.ts';
 import { sendInBackground } from '../../lib/email.ts';
 import { ApiError } from '../../lib/errors.ts';
-import { tooManyAttempts } from '../../lib/rateLimit.ts';
+import { enforce } from '../../lib/rateLimit.ts';
 import { readBody } from '../../lib/validate.ts';
 import type { AppEnv, Deps } from '../../types.ts';
 import { requireAuth } from './sessions.ts';
@@ -80,10 +80,7 @@ export function verificationRoutes(deps: Deps) {
     const user = c.get('user');
     if (user.emailVerifiedAt) return c.json({ sent: false, alreadyVerified: true });
     const key = `verify-resend:${user.id}`;
-    if ((await limiter.count(key)) >= RESENDS_PER_ACCOUNT) {
-      throw tooManyAttempts('We’ve sent a few links already. Check your inbox and spam folder, or try again in 15 minutes.');
-    }
-    await limiter.hit(key, 15 * MINUTE);
+    await enforce(c, limiter, key, RESENDS_PER_ACCOUNT, 15 * MINUTE, 'We’ve sent a few links already. Check your inbox and spam folder.');
     await sendVerification(deps, db, user);
     return c.json({ sent: true, alreadyVerified: false }, 202);
   });

@@ -35,13 +35,13 @@ describe('rate limits shared by every instance', () => {
 
   it('starts a new window once the old one has ended, and purges ended windows', async () => {
     const limiter = createRateLimiter({ db: api.db });
-    await limiter.hit('test:window', 60_000);
-    await limiter.hit('test:window', 60_000);
-    assert.equal(await limiter.count('test:window'), 2);
+    await limiter.take('test:window', 60_000);
+    await limiter.take('test:window', 60_000);
+    assert.equal((await limiter.status('test:window')).count, 2);
     await api.db.execute(sql`UPDATE rate_limits SET reset_at = now() - interval '1 second' WHERE key = 'test:window'`);
-    assert.equal(await limiter.count('test:window'), 0, 'an ended window no longer counts');
-    await limiter.hit('test:window', 60_000);
-    assert.equal(await limiter.count('test:window'), 1, 'and the next hit starts again at 1');
+    assert.equal((await limiter.status('test:window')).count, 0, 'an ended window no longer counts');
+    await limiter.take('test:window', 60_000);
+    assert.equal((await limiter.status('test:window')).count, 1, 'and the next hit starts again at 1');
 
     await api.db.execute(sql`UPDATE rate_limits SET reset_at = now() - interval '1 second' WHERE key = 'test:window'`);
     const removed = await purgeExpired(api.db);

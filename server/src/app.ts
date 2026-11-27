@@ -6,7 +6,7 @@ import { type Logger, logger as rootLogger } from './lib/logger.ts';
 import { requestContext } from './lib/requestContext.ts';
 import { systemRoutes } from './modules/system/routes.ts';
 import { createRateLimiter, noRateLimits } from './lib/rateLimit.ts';
-import type { Mailer } from './lib/email.ts';
+import { type EmailLimits, type Mailer, withSendingLimits } from './lib/email.ts';
 import type { Db } from './db/client.ts';
 import type { AppEnv, Deps } from './types.ts';
 import { authRoutes } from './modules/accounts/auth.ts';
@@ -29,12 +29,30 @@ type Options = {
   trustProxyHops?: number;
   /** Where request and error logs go. Tests pass their own to read what was logged. */
   logger?: Logger;
+  /** Email spending limits (see withSendingLimits). Defaults: 5 per address per hour, 2000 a day. */
+  emailLimits?: Partial<Pick<EmailLimits, 'perRecipientPerHour' | 'perDay'>>;
 };
 
 /** Builds the API. Everything is under /api, matching the storefront's VITE_API_URL default. */
-export function createApp({ db, mailer, appUrl = 'http://localhost:5173', supportEmail = 'support@example.com', rateLimits = true, trustProxyHops = 0, logger = rootLogger }: Options) {
+export function createApp({
+  db,
+  mailer: provider,
+  appUrl = 'http://localhost:5173',
+  supportEmail = 'support@example.com',
+  rateLimits = true,
+  trustProxyHops = 0,
+  logger = rootLogger,
+  emailLimits = {},
+}: Options) {
   // rateLimits: false is for tests that make many requests from one client.
   const limiter = rateLimits ? createRateLimiter({ db, trustProxyHops }) : noRateLimits;
+  // Every email the API sends goes through the spending limits.
+  const mailer = withSendingLimits(
+    provider,
+    limiter,
+    { perRecipientPerHour: emailLimits.perRecipientPerHour ?? 5, perDay: emailLimits.perDay ?? 2000, uncapped: [supportEmail] },
+    logger,
+  );
   const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter };
 
   const api = new Hono<AppEnv>();

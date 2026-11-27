@@ -68,6 +68,10 @@ export const env = {
   dbPoolMax: Number(process.env.DB_POOL_MAX ?? 10),
   /** Longest a query may run, in ms, before PostgreSQL cancels it. */
   dbStatementTimeoutMs: Number(process.env.DB_STATEMENT_TIMEOUT_MS ?? 15_000),
+  /** Most emails per UTC day, across every instance (a spending ceiling). Warned at 80%. */
+  emailDailyLimit: Number(process.env.EMAIL_DAILY_LIMIT ?? 2000),
+  /** Most emails to one address per hour, whatever triggered them. */
+  emailPerAddressPerHour: Number(process.env.EMAIL_PER_ADDRESS_PER_HOUR ?? 5),
   /** How many proxies sit in front of the API (e.g. 1 behind a Vercel rewrite). 0: ignore X-Forwarded-For. */
   trustProxyHops: Number(process.env.TRUST_PROXY_HOPS ?? 0),
 };

@@ -33,7 +33,7 @@ The data model behind these endpoints is in [DATA_MODEL.md](DATA_MODEL.md). How 
 | Dates | ISO 8601 strings in UTC (`2026-11-12T14:22:00.000Z`). Review dates are `YYYY-MM-DD`. |
 | Missing values | `null`, never an omitted key, for fields shown in this spec. |
 | Lists | Plain arrays unless the endpoint says otherwise. `GET /products` is the only paginated list. |
-| Rate limits | Return 429 with code `rate_limited`. Apply limits per client IP to login, register, forgot-password, reset-password, promo checks, newsletter and support. Login is also limited to 10 failed attempts per email per 15 minutes, from any IP. The client IP comes from the connection; `X-Forwarded-For` is used only when the server is told how many proxies are in front of it (`TRUST_PROXY_HOPS`), because clients can send any value in it. |
+| Rate limits | Return 429 with code `rate_limited`. Apply limits per client IP to login, register, forgot-password, reset-password, promo checks, newsletter and support. Login is also limited to 10 failed attempts per email per 15 minutes, from any IP. The client IP comes from the connection; `X-Forwarded-For` is used only when the server is told how many proxies are in front of it (`TRUST_PROXY_HOPS`), because clients can send any value in it. Email and password changes are limited to 5 per account per hour, since each sends email. Every 429 has a `Retry-After` header and `retryAfter` (seconds) in the body, and its message says how long to wait ("Please try again in 12 minutes."). |
 
 ## 2. Errors
 
@@ -65,7 +65,7 @@ Every error response has this body:
 | `price_changed` | 409 | The quote is stale; re-quote and show the new total | |
 | `card_declined` | 402 | Payment declined | |
 | `not_cancellable` | 409 | Order already shipped | |
-| `rate_limited` | 429 | Too many requests | |
+| `rate_limited` | 429 | Too many requests | `retryAfter`: seconds until the limit resets |
 | `payload_too_large` | 413 | Request body over 100 KB | |
 
 ## 3. Shared objects
@@ -555,6 +555,15 @@ Send through a transactional email provider from a background job, so a slow ema
 - shipped (with tracking)
 - cancelled or refunded
 - support message received
+
+## 9a. Email spending limits
+
+Every email passes through `withSendingLimits` (server/src/lib/email.ts), counted in the database so all instances agree:
+
+- **At most 5 emails per address per hour** (`EMAIL_PER_ADDRESS_PER_HOUR`), whatever triggered them, so the reset or verification forms can't flood someone's inbox at our expense. The endpoint still answers as usual, so the cap reveals nothing about accounts. The support inbox is exempt.
+- **At most 2,000 emails a day** (`EMAIL_DAILY_LIMIT`, UTC days). At 80% the API logs a warning; past it, nothing is sent and every dropped email is logged as an error, so an alert on that message catches a runaway.
+
+Dropped emails are logged as `Email not sent: …` with the masked address and the subject.
 
 ## 10a. Health checks and error reports
 
