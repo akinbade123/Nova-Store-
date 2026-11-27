@@ -1,5 +1,6 @@
 import { type Logger, logger } from './logger.ts';
 import type { RateLimiter } from './rateLimit.ts';
+import type { UsageMeter } from './usage.ts';
 
 export type Email = { to: string; subject: string; text: string };
 /** `name` says which provider sends the mail; the health check reports it. */
@@ -47,7 +48,7 @@ const msUntilUtcMidnight = (now = new Date()) =>
  *   still answer as if sent, so the cap reveals nothing about accounts.
  * - Per day: past the ceiling, nothing is sent and each drop is logged as an error, so it alerts.
  */
-export function withSendingLimits(mailer: Mailer, limiter: RateLimiter, limits: EmailLimits, log: Logger = logger): Mailer {
+export function withSendingLimits(mailer: Mailer, limiter: RateLimiter, limits: EmailLimits, log: Logger = logger, usage?: UsageMeter): Mailer {
   const warnAt = Math.ceil(limits.perDay * 0.8);
   const uncapped = new Set(limits.uncapped.map((address) => address.toLowerCase()));
   return {
@@ -58,6 +59,7 @@ export function withSendingLimits(mailer: Mailer, limiter: RateLimiter, limits: 
         const { count } = await limiter.take(`email-to:${to}`, HOUR_MS);
         if (count > limits.perRecipientPerHour) {
           log.warn('Email not sent: too many to this address this hour', { to: maskAddress(to), subject: email.subject, limit: limits.perRecipientPerHour });
+          usage?.email('droppedPerAddress');
           return;
         }
       }
@@ -65,10 +67,17 @@ export function withSendingLimits(mailer: Mailer, limiter: RateLimiter, limits: 
       const { count: sentToday } = await limiter.take(`email-day:${today}`, msUntilUtcMidnight());
       if (sentToday > limits.perDay) {
         log.error('Email not sent: daily email limit reached', { to: maskAddress(to), subject: email.subject, limit: limits.perDay });
+        usage?.email('droppedDaily');
         return;
       }
       if (sentToday === warnAt) log.warn('Emails today have reached 80% of the daily limit', { sent: sentToday, limit: limits.perDay });
-      await mailer.send(email);
+      try {
+        await mailer.send(email);
+        usage?.email('sent');
+      } catch (error) {
+        usage?.email('failed');
+        throw error;
+      }
     },
   };
 }

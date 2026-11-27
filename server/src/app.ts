@@ -4,6 +4,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import { errorHandler } from './lib/errors.ts';
 import { type Logger, logger as rootLogger } from './lib/logger.ts';
 import { requestContext } from './lib/requestContext.ts';
+import type { UsageMeter } from './lib/usage.ts';
 import { systemRoutes } from './modules/system/routes.ts';
 import { createRateLimiter, noRateLimits } from './lib/rateLimit.ts';
 import { type EmailLimits, type Mailer, withSendingLimits } from './lib/email.ts';
@@ -31,6 +32,8 @@ type Options = {
   logger?: Logger;
   /** Email spending limits (see withSendingLimits). Defaults: 5 per address per hour, 2000 a day. */
   emailLimits?: Partial<Pick<EmailLimits, 'perRecipientPerHour' | 'perDay'>>;
+  /** Counts requests and emails for the hourly "Usage summary" log line (src/index.ts). */
+  usage?: UsageMeter;
 };
 
 /** Builds the API. Everything is under /api, matching the storefront's VITE_API_URL default. */
@@ -43,6 +46,7 @@ export function createApp({
   trustProxyHops = 0,
   logger = rootLogger,
   emailLimits = {},
+  usage,
 }: Options) {
   // rateLimits: false is for tests that make many requests from one client.
   const limiter = rateLimits ? createRateLimiter({ db, trustProxyHops }) : noRateLimits;
@@ -52,6 +56,7 @@ export function createApp({
     limiter,
     { perRecipientPerHour: emailLimits.perRecipientPerHour ?? 5, perDay: emailLimits.perDay ?? 2000, uncapped: [supportEmail] },
     logger,
+    usage,
   );
   const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter };
 
@@ -76,7 +81,7 @@ export function createApp({
 
   const app = new Hono<AppEnv>();
   // First, so every request (including 404s and errors) gets an id, a logger and a summary log line.
-  app.use('*', requestContext(logger));
+  app.use('*', requestContext(logger, usage));
   app.route('/api', api);
   app.notFound((c) => {
     c.set('errorCode', 'not_found');

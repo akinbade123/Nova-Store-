@@ -3,6 +3,7 @@ import { createDb } from '../src/db/client.ts';
 import { seed, DEMO_ACCOUNT } from '../src/db/seed.ts';
 import { createConsoleMailer } from '../src/lib/email.ts';
 import type { Logger } from '../src/lib/logger.ts';
+import type { UsageMeter } from '../src/lib/usage.ts';
 
 export { DEMO_ACCOUNT };
 
@@ -12,12 +13,13 @@ export async function testApi({
   trustProxyHops = 0,
   logger,
   emailLimits,
-}: { rateLimits?: boolean; trustProxyHops?: number; logger?: Logger; emailLimits?: { perRecipientPerHour?: number; perDay?: number } } = {}) {
+  usage,
+}: { rateLimits?: boolean; trustProxyHops?: number; logger?: Logger; emailLimits?: { perRecipientPerHour?: number; perDay?: number }; usage?: UsageMeter } = {}) {
   const database = await createDb();
   await database.migrate();
   await seed(database.db, { demoAccount: true });
   const mailer = createConsoleMailer({ quiet: true });
-  const app = createApp({ db: database.db, mailer, appUrl: 'https://nova.test', supportEmail: 'support@nova.test', rateLimits, trustProxyHops, logger, emailLimits });
+  const app = createApp({ db: database.db, mailer, appUrl: 'https://nova.test', supportEmail: 'support@nova.test', rateLimits, trustProxyHops, logger, emailLimits, usage });
 
   /** Calls the API in-process. Returns the status and parsed JSON body (null for empty responses). */
   async function call(

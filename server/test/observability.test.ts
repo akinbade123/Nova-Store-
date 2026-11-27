@@ -206,3 +206,33 @@ describe('the API’s own headers', () => {
     assert.match(res.headers.get('content-security-policy') ?? '', /default-src 'none'.*frame-ancestors 'none'/);
   });
 });
+
+describe('usage summary', () => {
+  it('counts requests by route pattern and emails by outcome, then starts again', async () => {
+    const { createUsageMeter } = await import('../src/lib/usage.ts');
+    const usage = createUsageMeter({ instance: 'test' });
+    const metered = await testApi({ usage });
+    try {
+      await metered.app.request('/api/products/moto-leather-jacket');
+      await metered.app.request('/api/products/cloud-fleece-hoodie');
+      await metered.app.request('/api/products/no-such-product');
+      await metered.app.request('/api/nope');
+      await metered.register(); // sends a verification email
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const summary = usage.flush();
+      assert.equal(summary.instance, 'test');
+      assert.deepEqual(
+        { count: summary.requests.routes['/api/products/:slug']!.count },
+        { count: 3 },
+        'one route, whatever the slug',
+      );
+      assert.equal(summary.requests.routes['unmatched']!.count, 1);
+      assert.equal(summary.requests.routes['/api/auth/register']!.count, 1);
+      assert.equal(summary.requests.total, 5);
+      assert.deepEqual(summary.emails, { sent: 1, failed: 0, droppedPerAddress: 0, droppedDaily: 0 });
+      assert.equal(usage.flush().requests.total, 0, 'counting starts again after each summary');
+    } finally {
+      await metered.close();
+    }
+  });
+});

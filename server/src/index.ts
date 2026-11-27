@@ -10,6 +10,7 @@ import { loginCanBypassRestrictions } from './db/roles.ts';
 import { env } from './env.ts';
 import { createConsoleMailer, createProductionMailer } from './lib/email.ts';
 import { logger } from './lib/logger.ts';
+import { createUsageMeter } from './lib/usage.ts';
 
 // Emails carry reset and confirmation links, so production must send them, never print them to the logs.
 // Checked before anything else, so a misconfigured deploy stops straight away with this message.
@@ -49,7 +50,13 @@ if (!env.databaseUrl) {
   }
 }
 
+// Requests and emails, logged as one "Usage summary" line per hour (docs/COSTS.md has the dashboard queries).
+const usage = createUsageMeter();
+const usageTimer = setInterval(() => logger.info('Usage summary', usage.flush()), 60 * 60 * 1000);
+usageTimer.unref();
+
 const app = createApp({
+  usage,
   db: database.db,
   mailer,
   appUrl: env.appUrl,
@@ -80,6 +87,8 @@ const server = serve({ fetch: app.fetch, port: env.port }, ({ port }) => {
 const shutdown = (signal: string) => {
   logger.info('Shutting down', { signal });
   clearInterval(purgeTimer);
+  clearInterval(usageTimer);
+  logger.info('Usage summary', usage.flush()); // the partial hour, so a deploy or restart doesn't lose it
   server.close();
   database.close().finally(() => process.exit(0));
 };
