@@ -44,10 +44,12 @@ Seventeen tables in five groups: accounts, catalogue, promotions and shipping, o
 | Primary keys | `text`, using the prefixes the frontend already shows: `u-`, `p-`, `addr-`, `NV-`. Generate them from random bytes, not sequences, so they can't be guessed. |
 | Money | `integer` **cents**, in columns named `*_cents`. The API converts to major units at the edge. One `currency` column per order, so a currency change later doesn't rewrite history. |
 | Time | `timestamptz`, stored in UTC. Every table has `created_at default now()`. Mutable tables also have `updated_at`. |
-| Email | `text`, lowercased and trimmed before saving, so a plain unique index is case-insensitive. No `citext` extension is needed. |
+| Email | `text`, lowercased and trimmed before saving. A CHECK (`email = lower(btrim(email))`, on `users`, `orders` and `newsletter_subscribers`) guarantees it, so a plain unique index is case-insensitive and every stored account can sign in. No `citext` extension is needed. |
 | Secrets | Tokens (sessions, password resets, guest order access) are stored **only as SHA-256 hashes**. Passwords use scrypt from Node's standard library (memory-hard, OWASP-recommended alongside argon2id and bcrypt), never plain SHA-256. |
 | Deletion | Hard-delete what's personal and not needed. Anonymise what accounting needs (orders). See [8](#8-rules-that-span-tables). |
 | JSON columns | Used only for data that's displayed but never queried: specs, address snapshots, the colours list |
+| Allowed values | Every status, type, kind, role and method column has a **CHECK constraint** listing its values (migration `0001`), so the database refuses anything else, whoever writes it. The lists live once, as constants in `server/src/db/schema.ts`, and drive both the TypeScript types and the checks. Money rules are checks too: amounts are never negative, an order's discount never exceeds its subtotal, and its total always equals subtotal − discount + shipping. Percent promotions are 1–100; free-shipping codes have value 0. |
+| Backups | Managed PostgreSQL with point-in-time recovery, plus our own tested logical backups. See [BACKUPS.md](BACKUPS.md). |
 
 ## 3. Accounts
 
@@ -148,7 +150,7 @@ Indexes:
 | `id` | text PK | |
 | `product_id` | text FK → products, on delete cascade | |
 | `url` | text not null | Full CDN URL |
-| `position` | integer not null | `0` is the main image |
+| `position` | integer not null, **unique per product and `kind`** | `0` is the main image |
 | `zoom`, `focal_x`, `focal_y` | numeric null | Detail-shot crops, as in the sample data |
 | `kind` | text not null | `card` (the product's `images`) or `gallery` (the product page `gallery`) |
 
@@ -166,15 +168,15 @@ Indexes:
 |---|---|---|
 | `collection_slug` | text FK → collections, on delete cascade | PK part 1 |
 | `product_id` | text FK → products, on delete cascade | PK part 2 |
-| `position` | integer not null | The curated order. `productIds` in the API is in this order. |
+| `position` | integer not null, **unique per collection** | The curated order. `productIds` in the API is in this order. |
 
 ### `reviews`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | text PK | |
-| `product_id` | text FK → products, on delete cascade | |
-| `user_id` | text FK → users, on delete set null | Null for imported reviews |
-| `order_item_id` | text null | Set means a verified purchase |
+| `product_id` | text FK → products, **on delete restrict** | A product with reviews can't be deleted, because that would erase them. Unpublish it (`published = false`) instead. |
+| `user_id` | text FK → users, on delete set null | Null for imported reviews. **Unique with `product_id`** when set: one review per customer per product. |
+| `order_item_id` | text null, **unique when set** | Set means a verified purchase; one review per purchased item |
 | `verified` | boolean not null default false | For imported reviews verified elsewhere. The API's `verified` is `verified OR order_item_id IS NOT NULL`. |
 | `rating` | smallint not null, check 1–5 | |
 | `title`, `body` | text not null | |

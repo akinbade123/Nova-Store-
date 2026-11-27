@@ -115,6 +115,66 @@ describe('password reset', () => {
   });
 });
 
+describe('reset links and security notices', () => {
+  const resetLink = () => api.mailer.outbox.filter((m) => m.subject.includes('Reset')).at(-1)!.text.match(/token=([\w-]+)/)![1]!;
+  const reset = (token: string, password: string) => api.call('POST', '/auth/reset-password', { body: { token, password } });
+  const noticesTo = (email: string, subject: string) => api.mailer.outbox.filter((m) => m.to === email && m.subject.includes(subject));
+
+  it('using one reset link cancels every other one, and tells the owner', async () => {
+    const { user } = await api.register();
+    const links = [];
+    for (let i = 0; i < 3; i += 1) {
+      await api.call('POST', '/auth/forgot-password', { body: { email: user.email } });
+      links.push(resetLink());
+    }
+    assert.equal((await reset(links[0]!, 'NewPass2026a')).status, 200);
+    for (const other of links.slice(1)) {
+      const res = await reset(other, 'Attacker2026');
+      assert.equal(res.status, 400, 'an older link must not work after a reset');
+      assert.equal(res.body.code, 'invalid_token');
+    }
+    await new Promise((resolve) => setImmediate(resolve)); // notices are sent in the background
+    const [notice] = noticesTo(user.email, 'password was changed');
+    assert.ok(notice, 'the owner is told');
+    assert.match(notice!.text, /reset using a link/);
+    assert.match(notice!.text, /forgot-password/);
+    assert.ok(!/token=/.test(notice!.text), 'the notice never contains a usable link');
+  });
+
+  it('changing the password cancels links requested before, and tells the owner', async () => {
+    const { token, user, password } = await api.register();
+    await api.call('POST', '/auth/forgot-password', { body: { email: user.email } });
+    const pending = resetLink();
+    const res = await api.call('POST', '/me/password', { token, body: { currentPassword: password, newPassword: 'Changed2026x' } });
+    assert.equal(res.status, 200);
+    assert.equal((await reset(pending, 'Attacker2026')).status, 400);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(noticesTo(user.email, 'password was changed').length, 1);
+  });
+
+  it('changing the email cancels links sent to the old address, and tells the old address', async () => {
+    const { token, user, password } = await api.register();
+    await api.call('POST', '/auth/forgot-password', { body: { email: user.email } });
+    const pending = resetLink();
+    const res = await api.call('PATCH', '/me', { token, body: { email: 'brand-new@example.com', currentPassword: password } });
+    assert.equal(res.status, 200);
+    assert.equal((await reset(pending, 'Attacker2026')).status, 400);
+    await new Promise((resolve) => setImmediate(resolve));
+    const [notice] = noticesTo(user.email, 'email address was changed');
+    assert.ok(notice, 'the OLD address is told');
+    assert.match(notice!.text, /b\*+@example\.com/, 'the new address is shown masked');
+    assert.ok(!notice!.text.includes('brand-new@example.com'));
+  });
+
+  it('sends nothing when only the name changes', async () => {
+    const { token, user } = await api.register();
+    const before = api.mailer.outbox.length;
+    await api.call('PATCH', '/me', { token, body: { firstName: 'Renamed', email: user.email } });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(api.mailer.outbox.length, before);
+  });
+});
+
 describe('rate limiting', () => {
   it('answers 429 rate_limited after 10 logins in a minute', async () => {
     const fresh = await testApi({ rateLimits: true });

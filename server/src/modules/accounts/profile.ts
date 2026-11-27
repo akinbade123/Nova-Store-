@@ -9,6 +9,7 @@ import { fields, readBody } from '../../lib/validate.ts';
 import type { AppEnv, Deps, UserRow } from '../../types.ts';
 import { newPassword } from './auth.ts';
 import { requireAuth, revokeUserSessions, toPublicUser } from './sessions.ts';
+import { cancelResetLinks, notifyEmailChanged, notifyPasswordChanged } from './security.ts';
 
 const profileBody = z.object({
   firstName: fields.name('first name').optional(),
@@ -58,21 +59,33 @@ export function profileRoutes(deps: Deps) {
       if (taken) throw new ApiError(409, 'email_taken', 'Another account already uses this email.');
     }
     const changes = Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined));
-    if (patch.email && patch.email !== user.email) Object.assign(changes, { emailVerifiedAt: null });
-    const [updated] = await db
-      .update(users)
-      .set({ ...changes, updatedAt: new Date() })
-      .where(eq(users.id, user.id))
-      .returning();
-    return c.json(toPublicUser(updated!));
+    const emailChanged = Boolean(patch.email && patch.email !== user.email);
+    if (emailChanged) Object.assign(changes, { emailVerifiedAt: null });
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(users)
+        .set({ ...changes, updatedAt: new Date() })
+        .where(eq(users.id, user.id))
+        .returning();
+      // Reset links were sent to the old address; they mustn't keep working once it's no longer the account's.
+      if (emailChanged) await cancelResetLinks(tx, user.id);
+      return row!;
+    });
+    if (emailChanged) notifyEmailChanged(deps, user, user.email, updated.email);
+    return c.json(toPublicUser(updated));
   });
 
   app.post('/me/password', async (c) => {
     const user = c.get('user');
     const body = await readBody(c, passwordBody);
     if (!(await verifyPassword(body.currentPassword, user.passwordHash))) throw wrongPassword();
-    await db.update(users).set({ passwordHash: await hashPassword(body.newPassword), updatedAt: new Date() }).where(eq(users.id, user.id));
-    await revokeUserSessions(db, user.id, c.get('sessionId')); // other devices are signed out; this one stays in
+    const passwordHash = await hashPassword(body.newPassword);
+    await db.transaction(async (tx) => {
+      await tx.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, user.id));
+      await revokeUserSessions(tx, user.id, c.get('sessionId')); // other devices are signed out; this one stays in
+      await cancelResetLinks(tx, user.id); // a reset link requested earlier (maybe by an intruder) stops working
+    });
+    notifyPasswordChanged(deps, user, 'changed');
     return c.json({ changed: true });
   });
 
@@ -84,7 +97,8 @@ export function profileRoutes(deps: Deps) {
     const user = c.get('user');
     const { password } = await readBody(c, deleteBody);
     await confirmPassword(user, password, 'Enter your password to confirm', 'password');
-    const placeholderEmail = `deleted+${user.id}@nova.invalid`;
+    // Lowercase like every stored email (a database check enforces it). Ids use only capitals and digits, so this stays unique.
+    const placeholderEmail = `deleted+${user.id.toLowerCase()}@nova.invalid`;
     await db.transaction(async (tx) => {
       await revokeUserSessions(tx, user.id);
       await tx.delete(addresses).where(eq(addresses.userId, user.id));

@@ -48,6 +48,8 @@ Emails, such as the password reset link, are printed in the API's terminal.
 | `npm run db:migrate` | Applies pending migrations. Run this before starting in production. |
 | `npm run db:seed` | Loads the sample catalogue, shipping methods and promotions. Add `-- --demo` for the demo account (never in production). |
 | `npm run db:reset` | Deletes the embedded development database. The next `npm run dev` recreates it. |
+| `npm run db:backup` | Backs up the database in `DATABASE_URL` to `backups/` (see [docs/BACKUPS.md](../docs/BACKUPS.md)) |
+| `npm run db:restore-test -- <file>` | Restores a backup into a throwaway PostgreSQL in Docker and checks it matches: PASS or FAIL |
 
 ## Layout
 
@@ -79,7 +81,7 @@ server/
 
 ## Before production
 
-1. Set `DATABASE_URL` and `NODE_ENV=production`. Run `npm run db:migrate`, then `npm run db:seed` (without `--demo`).
+1. Use a managed PostgreSQL 17 with automatic backups and point-in-time recovery turned on (checklist in [docs/BACKUPS.md](../docs/BACKUPS.md)). Set `DATABASE_URL` and `NODE_ENV=production`. Run `npm run db:migrate`, then `npm run db:seed` (without `--demo`). Then take a backup and run the restore test once before launch.
 2. Connect a transactional email provider in `src/lib/email.ts`.
 3. Serve the API at `/api` on the storefront's domain, for example with a Vercel rewrite to the API's host. The storefront calls `/api` by default, so no CORS setup is needed.
 4. If the API runs behind a proxy (a Vercel rewrite, a load balancer), set `TRUST_PROXY_HOPS` to the number of proxies, usually `1`. Otherwise every request looks like it comes from the proxy, and all shoppers share one rate limit. Never set it when clients reach the API directly: they could then fake their IP to dodge the limits.

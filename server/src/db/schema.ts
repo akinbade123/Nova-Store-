@@ -20,6 +20,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 const timestamps = {
@@ -27,6 +28,30 @@ const timestamps = {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 };
 const ts = (name: string) => timestamp(name, { withTimezone: true });
+
+/**
+ * A CHECK that `column` holds one of `values`. The `enum` option on a text column only types the code;
+ * this makes the database itself refuse anything else, whether it comes from the API, an admin tool,
+ * an import or a bug. The lists below are the single source for both.
+ */
+const oneOf = (column: AnyPgColumn, values: readonly string[]) =>
+  sql`${column} IN (${sql.raw(values.map((value) => `'${value}'`).join(', '))})`;
+
+/**
+ * Emails are stored lowercased and trimmed (the API does it on the way in). This check guarantees it,
+ * which makes each plain unique index on email case-insensitive and keeps every account reachable by
+ * sign-in, which lowercases what's typed.
+ */
+const normalisedEmail = (name: string, column: AnyPgColumn) => check(name, sql`${column} = lower(btrim(${column}))`);
+
+export const ROLES = ['customer', 'admin'] as const;
+export const SIZE_GUIDES = ['apparel', 'shoes'] as const;
+export const IMAGE_KINDS = ['card', 'gallery'] as const;
+export const COLLECTION_TONES = ['dark', 'light'] as const;
+export const REVIEW_STATUSES = ['pending', 'approved', 'rejected'] as const;
+export const PROMOTION_TYPES = ['percent', 'shipping'] as const;
+export const PAYMENT_METHODS = ['card', 'paypal', 'applepay'] as const;
+export const SUPPORT_STATUSES = ['open', 'closed'] as const;
 
 // ---------------------------------------------------------------- Accounts
 
@@ -37,11 +62,11 @@ export const users = pgTable('users', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   marketing: boolean('marketing').notNull().default(false),
-  role: text('role', { enum: ['customer', 'admin'] }).notNull().default('customer'),
+  role: text('role', { enum: ROLES }).notNull().default('customer'),
   emailVerifiedAt: ts('email_verified_at'),
   deletedAt: ts('deleted_at'),
   ...timestamps,
-});
+}, (t) => [check('users_role_check', oneOf(t.role, ROLES)), normalisedEmail('users_email_check', t.email)]);
 
 export const sessions = pgTable(
   'sessions',
@@ -125,7 +150,7 @@ export const products = pgTable(
     highlights: text('highlights').array().notNull().default(sql`'{}'::text[]`),
     specs: jsonb('specs').$type<[string, string][]>().notNull().default([]),
     care: text('care'),
-    sizeGuide: text('size_guide', { enum: ['apparel', 'shoes'] }),
+    sizeGuide: text('size_guide', { enum: SIZE_GUIDES }),
     ...timestamps,
   },
   (t) => [
@@ -134,6 +159,8 @@ export const products = pgTable(
     check('products_compare_at_check', sql`${t.compareAtCents} IS NULL OR ${t.compareAtCents} > ${t.priceCents}`),
     // Stock can never go negative, even if two orders race for the last item.
     check('products_stock_check', sql`${t.stockCount} >= 0`),
+    check('products_size_guide_check', sql`${t.sizeGuide} IS NULL OR ${oneOf(t.sizeGuide, SIZE_GUIDES)}`),
+    check('products_rating_check', sql`${t.ratingAvg} BETWEEN 0 AND 5 AND ${t.reviewCount} >= 0`),
   ],
 );
 
@@ -143,14 +170,18 @@ export const productImages = pgTable(
     id: text('id').primaryKey(),
     productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
     // 'card' images are the product's `images`; 'gallery' images are the product page `gallery`.
-    kind: text('kind', { enum: ['card', 'gallery'] }).notNull(),
+    kind: text('kind', { enum: IMAGE_KINDS }).notNull(),
     url: text('url').notNull(),
     position: integer('position').notNull(),
     zoom: numeric('zoom', { mode: 'number' }),
     focalX: numeric('focal_x', { mode: 'number' }),
     focalY: numeric('focal_y', { mode: 'number' }),
   },
-  (t) => [index('product_images_product_idx').on(t.productId, t.kind, t.position)],
+  (t) => [
+    // One image per slot; also the index for loading a product's images in order.
+    uniqueIndex('product_images_product_idx').on(t.productId, t.kind, t.position),
+    check('product_images_kind_check', oneOf(t.kind, IMAGE_KINDS)),
+  ],
 );
 
 export const collections = pgTable('collections', {
@@ -160,10 +191,10 @@ export const collections = pgTable('collections', {
   tagline: text('tagline').notNull(),
   description: text('description').notNull(),
   imageUrl: text('image_url').notNull(),
-  tone: text('tone', { enum: ['dark', 'light'] }).notNull(),
+  tone: text('tone', { enum: COLLECTION_TONES }).notNull(),
   position: integer('position').notNull(),
   published: boolean('published').notNull().default(true),
-});
+}, (t) => [check('collections_tone_check', oneOf(t.tone, COLLECTION_TONES))]);
 
 export const collectionProducts = pgTable(
   'collection_products',
@@ -172,14 +203,18 @@ export const collectionProducts = pgTable(
     productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
     position: integer('position').notNull(),
   },
-  (t) => [primaryKey({ columns: [t.collectionSlug, t.productId] })],
+  (t) => [
+    primaryKey({ columns: [t.collectionSlug, t.productId] }),
+    uniqueIndex('collection_products_position_idx').on(t.collectionSlug, t.position),
+  ],
 );
 
 export const reviews = pgTable(
   'reviews',
   {
     id: text('id').primaryKey(),
-    productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+    // Restrict: a product with reviews can't be deleted (that would silently erase them). Unpublish it instead.
+    productId: text('product_id').notNull().references(() => products.id, { onDelete: 'restrict' }),
     userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     orderItemId: text('order_item_id'),
     // Imported reviews have no order item but were verified at the source.
@@ -191,14 +226,19 @@ export const reviews = pgTable(
     location: text('location').notNull(),
     variant: text('variant'),
     helpfulCount: integer('helpful_count').notNull().default(0),
-    status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+    status: text('status', { enum: REVIEW_STATUSES }).notNull().default('pending'),
     isFeatured: boolean('is_featured').notNull().default(false),
     avatarUrl: text('avatar_url'),
     createdAt: ts('created_at').notNull().defaultNow(),
   },
   (t) => [
     index('reviews_product_idx').on(t.productId, t.status, t.createdAt),
+    // One review per customer per product, and per purchased item. Imported reviews have neither, so they're exempt.
+    uniqueIndex('reviews_user_product_idx').on(t.productId, t.userId).where(sql`${t.userId} IS NOT NULL`),
+    uniqueIndex('reviews_order_item_idx').on(t.orderItemId).where(sql`${t.orderItemId} IS NOT NULL`),
     check('reviews_rating_check', sql`${t.rating} BETWEEN 1 AND 5`),
+    check('reviews_status_check', oneOf(t.status, REVIEW_STATUSES)),
+    check('reviews_helpful_check', sql`${t.helpfulCount} >= 0`),
   ],
 );
 
@@ -206,7 +246,7 @@ export const reviews = pgTable(
 
 export const promotions = pgTable('promotions', {
   code: text('code').primaryKey(),
-  type: text('type', { enum: ['percent', 'shipping'] }).notNull(),
+  type: text('type', { enum: PROMOTION_TYPES }).notNull(),
   value: integer('value').notNull(),
   label: text('label').notNull(),
   minSubtotalCents: integer('min_subtotal_cents').notNull().default(0),
@@ -215,7 +255,13 @@ export const promotions = pgTable('promotions', {
   maxRedemptions: integer('max_redemptions'),
   redemptions: integer('redemptions').notNull().default(0),
   active: boolean('active').notNull().default(true),
-});
+}, (t) => [
+  check('promotions_type_check', oneOf(t.type, PROMOTION_TYPES)),
+  // A percentage between 1 and 100; free-shipping codes carry no value.
+  check('promotions_value_check', sql`(${t.type} = 'percent' AND ${t.value} BETWEEN 1 AND 100) OR (${t.type} = 'shipping' AND ${t.value} = 0)`),
+  check('promotions_amounts_check', sql`${t.minSubtotalCents} >= 0 AND ${t.redemptions} >= 0 AND (${t.maxRedemptions} IS NULL OR ${t.maxRedemptions} > 0)`),
+  check('promotions_dates_check', sql`${t.startsAt} IS NULL OR ${t.endsAt} IS NULL OR ${t.endsAt} > ${t.startsAt}`),
+]);
 
 export const shippingMethods = pgTable('shipping_methods', {
   id: text('id').primaryKey(),
@@ -228,7 +274,10 @@ export const shippingMethods = pgTable('shipping_methods', {
   countries: char('countries', { length: 2 }).array(),
   position: integer('position').notNull(),
   active: boolean('active').notNull().default(true),
-});
+}, (t) => [
+  check('shipping_methods_price_check', sql`${t.priceCents} >= 0 AND (${t.freeOverCents} IS NULL OR ${t.freeOverCents} >= 0)`),
+  check('shipping_methods_days_check', sql`${t.minDays} >= 0 AND ${t.maxDays} >= ${t.minDays}`),
+]);
 
 // ---------------------------------------------------------------- Orders and payments
 // Created now so the schema is complete; the endpoints that use them come in the next phase.
@@ -260,7 +309,7 @@ export const orders = pgTable(
     totalCents: integer('total_cents').notNull(),
     promoCode: text('promo_code').references(() => promotions.code),
     promo: jsonb('promo'),
-    paymentMethod: text('payment_method', { enum: ['card', 'paypal', 'applepay'] }).notNull(),
+    paymentMethod: text('payment_method', { enum: PAYMENT_METHODS }).notNull(),
     paymentBrand: text('payment_brand'),
     paymentLast4: text('payment_last4'),
     paymentProvider: text('payment_provider'),
@@ -278,6 +327,17 @@ export const orders = pgTable(
     index('orders_user_idx').on(t.userId, t.createdAt),
     index('orders_email_idx').on(t.email),
     index('orders_status_idx').on(t.status, t.createdAt),
+    normalisedEmail('orders_email_check', t.email), // guest orders are matched to accounts by email
+    check('orders_status_check', oneOf(t.status, ORDER_STATUSES)),
+    check('orders_payment_method_check', oneOf(t.paymentMethod, PAYMENT_METHODS)),
+    check('orders_currency_check', sql`${t.currency} ~ '^[A-Z]{3}$'`),
+    // Money is never negative, the discount never exceeds the subtotal, and the total always adds up.
+    check(
+      'orders_totals_check',
+      sql`${t.subtotalCents} >= 0 AND ${t.discountCents} BETWEEN 0 AND ${t.subtotalCents} AND ${t.shippingCents} >= 0
+        AND ${t.totalCents} = ${t.subtotalCents} - ${t.discountCents} + ${t.shippingCents}`,
+    ),
+    check('orders_delivery_check', sql`${t.deliveryMaxDate} >= ${t.deliveryMinDate}`),
   ],
 );
 
@@ -295,7 +355,11 @@ export const orderItems = pgTable(
     color: text('color'),
     size: text('size'),
   },
-  (t) => [index('order_items_order_idx').on(t.orderId), check('order_items_quantity_check', sql`${t.quantity} BETWEEN 1 AND 10`)],
+  (t) => [
+    index('order_items_order_idx').on(t.orderId),
+    check('order_items_quantity_check', sql`${t.quantity} BETWEEN 1 AND 10`),
+    check('order_items_price_check', sql`${t.unitPriceCents} >= 0`),
+  ],
 );
 
 export const paymentEvents = pgTable(
@@ -321,7 +385,7 @@ export const newsletterSubscribers = pgTable('newsletter_subscribers', {
   confirmedAt: ts('confirmed_at'),
   unsubscribedAt: ts('unsubscribed_at'),
   createdAt: ts('created_at').notNull().defaultNow(),
-});
+}, (t) => [normalisedEmail('newsletter_subscribers_email_check', t.email)]);
 
 export const supportMessages = pgTable('support_messages', {
   ticket: text('ticket').primaryKey(),
@@ -331,6 +395,6 @@ export const supportMessages = pgTable('support_messages', {
   orderId: text('order_id'),
   topic: text('topic').notNull(),
   message: text('message').notNull(),
-  status: text('status', { enum: ['open', 'closed'] }).notNull().default('open'),
+  status: text('status', { enum: SUPPORT_STATUSES }).notNull().default('open'),
   createdAt: ts('created_at').notNull().defaultNow(),
-});
+}, (t) => [check('support_messages_status_check', oneOf(t.status, SUPPORT_STATUSES))]);

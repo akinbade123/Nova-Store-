@@ -10,6 +10,7 @@ import { tooManyAttempts } from '../../lib/rateLimit.ts';
 import { fields, readBody } from '../../lib/validate.ts';
 import type { AppEnv, Deps } from '../../types.ts';
 import { authenticate, createSession, revokeSession, revokeUserSessions, toPublicUser } from './sessions.ts';
+import { cancelResetLinks, notifyPasswordChanged } from './security.ts';
 
 const RESET_TTL_MS = 60 * 60 * 1000;
 const MINUTE = 60 * 1000;
@@ -135,12 +136,14 @@ export function authRoutes(deps: Deps) {
         .update(users)
         .set({ passwordHash, updatedAt: new Date() })
         .where(and(eq(users.id, row.userId), isNull(users.deletedAt)))
-        .returning({ id: users.id });
+        .returning({ id: users.id, email: users.email, firstName: users.firstName });
       if (!user) return null;
       await revokeUserSessions(tx, user.id); // anyone signed in with the old password is signed out
+      await cancelResetLinks(tx, user.id); // and any other link sent earlier stops working
       return user;
     });
     if (!reset) throw new ApiError(400, 'invalid_token', 'This reset link is invalid or has expired. Request a new one to continue.');
+    notifyPasswordChanged(deps, reset, 'reset');
     return c.json({ reset: true });
   });
 
