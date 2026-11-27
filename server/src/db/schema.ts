@@ -172,6 +172,9 @@ export const products = pgTable(
   },
   (t) => [
     index('products_category_idx').on(t.categoryId),
+    // Search (GET /products?q=) matches '%text%' anywhere in this expression, which a normal index
+    // can't help with. A trigram index can. Keep the expression identical to the one in products.ts.
+    index('products_search_idx').using('gin', sql`(${t.name} || ' ' || ${t.categoryId} || ' ' || ${t.description}) gin_trgm_ops`),
     check('products_price_check', sql`${t.priceCents} >= 0`),
     check('products_compare_at_check', sql`${t.compareAtCents} IS NULL OR ${t.compareAtCents} > ${t.priceCents}`),
     // Stock can never go negative, even if two orders race for the last item.
@@ -415,3 +418,17 @@ export const supportMessages = pgTable('support_messages', {
   status: text('status', { enum: SUPPORT_STATUSES }).notNull().default('open'),
   createdAt: ts('created_at').notNull().defaultNow(),
 }, (t) => [check('support_messages_status_check', oneOf(t.status, SUPPORT_STATUSES))]);
+
+/**
+ * Rate-limit counters (src/lib/rateLimit.ts), one row per limit and client. Kept in the database, not
+ * in memory, so every API instance counts against the same limit. Expired rows are purged.
+ */
+export const rateLimits = pgTable(
+  'rate_limits',
+  {
+    key: text('key').primaryKey(),
+    count: integer('count').notNull(),
+    resetAt: timestamp('reset_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [index('rate_limits_reset_idx').on(t.resetAt)],
+);

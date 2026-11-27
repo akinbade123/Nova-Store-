@@ -1,11 +1,11 @@
 /**
- * Deletes what's no longer any use: ended sessions and spent or expired links. Ended sessions can't sign
+ * Deletes what's no longer any use: ended sessions, spent or expired links, and ended rate-limit windows. Ended sessions can't sign
  * anyone in, but keeping them grows the tables (and the backups) forever. Run at startup and every
  * few hours by src/index.ts.
  */
 import { isNotNull, lt, or } from 'drizzle-orm';
 import type { Db } from './client.ts';
-import { emailVerifications, passwordResets, sessions } from './schema.ts';
+import { emailVerifications, passwordResets, rateLimits, sessions } from './schema.ts';
 import { MAX_SESSION_DAYS } from '../modules/accounts/sessions.ts';
 
 export async function purgeExpired(db: Db, now = new Date()) {
@@ -22,5 +22,6 @@ export async function purgeExpired(db: Db, now = new Date()) {
     .delete(emailVerifications)
     .where(or(lt(emailVerifications.expiresAt, now), isNotNull(emailVerifications.usedAt)))
     .returning({ id: emailVerifications.tokenHash });
-  return { sessions: ended.length, passwordResets: resets.length, emailVerifications: verifications.length };
+  const counters = await db.delete(rateLimits).where(lt(rateLimits.resetAt, now)).returning({ key: rateLimits.key });
+  return { sessions: ended.length, passwordResets: resets.length, emailVerifications: verifications.length, rateLimits: counters.length };
 }

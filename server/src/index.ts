@@ -30,7 +30,7 @@ async function step<T>(name: string, run: () => Promise<T>): Promise<T> {
 }
 
 const database = await step('connecting to the database', () =>
-  createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir }),
+  createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } }),
 );
 await step('applying migrations', () => database.migrate());
 

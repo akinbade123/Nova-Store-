@@ -6,6 +6,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
+import { PGLITE_EXTENSIONS } from '../src/db/client.ts';
 
 const folder = new URL('../drizzle/', import.meta.url);
 const files = readdirSync(folder).filter((name) => name.endsWith('.sql')).sort();
@@ -17,7 +18,7 @@ const run = async (db: PGlite, file: string) => {
 
 describe('migrations upgrade existing data', () => {
   it('0002 normalises emails stored by older versions before enforcing lowercase', async () => {
-    const db = new PGlite();
+    const db = new PGlite({ extensions: PGLITE_EXTENSIONS });
     try {
       const upTo = files.indexOf(files.find((name) => name.startsWith('0002'))!);
       for (const file of files.slice(0, upTo)) await run(db, file);
@@ -45,7 +46,7 @@ describe('migrations upgrade existing data', () => {
   });
 
   it('stops rather than guess when two real accounts differ only in capitals', async () => {
-    const db = new PGlite();
+    const db = new PGlite({ extensions: PGLITE_EXTENSIONS });
     try {
       const upTo = files.indexOf(files.find((name) => name.startsWith('0002'))!);
       for (const file of files.slice(0, upTo)) await run(db, file);

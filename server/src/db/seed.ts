@@ -213,7 +213,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     );
     process.exit(1);
   }
-  const database = await createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir });
+  const database = await createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } });
   await database.migrate();
   await seed(database.db, { demoAccount });
   await database.close();

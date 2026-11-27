@@ -2,7 +2,7 @@
 import { createDb } from './client.ts';
 import { env } from '../env.ts';
 
-const database = await createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir });
+const database = await createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } });
 await database.migrate();
 await database.close();
 console.log('Migrations applied.');

@@ -331,6 +331,17 @@ Anything else is rejected.
 | `status` | text not null default `'open'` | `open` or `closed` |
 | `created_at` | timestamptz | |
 
+### `rate_limits`
+Rate-limit counters, shared by every API instance. Not business data: rows expire within minutes, the purge job deletes them, and losing them only resets the limits.
+
+| Column | Type | Notes |
+|---|---|---|
+| `key` | text PK | The limit and the client, for example `login:203.0.113.7` or `login-failures:ada@example.com` |
+| `count` | integer not null | Requests in the current window |
+| `reset_at` | timestamptz not null, indexed | When the window ends. A hit after this starts a new window at 1. |
+
+**Search index.** `products_search_idx` is a trigram (GIN, `pg_trgm`) index on `name || ' ' || category_id || ' ' || description`, the expression `GET /products?q=` searches with `ILIKE '%…%'`. Without it, every search reads the whole table. If you change the search expression, change the index to match.
+
 ## 8. Rules that span tables
 
 These are the places where getting it wrong costs money or leaks data. Each should have an integration test.
