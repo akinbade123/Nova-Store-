@@ -25,6 +25,12 @@ cd server && npm install && npm run dev          # terminal 1: API at http://loc
 VITE_USE_MOCK_DATA=false npm run dev             # terminal 2 (repo root): Vite forwards /api to it
 ```
 
+After the first `npm install` in `server/`, one command at the repo root starts both, and Ctrl+C stops both:
+
+```bash
+npm run dev:all
+```
+
 Checkout isn't connected yet. In this mode, placing an order shows "Checkout isn't available yet" and the order isn't created.
 
 ## Scripts
@@ -32,6 +38,7 @@ Checkout isn't connected yet. In this mode, placing an order shows "Checkout isn
 | Command | What it does |
 |---|---|
 | `npm run dev` | Starts the Vite dev server with hot reload |
+| `npm run dev:all` | Starts the API and the storefront together, the storefront on the real API. Ctrl+C stops both. macOS and Linux only. |
 | `npm run build` | Builds the production site into `dist/` |
 | `npm run preview` | Serves the `dist/` build locally so you can check it before deploying |
 
