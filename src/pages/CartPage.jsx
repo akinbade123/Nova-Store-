@@ -22,7 +22,7 @@ function FreeShippingProgress({ subtotal, remaining }) {
   return (
     <div className="rounded-2xl bg-surface px-5 py-4">
       <p className="flex items-center gap-2.5 text-sm">
-        <Truck className="size-[18px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
+        <Truck className="size-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
         {remaining > 0 ? (
           <span>
             Add <strong className="font-semibold">{formatPrice(remaining)}</strong> more for free express shipping
@@ -149,7 +149,7 @@ export default function CartPage() {
             <ul className="mt-8 grid gap-4 sm:grid-cols-3">
               {trust.map(({ Icon, text }) => (
                 <li key={text} className="flex items-center gap-2.5 text-caption text-muted">
-                  <Icon className="size-[18px] shrink-0 text-ink" strokeWidth={1.5} aria-hidden="true" />
+                  <Icon className="size-5 shrink-0 text-ink" strokeWidth={1.5} aria-hidden="true" />
                   {text}
                 </li>
               ))}

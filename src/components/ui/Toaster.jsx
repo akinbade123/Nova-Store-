@@ -22,13 +22,13 @@ export function Toaster() {
       data-toaster
       aria-live="polite"
       aria-atomic="false"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[70] flex flex-col items-center gap-2 p-4 sm:inset-x-auto sm:right-0 sm:items-end sm:p-6"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-70 flex flex-col items-center gap-2 p-4 sm:inset-x-auto sm:right-0 sm:items-end sm:p-6"
     >
       {toasts.map((toast) => (
         <div
           key={toast.id}
           role={toast.variant === 'error' ? 'alert' : 'status'}
-          className="pointer-events-auto flex w-full max-w-[380px] animate-slide-up items-center gap-3 rounded-2xl bg-white p-3 pr-2 shadow-lift ring-1 ring-line"
+          className="pointer-events-auto flex w-full max-w-95 animate-slide-up items-center gap-3 rounded-2xl bg-white p-3 pr-2 shadow-lift ring-1 ring-line"
         >
           {toast.image ? (
             <img

@@ -38,7 +38,7 @@ export function CartLineItem({ item }) {
 
   return (
     <li className="flex gap-4 py-6 sm:gap-6">
-      <Link to={href} className="relative block aspect-[4/5] w-24 shrink-0 overflow-hidden rounded-xl bg-surface sm:w-32">
+      <Link to={href} className="relative block aspect-4/5 w-24 shrink-0 overflow-hidden rounded-xl bg-surface sm:w-32">
         <img
           src={imageUrl(product.images[0].src, { w: 256, h: 320 })}
           alt={product.name}

@@ -12,7 +12,7 @@ export const IconButton = forwardRef(function IconButton({ to, label, count, cla
     count > 0 ? (
       <span
         key={count}
-        className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] animate-fade-in items-center justify-center rounded-full bg-ink px-1 text-2xs font-semibold leading-none text-white ring-2 ring-white"
+        className="absolute right-0.5 top-0.5 flex h-5 min-w-5 animate-fade-in items-center justify-center rounded-full bg-ink px-1 text-2xs font-semibold leading-none text-white ring-2 ring-white"
         aria-hidden="true"
       >
         {count > 99 ? '99+' : count}

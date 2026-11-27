@@ -90,7 +90,7 @@ function Section({ step, title, aside, id, children }) {
 function ErrorSummary({ errors, innerRef }) {
   const entries = Object.entries(errors);
   return (
-    <div ref={innerRef} tabIndex={-1} role="alert" className="mb-8 rounded-2xl bg-danger/[0.05] p-5 ring-1 ring-inset ring-danger/25 outline-none">
+    <div ref={innerRef} tabIndex={-1} role="alert" className="mb-8 rounded-2xl bg-danger/5 p-5 ring-1 ring-inset ring-danger/25 outline-none">
       <p className="flex items-center gap-2 text-sm font-semibold text-danger">
         <CircleAlert className="size-5" aria-hidden="true" />
         {entries.length === 1 ? 'There’s 1 thing to fix' : `There are ${entries.length} things to fix`} before placing your order
@@ -250,7 +250,7 @@ export default function CheckoutPage() {
       <div className="lg:flex lg:min-h-[calc(100dvh-72px)]">
         {/* Form column */}
         <div className="flex-1 lg:flex lg:justify-end">
-          <div className="mx-auto w-full max-w-xl px-4 pb-16 pt-8 sm:px-6 lg:mx-0 lg:max-w-[640px] lg:px-12 lg:pb-20 lg:pt-12 xl:pr-20">
+          <div className="mx-auto w-full max-w-xl px-4 pb-16 pt-8 sm:px-6 lg:mx-0 lg:max-w-160 lg:px-12 lg:pb-20 lg:pt-12 xl:pr-20">
             <nav aria-label="Checkout progress" className="mb-8">
               <ol className="flex items-center gap-2 text-caption text-muted">
                 <li>
@@ -376,7 +376,7 @@ export default function CheckoutPage() {
 
         {/* Summary column */}
         <aside className="hidden border-l border-line bg-surface lg:block lg:w-[42%] xl:w-[44%]">
-          <div className="sticky top-0 max-w-[500px] px-12 py-12 xl:px-16">
+          <div className="sticky top-0 max-w-125 px-12 py-12 xl:px-16">
             <CheckoutSummary items={items} totals={totals} count={count} promo={promo} />
           </div>
         </aside>

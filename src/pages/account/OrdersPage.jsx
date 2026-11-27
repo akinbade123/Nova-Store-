@@ -51,12 +51,12 @@ function OrderCard({ order }) {
                 <img
                   src={imageUrl(item.image, { w: 112, h: 140 })}
                   alt={item.name}
-                  className="h-[70px] w-14 rounded-xl bg-surface object-cover"
+                  className="h-18 w-14 rounded-xl bg-surface object-cover"
                 />
               </li>
             ))}
             {extra > 0 && (
-              <li className="flex h-[70px] w-14 items-center justify-center rounded-xl bg-surface text-sm font-medium text-muted">+{extra}</li>
+              <li className="flex h-18 w-14 items-center justify-center rounded-xl bg-surface text-sm font-medium text-muted">+{extra}</li>
             )}
           </ul>
           <p className="hidden min-w-0 text-sm text-muted md:block">

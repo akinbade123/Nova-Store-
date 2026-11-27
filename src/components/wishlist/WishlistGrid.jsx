@@ -59,7 +59,7 @@ function WishlistItem({ product }) {
 
   return (
     <li className="flex flex-col">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-surface">
+      <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-surface">
         <Link to={href} tabIndex={-1} aria-hidden="true" className="group absolute inset-0">
           <SmartImage
             src={product.images[0].src}

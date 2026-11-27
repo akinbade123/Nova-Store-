@@ -9,7 +9,7 @@ const mark = (name) => paymentMarks.find((item) => item.name === name)?.mark;
 
 function MarkChip({ name }) {
   return (
-    <span className="inline-flex h-6 w-10 items-center justify-center rounded-[4px] bg-white ring-1 ring-black/10" title={name}>
+    <span className="inline-flex h-6 w-10 items-center justify-center rounded-sm bg-white ring-1 ring-black/10" title={name}>
       {mark(name)}
     </span>
   );
@@ -34,7 +34,7 @@ export function PaymentMethods({ form, paymentError }) {
   return (
     <div className="space-y-3">
       {paymentError && (
-        <div role="alert" className="flex items-start gap-3 rounded-2xl bg-danger/[0.06] p-4 text-sm text-danger ring-1 ring-inset ring-danger/20">
+        <div role="alert" className="flex items-start gap-3 rounded-2xl bg-danger/6 p-4 text-sm text-danger ring-1 ring-inset ring-danger/20">
           <CircleAlert className="mt-px size-5 shrink-0" aria-hidden="true" />
           <div>
             <p className="font-semibold">{paymentError.title}</p>

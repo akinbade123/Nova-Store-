@@ -46,7 +46,7 @@ export function AccountMenu({ className }) {
   if (!user) {
     return (
       <IconButton label="Sign in" to="/login" className={className}>
-        <User className="size-[21px]" strokeWidth={1.6} />
+        <User className="size-5" strokeWidth={1.6} />
       </IconButton>
     );
   }
@@ -88,7 +88,7 @@ export function AccountMenu({ className }) {
             {links.map(({ label, to, Icon }) => (
               <li key={to}>
                 <Link to={to} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-surface">
-                  <Icon className="size-[18px] text-muted" strokeWidth={1.6} aria-hidden="true" />
+                  <Icon className="size-5 text-muted" strokeWidth={1.6} aria-hidden="true" />
                   {label}
                 </Link>
               </li>
@@ -100,7 +100,7 @@ export function AccountMenu({ className }) {
               onClick={handleSignOut}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-surface"
             >
-              <LogOut className="size-[18px] text-muted" strokeWidth={1.6} aria-hidden="true" />
+              <LogOut className="size-5 text-muted" strokeWidth={1.6} aria-hidden="true" />
               Sign out
             </button>
           </div>

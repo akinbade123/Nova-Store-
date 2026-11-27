@@ -16,7 +16,7 @@ function SummaryItems({ items }) {
               alt=""
               className="h-20 w-16 rounded-xl bg-white object-cover ring-1 ring-line"
             />
-            <span className="absolute -right-2 -top-2 flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ink px-1.5 text-2xs font-semibold text-white ring-2 ring-surface">
+            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1.5 text-2xs font-semibold text-white ring-2 ring-surface">
               {quantity}
               <span className="sr-only"> × </span>
             </span>
@@ -79,7 +79,7 @@ export function CheckoutSummary({ items, totals, count, promo, variant = 'sideba
           className="mx-auto flex h-16 w-full max-w-xl items-center justify-between gap-4 px-4 sm:px-6"
         >
           <span className="flex items-center gap-2 text-sm font-medium">
-            <ShoppingBag className="size-[18px]" strokeWidth={1.75} aria-hidden="true" />
+            <ShoppingBag className="size-5" strokeWidth={1.75} aria-hidden="true" />
             {open ? 'Hide' : 'Show'} order summary
             <ChevronDown className={cn('size-4 transition-transform duration-300', open && 'rotate-180')} aria-hidden="true" />
           </span>

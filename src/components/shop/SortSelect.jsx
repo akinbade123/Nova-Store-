@@ -12,7 +12,7 @@ export function SortSelect({ value, onChange, className }) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 w-full cursor-pointer appearance-none rounded-full bg-white pl-[52px] pr-10 text-caption font-medium ring-1 ring-inset ring-line-strong outline-none transition-shadow hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink"
+        className="h-10 w-full cursor-pointer appearance-none rounded-full bg-white pl-13 pr-10 text-caption font-medium ring-1 ring-inset ring-line-strong outline-none transition-shadow hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink"
       >
         {SORT_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>

@@ -123,7 +123,7 @@ export default function ForgotPasswordPage() {
         <fieldset disabled={status === 'sending'}>
           <TextField label="Email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" {...form.field('email')} />
         </fieldset>
-        <Button type="submit" size="lg" fullWidth loading={status === 'sending'} className="!mt-8">
+        <Button type="submit" size="lg" fullWidth loading={status === 'sending'} className="mt-8!">
           Send reset link
         </Button>
       </form>

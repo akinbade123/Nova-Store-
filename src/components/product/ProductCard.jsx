@@ -34,7 +34,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
 
   return (
     <article className="group relative flex flex-col" aria-labelledby={`product-${product.id}`}>
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-surface">
+      <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-surface">
         <Link to={href} tabIndex={-1} aria-hidden="true" className="absolute inset-0">
           <SmartImage
             src={product.images[0].src}
@@ -87,7 +87,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
             aria-label={`Quick add ${product.name} to bag`}
             className="absolute bottom-3 right-3 inline-flex size-10 items-center justify-center rounded-full bg-white text-ink shadow-soft transition-transform active:scale-95 can-hover:hidden"
           >
-            {justAdded ? <Check className="size-[18px]" /> : <ShoppingBag className="size-[18px]" strokeWidth={1.75} />}
+            {justAdded ? <Check className="size-5" /> : <ShoppingBag className="size-5" strokeWidth={1.75} />}
           </button>
         )}
 
@@ -159,7 +159,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
 export function ProductCardSkeleton() {
   return (
     <div aria-hidden="true">
-      <div className="skeleton aspect-[4/5] rounded-2xl" />
+      <div className="skeleton aspect-4/5 rounded-2xl" />
       <div className="space-y-2.5 pt-4">
         <div className="skeleton h-3 w-16 rounded" />
         <div className="skeleton h-4 w-4/5 rounded" />

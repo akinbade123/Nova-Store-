@@ -32,7 +32,7 @@ export function Navbar() {
         scrolled ? 'border-line shadow-[0_1px_12px_rgb(0_0_0/0.03)]' : 'border-transparent',
       )}
     >
-      <div className="mx-auto grid h-16 max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center px-2 sm:px-4 lg:h-[72px] lg:px-10">
+      <div className="mx-auto grid h-16 max-w-360 grid-cols-[1fr_auto_1fr] items-center px-2 sm:px-4 lg:h-18 lg:px-10">
         {/* Left: mobile controls / desktop logo */}
         <div className="flex items-center">
           <IconButton label="Open menu" onClick={openMenu} className="lg:hidden">

@@ -46,7 +46,7 @@ export function SearchPanel() {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Search products">
+    <div className="fixed inset-0 z-60" role="dialog" aria-modal="true" aria-label="Search products">
       <div className="absolute inset-0 animate-fade-in bg-ink/30 backdrop-blur-[2px]" onClick={close} aria-hidden="true" />
       <div className="relative max-h-dvh animate-slide-down overflow-y-auto bg-white shadow-lift">
         <div className="mx-auto max-w-3xl px-4 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-6">
@@ -143,7 +143,7 @@ export function SearchPanel() {
                           <img
                             src={imageUrl(product.images[0].src, { w: 112, h: 140 })}
                             alt=""
-                            className="h-[70px] w-14 shrink-0 rounded-lg bg-surface object-cover"
+                            className="h-18 w-14 shrink-0 rounded-lg bg-surface object-cover"
                           />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium">{product.name}</span>

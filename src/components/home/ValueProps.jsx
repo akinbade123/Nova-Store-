@@ -38,7 +38,7 @@ export function ValueProps() {
           {values.map(({ Icon, title, text }) => (
             <li key={title} className="flex gap-4 lg:flex-col lg:gap-5">
               <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-line">
-                <Icon className="size-[22px]" strokeWidth={1.5} aria-hidden="true" />
+                <Icon className="size-5" strokeWidth={1.5} aria-hidden="true" />
               </span>
               <div>
                 <h3 className="font-sans text-body font-semibold tracking-normal">{title}</h3>

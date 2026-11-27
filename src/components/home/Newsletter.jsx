@@ -35,7 +35,7 @@ export function Newsletter() {
   return (
     <section aria-labelledby="newsletter-heading" className="pb-16 lg:pb-24">
       <Container>
-        <div className="grid items-center gap-8 rounded-[24px] bg-surface-warm px-6 py-12 sm:px-10 sm:py-14 lg:grid-cols-2 lg:gap-16 lg:rounded-[32px] lg:px-16 lg:py-20">
+        <div className="grid items-center gap-8 rounded-3xl bg-surface-warm px-6 py-12 sm:px-10 sm:py-14 lg:grid-cols-2 lg:gap-16 lg:rounded-4xl lg:px-16 lg:py-20">
           <div>
             <p className="eyebrow text-muted">The NOVA list</p>
             <h2 id="newsletter-heading" className="mt-3 text-heading font-bold leading-[1.08] sm:text-[44px]">
@@ -68,7 +68,7 @@ export function Newsletter() {
                     error ? 'ring-danger focus-within:ring-danger' : 'ring-line-strong focus-within:ring-ink',
                   )}
                 >
-                  <Mail className="size-[18px] shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
+                  <Mail className="size-5 shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
                   <input
                     id="newsletter-email"
                     type="email"
@@ -85,7 +85,7 @@ export function Newsletter() {
                     className="h-full w-full bg-transparent text-body outline-none placeholder:text-subtle"
                   />
                 </div>
-                <Button type="submit" size="lg" loading={status === 'loading'} className="sm:min-w-[140px]">
+                <Button type="submit" size="lg" loading={status === 'loading'} className="sm:min-w-35">
                   Subscribe
                 </Button>
               </div>

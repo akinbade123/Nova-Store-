@@ -95,7 +95,7 @@ export const PasswordField = forwardRef(function PasswordField(
           aria-controls={fieldId(name)}
           className="absolute inset-y-1.5 right-1.5 inline-flex w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-ink"
         >
-          {visible ? <EyeOff className="size-[18px]" strokeWidth={1.75} /> : <Eye className="size-[18px]" strokeWidth={1.75} />}
+          {visible ? <EyeOff className="size-5" strokeWidth={1.75} /> : <Eye className="size-5" strokeWidth={1.75} />}
         </button>
       </div>
       {children}
@@ -141,7 +141,7 @@ export function CheckboxField({ name, label, description, checked, onChange, err
         <span
           aria-hidden="true"
           className={cn(
-            'mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] ring-1 ring-inset transition-colors',
+            'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-[5px] ring-1 ring-inset transition-colors',
             'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
             checked ? 'bg-ink ring-ink' : error ? 'bg-white ring-danger' : 'bg-white ring-line-strong group-hover:ring-ink',
           )}
@@ -154,7 +154,7 @@ export function CheckboxField({ name, label, description, checked, onChange, err
         </span>
       </label>
       {error && (
-        <p id={errorId} className="ml-[30px] mt-1.5 flex items-start gap-1.5 text-caption font-medium text-danger">
+        <p id={errorId} className="ml-8 mt-1.5 flex items-start gap-1.5 text-caption font-medium text-danger">
           <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
           {error}
         </p>

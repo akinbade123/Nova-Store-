@@ -22,7 +22,7 @@ export function MobileMenu() {
   ];
 
   return (
-    <Sheet open={isMenuOpen} onClose={close} side="left" label="Menu" title={<Logo className="text-xl" onClick={close} />} className="max-w-[400px]">
+    <Sheet open={isMenuOpen} onClose={close} side="left" label="Menu" title={<Logo className="text-xl" onClick={close} />} className="max-w-100">
       <nav aria-label="Mobile" className="px-5 pb-10 pt-4">
         <ul>
           {mainNav.map((item) => (
@@ -50,7 +50,7 @@ export function MobileMenu() {
           {categories.map((category) => (
             <li key={category.id}>
               <Link to={`/shop?category=${category.slug}`} onClick={close} className="group block">
-                <div className="aspect-[4/3] overflow-hidden rounded-xl bg-surface">
+                <div className="aspect-4/3 overflow-hidden rounded-xl bg-surface">
                   <img
                     src={imageUrl(category.image, { w: 360, h: 270 })}
                     alt=""

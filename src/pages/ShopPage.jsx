@@ -61,7 +61,7 @@ function ShopSearch({ value, onSearch, className }) {
       className={className}
     >
       <label className="flex h-11 items-center gap-2.5 rounded-full bg-surface px-4 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-ink">
-        <Search className="size-[18px] shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
+        <Search className="size-5 shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
         <span className="sr-only">Search products</span>
         <input
           type="search"
@@ -139,7 +139,7 @@ export default function ShopPage() {
             <ShopSearch
               value={filters.q}
               onSearch={(q) => update({ q }, { replace: true })}
-              className="w-full lg:w-[340px]"
+              className="w-full lg:w-85"
             />
           </div>
 
@@ -196,9 +196,9 @@ export default function ShopPage() {
               className="hidden h-10 items-center gap-2 rounded-full pr-2 text-sm font-medium hover:text-ink lg:inline-flex"
             >
               {sidebarVisible ? (
-                <PanelLeftClose className="size-[18px]" strokeWidth={1.75} aria-hidden="true" />
+                <PanelLeftClose className="size-5" strokeWidth={1.75} aria-hidden="true" />
               ) : (
-                <PanelLeftOpen className="size-[18px]" strokeWidth={1.75} aria-hidden="true" />
+                <PanelLeftOpen className="size-5" strokeWidth={1.75} aria-hidden="true" />
               )}
               {sidebarVisible ? 'Hide filters' : 'Show filters'}
             </button>
@@ -206,7 +206,7 @@ export default function ShopPage() {
               {firstLoad ? 'Loading products…' : `${total} ${total === 1 ? 'product' : 'products'}`}
             </p>
           </div>
-          <SortSelect value={filters.sort} onChange={(sort) => update({ sort })} className="w-[210px] sm:w-[240px]" />
+          <SortSelect value={filters.sort} onChange={(sort) => update({ sort })} className="w-52 sm:w-60" />
         </Container>
       </div>
 
@@ -287,7 +287,7 @@ export default function ShopPage() {
                     <p className="text-sm text-muted" aria-live="polite">
                       Showing <span className="font-medium text-ink">{items.length}</span> of {total} products
                     </p>
-                    <div className="mt-3 h-[3px] w-48 overflow-hidden rounded-full bg-line" aria-hidden="true">
+                    <div className="mt-3 h-0.75 w-48 overflow-hidden rounded-full bg-line" aria-hidden="true">
                       <div
                         className="h-full rounded-full bg-ink transition-[width] duration-500 ease-out-soft"
                         style={{ width: `${(items.length / total) * 100}%` }}
@@ -297,7 +297,7 @@ export default function ShopPage() {
                       <Button
                         variant="secondary"
                         size="lg"
-                        className="mt-6 min-w-[200px]"
+                        className="mt-6 min-w-50"
                         loading={loadingMore}
                         onClick={() => setPagination({ key, offset: items.length })}
                       >
@@ -327,7 +327,7 @@ export default function ShopPage() {
         onClose={() => setFiltersOpen(false)}
         title="Filters"
         headerExtra={activeCount > 0 && <span className="text-sm text-muted">({activeCount})</span>}
-        className="max-w-full sm:max-w-[420px]"
+        className="max-w-full sm:max-w-105"
         footer={
           <div className="flex gap-3">
             <Button variant="secondary" size="lg" className="flex-1" onClick={() => clearFilters()} disabled={activeCount === 0}>

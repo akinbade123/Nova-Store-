@@ -21,7 +21,7 @@ import { cn } from '../../utils/cn';
 function SizeGuideSheet({ guide, open, onClose }) {
   if (!guide) return null;
   return (
-    <Sheet open={open} onClose={onClose} title={guide.title} className="sm:max-w-[480px]">
+    <Sheet open={open} onClose={onClose} title={guide.title} className="sm:max-w-120">
       <div className="px-5 py-6 sm:px-6">
         <p className="text-sm leading-relaxed text-muted">{guide.note}</p>
         <div className="mt-6 overflow-hidden rounded-xl ring-1 ring-line">
@@ -146,7 +146,7 @@ export function ProductPurchase({ product }) {
         </Link>
         {product.badge && <Badge tone="dark">{product.badge}</Badge>}
       </div>
-      <h1 className="mt-3 text-heading font-bold leading-[1.1] tracking-[-0.025em] sm:text-4xl">{product.name}</h1>
+      <h1 className="mt-3 text-heading font-bold leading-[1.1] tracking-tight sm:text-4xl">{product.name}</h1>
       <a href="#reviews" className="mt-3 inline-flex items-center gap-2 underline-offset-4 hover:underline">
         <Rating value={product.rating} size="md" />
         <span className="text-caption text-muted">

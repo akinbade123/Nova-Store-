@@ -18,9 +18,9 @@ export function Hero() {
   return (
     <section aria-labelledby="hero-heading" className="pt-3 sm:pt-4 lg:pt-6">
       <Container className="px-3 sm:px-6">
-        <div className="relative isolate flex flex-col overflow-hidden rounded-[24px] bg-surface-warm lg:flex-row lg:items-center lg:min-h-[600px] lg:rounded-[32px] xl:h-[min(calc(100svh-150px),760px)]">
+        <div className="relative isolate flex flex-col overflow-hidden rounded-3xl bg-surface-warm lg:flex-row lg:items-center lg:min-h-150 lg:rounded-4xl xl:h-[min(calc(100svh-150px),760px)]">
           {/* Photography — full-bleed on desktop, stacked below the copy on mobile */}
-          <div className="relative order-2 aspect-[4/5] sm:aspect-[16/11] lg:absolute lg:inset-y-0 lg:left-[50%] lg:right-0 xl:left-[44%] lg:aspect-auto">
+          <div className="relative order-2 aspect-4/5 sm:aspect-16/11 lg:absolute lg:inset-y-0 lg:left-[50%] lg:right-0 xl:left-[44%] lg:aspect-auto">
             <SmartImage
               src={HERO_IMAGE}
               alt="Neutral-toned shirts and knitwear hanging on a minimalist clothing rail"
@@ -30,7 +30,7 @@ export function Hero() {
               imgClassName="object-[72%_center] lg:object-[62%_center]"
             />
             <div
-              className="absolute inset-0 hidden bg-gradient-to-r from-surface-warm via-surface-warm/0 via-40% to-transparent lg:block"
+              className="absolute inset-0 hidden bg-linear-to-r from-surface-warm via-surface-warm/0 via-40% to-transparent lg:block"
               aria-hidden="true"
             />
           </div>
@@ -43,7 +43,7 @@ export function Hero() {
             <h1 id="hero-heading" className="mt-6 text-balance text-[clamp(2.5rem,1.4rem+3.2vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.035em]">
               Discover Your Next Favourite.
             </h1>
-            <p className="mt-5 max-w-[440px] text-base leading-relaxed text-ink/70 sm:text-lg">
+            <p className="mt-5 max-w-110 text-base leading-relaxed text-ink/70 sm:text-lg">
               Thoughtfully chosen electronics, fashion and home essentials — designed to be lived with and made to last.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -75,12 +75,12 @@ export function Hero() {
           {spotlight && (
             <Link
               to={`/product/${spotlight.slug}`}
-              className="group absolute bottom-8 right-8 z-10 hidden w-[340px] items-center gap-4 rounded-2xl bg-white/80 p-3 pr-4 shadow-soft ring-1 ring-black/5 backdrop-blur-xl transition-[transform,background-color] duration-300 hover:-translate-y-0.5 hover:bg-white xl:flex"
+              className="group absolute bottom-8 right-8 z-10 hidden w-85 items-center gap-4 rounded-2xl bg-white/80 p-3 pr-4 shadow-soft ring-1 ring-black/5 backdrop-blur-xl transition-[transform,background-color] duration-300 hover:-translate-y-0.5 hover:bg-white xl:flex"
             >
               <img
                 src={imageUrl(spotlight.images[0].src, { w: 144, h: 176 })}
                 alt=""
-                className="h-[88px] w-[72px] shrink-0 rounded-xl bg-surface object-cover"
+                className="h-22 w-18 shrink-0 rounded-xl bg-surface object-cover"
               />
               <span className="min-w-0 flex-1">
                 <span className="block eyebrow text-muted">Just landed</span>

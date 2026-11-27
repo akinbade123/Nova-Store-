@@ -39,7 +39,7 @@ function CheckRow({ checked, onChange, disabled, label, count }) {
       <input type="checkbox" className="peer sr-only" checked={checked} onChange={onChange} disabled={disabled} />
       <span
         className={cn(
-          'flex size-[18px] shrink-0 items-center justify-center rounded-[5px] ring-1 ring-inset transition-colors',
+          'flex size-5 shrink-0 items-center justify-center rounded-[5px] ring-1 ring-inset transition-colors',
           'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
           checked ? 'bg-ink ring-ink' : 'bg-white ring-line-strong group-hover:ring-ink',
         )}
@@ -209,7 +209,7 @@ export function FilterPanel({ filters, update, facets }) {
                 />
                 <span
                   className={cn(
-                    'flex size-[18px] shrink-0 items-center justify-center rounded-full ring-1 ring-inset transition-colors',
+                    'flex size-5 shrink-0 items-center justify-center rounded-full ring-1 ring-inset transition-colors',
                     'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
                     checked ? 'ring-[5px] ring-ink' : 'ring-line-strong group-hover:ring-ink',
                   )}
