@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { DemoBanner } from './components/layout/DemoBanner';
 import { AppProviders } from './context/AppProviders';
 import { MainLayout } from './layouts/MainLayout';
 import { CheckoutLayout } from './layouts/CheckoutLayout';
@@ -47,6 +48,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppProviders>
+        <DemoBanner />
         <PageErrorBoundary>
           <Suspense fallback={<PageFallback />}>
             <Routes>

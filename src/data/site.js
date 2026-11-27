@@ -36,3 +36,9 @@ export const footerLinks = {
 };
 
 export const FREE_SHIPPING_THRESHOLD = 100;
+
+/**
+ * A public demo: the live site runs on sample data until the API is hosted, and says so on every page.
+ * Set in .env.production; vite.config.js refuses a production build that uses sample data without it.
+ */
+export const IS_DEMO_SITE = import.meta.env.VITE_DEMO_SITE === 'true';

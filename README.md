@@ -43,6 +43,7 @@ Settings come from environment variables in `.env`. Vite only exposes variables 
 |---|---|---|
 | `VITE_USE_MOCK_DATA` | `true` | Set it to `false` to send every request to the real API instead of using sample data. |
 | `VITE_API_URL` | `/api` | The backend's base URL, for example `http://localhost:4000/api`. |
+| `VITE_DEMO_SITE` | unset (`true` in [.env.production](.env.production)) | Shows a "Demo store" banner on every page. On while the live site runs on sample data. |
 
 ## Trying it out in sample-data mode
 
@@ -85,6 +86,10 @@ The site is deployed on Vercel. Each pull request gets a preview deployment.
 - **Vercel:** [vercel.json](vercel.json) already does this with a rewrite.
 - **Other hosts:** add the equivalent "SPA fallback" rule. On Netlify, for example, that's a `_redirects` file containing `/* /index.html 200`.
 
-**Production must use the real API.** Set `VITE_USE_MOCK_DATA=false` for the Production environment in Vercel's project settings. A production build without it is refused on purpose: in sample-data mode, accounts and orders live only in each shopper's browser. Preview deployments may leave it unset.
+**Production is a labelled demo until the API is hosted.** [.env.production](.env.production) sets `VITE_DEMO_SITE=true`, so every build shows a "Demo store: orders, payments and accounts aren't real" banner, and the site runs on sample data. A production build on sample data *without* that banner is refused on purpose: accounts and orders would live only in each shopper's browser, with nothing telling them.
+
+**At launch**, once the API is hosted:
+1. In Vercel → Settings → Environment Variables (Production), set `VITE_USE_MOCK_DATA=false` and `VITE_API_URL` if the API isn't served at `/api`.
+2. Delete `VITE_DEMO_SITE` from `.env.production`. The build refuses a demo banner on a site that takes real orders.
 
 **Security headers.** [vercel.json](vercel.json) also sends a Content-Security-Policy and the usual protective headers. The policy allows scripts and API calls only from the site itself, styles and fonts from Google Fonts, and images from Unsplash. If you add a script, font, image host or API on another domain (a payment provider's checkout, a CDN for product photos, a `VITE_API_URL` on another origin), add it to the policy, or the browser will block it.

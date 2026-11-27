@@ -208,7 +208,7 @@ The full request and response bodies for every endpoint are in [docs/API.md](doc
 
 **Status:** the API in [server/](server/README.md) implements every endpoint below except `POST /orders` and `POST /orders/:id/cancel`, which answer `501 not_implemented` until checkout is built. In development, Vite forwards `/api` to it on port 4000.
 
-1. Set `VITE_USE_MOCK_DATA=false` and point `VITE_API_URL` at the API.
+1. Set `VITE_USE_MOCK_DATA=false` and point `VITE_API_URL` at the API. For the live site, also delete `VITE_DEMO_SITE` from `.env.production`, which shows the "Demo store" banner (see README, Deployment).
 2. Make the API implement the endpoints the services already call:
 
    | Area | Endpoints |
