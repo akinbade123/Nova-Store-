@@ -2,16 +2,17 @@ import { createApp } from '../src/app.ts';
 import { createDb } from '../src/db/client.ts';
 import { seed, DEMO_ACCOUNT } from '../src/db/seed.ts';
 import { createConsoleMailer } from '../src/lib/email.ts';
+import type { Logger } from '../src/lib/logger.ts';
 
 export { DEMO_ACCOUNT };
 
 /** A fresh API on an in-memory database with migrations applied and the sample data loaded. */
-export async function testApi({ rateLimits = false, trustProxyHops = 0 } = {}) {
+export async function testApi({ rateLimits = false, trustProxyHops = 0, logger }: { rateLimits?: boolean; trustProxyHops?: number; logger?: Logger } = {}) {
   const database = await createDb();
   await database.migrate();
   await seed(database.db, { demoAccount: true });
   const mailer = createConsoleMailer({ quiet: true });
-  const app = createApp({ db: database.db, mailer, appUrl: 'https://nova.test', supportEmail: 'support@nova.test', rateLimits, trustProxyHops });
+  const app = createApp({ db: database.db, mailer, appUrl: 'https://nova.test', supportEmail: 'support@nova.test', rateLimits, trustProxyHops, logger });
 
   /** Calls the API in-process. Returns the status and parsed JSON body (null for empty responses). */
   async function call(

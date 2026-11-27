@@ -146,6 +146,14 @@ API error responses are JSON shaped `{ message, code }`:
 
 The UI checks these codes today: `email_taken` on register and in settings, and `invalid_token` on the reset-password page. Sample-data services reject with errors of exactly the same shape, for example `invalid_credentials`, `card_declined` and `not_cancellable`. So UI code handles both modes the same way.
 
+Every API error also carries `error.requestId`, the id on the server's log lines for that request.
+
+### Crashes and error reporting
+
+- **A crash while rendering a page** is caught by `ErrorBoundary` ([src/components/ui/ErrorBoundary.jsx](src/components/ui/ErrorBoundary.jsx)), which wraps every route. The shopper sees "Something went wrong on this page" with Reload, Home, and a reference like `ui_6je7f0`, instead of a blank screen. Going to another page (including Back) resets it.
+- **Reporting:** [src/services/errorReporter.js](src/services/errorReporter.js) sends render crashes, uncaught errors, unhandled promise rejections and requests that never reached the server to `POST /api/client-errors`. They're logged next to the server's own errors, so searching the server logs for the shopper's reference finds the stack and the component. At most 10 reports per page load, each distinct error once; errors from browser extensions are ignored. In sample-data mode, errors only go to the console.
+- To trace a problem a shopper reports: search the logs for their reference (`ui_…`, from the error page) or request id (`req_…`, quoted in "something went wrong" messages).
+
 ### Sample-data mode
 
 When `VITE_USE_MOCK_DATA` isn't `false`:

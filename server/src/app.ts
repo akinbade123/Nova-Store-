@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { secureHeaders } from 'hono/secure-headers';
 import { errorHandler } from './lib/errors.ts';
+import { type Logger, logger as rootLogger } from './lib/logger.ts';
+import { requestContext } from './lib/requestContext.ts';
+import { systemRoutes } from './modules/system/routes.ts';
 import { createRateLimiter, noRateLimits } from './lib/rateLimit.ts';
 import type { Mailer } from './lib/email.ts';
 import type { Db } from './db/client.ts';
@@ -24,10 +27,12 @@ type Options = {
   rateLimits?: boolean;
   /** How many proxies you run in front of the API. 0 means X-Forwarded-For is ignored. */
   trustProxyHops?: number;
+  /** Where request and error logs go. Tests pass their own to read what was logged. */
+  logger?: Logger;
 };
 
 /** Builds the API. Everything is under /api, matching the storefront's VITE_API_URL default. */
-export function createApp({ db, mailer, appUrl = 'http://localhost:5173', supportEmail = 'support@nova.store', rateLimits = true, trustProxyHops = 0 }: Options) {
+export function createApp({ db, mailer, appUrl = 'http://localhost:5173', supportEmail = 'support@nova.store', rateLimits = true, trustProxyHops = 0, logger = rootLogger }: Options) {
   // rateLimits: false is for tests that make many requests from one client.
   const limiter = rateLimits ? createRateLimiter({ trustProxyHops }) : noRateLimits;
   const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter };
@@ -40,17 +45,24 @@ export function createApp({ db, mailer, appUrl = 'http://localhost:5173', suppor
     '*',
     bodyLimit({
       maxSize: MAX_BODY_BYTES,
-      onError: (c) => c.json({ message: 'That request is too large.', code: 'payload_too_large' }, 413),
+      onError: (c) => {
+        c.set('errorCode', 'payload_too_large');
+        return c.json({ message: 'That request is too large.', code: 'payload_too_large', requestId: c.get('requestId') }, 413);
+      },
     }),
   );
-  api.get('/health', (c) => c.json({ ok: true }));
-  for (const routes of [authRoutes, verificationRoutes, profileRoutes, addressRoutes, catalogRoutes, engagementRoutes, orderRoutes]) {
+  for (const routes of [systemRoutes, authRoutes, verificationRoutes, profileRoutes, addressRoutes, catalogRoutes, engagementRoutes, orderRoutes]) {
     api.route('/', routes(deps));
   }
 
   const app = new Hono<AppEnv>();
+  // First, so every request (including 404s and errors) gets an id, a logger and a summary log line.
+  app.use('*', requestContext(logger));
   app.route('/api', api);
-  app.notFound((c) => c.json({ message: 'We couldn’t find that.', code: 'not_found' }, 404));
+  app.notFound((c) => {
+    c.set('errorCode', 'not_found');
+    return c.json({ message: 'We couldn’t find that.', code: 'not_found', requestId: c.get('requestId') }, 404);
+  });
   app.onError(errorHandler);
   return app;
 }

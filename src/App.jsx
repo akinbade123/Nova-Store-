@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AppProviders } from './context/AppProviders';
 import { MainLayout } from './layouts/MainLayout';
 import { CheckoutLayout } from './layouts/CheckoutLayout';
@@ -36,55 +37,63 @@ function PageFallback() {
   return <div className="min-h-[60vh]" aria-busy="true" />;
 }
 
+/** One error boundary for every page, reset whenever the page changes. */
+function PageErrorBoundary({ children }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary key={pathname}>{children}</ErrorBoundary>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AppProviders>
-        <Suspense fallback={<PageFallback />}>
-          <Routes>
-            <Route element={<MainLayout />}>
-              <Route index element={<HomePage />} />
-              <Route path="shop" element={<ShopPage />} />
-              <Route path="product/:slug" element={<ProductPage />} />
-              <Route path="cart" element={<CartPage />} />
-              <Route path="wishlist" element={<WishlistPage />} />
-              <Route
-                path="account"
-                element={
-                  <RequireAuth>
-                    <AccountLayout />
-                  </RequireAuth>
-                }
-              >
-                <Route index element={<AccountOverviewPage />} />
-                <Route path="orders" element={<OrdersPage />} />
-                <Route path="orders/:orderId" element={<OrderDetailPage />} />
-                <Route path="wishlist" element={<AccountWishlistPage />} />
-                <Route path="addresses" element={<AddressesPage />} />
-                <Route path="settings" element={<SettingsPage />} />
+        <PageErrorBoundary>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route element={<MainLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="shop" element={<ShopPage />} />
+                <Route path="product/:slug" element={<ProductPage />} />
+                <Route path="cart" element={<CartPage />} />
+                <Route path="wishlist" element={<WishlistPage />} />
+                <Route
+                  path="account"
+                  element={
+                    <RequireAuth>
+                      <AccountLayout />
+                    </RequireAuth>
+                  }
+                >
+                  <Route index element={<AccountOverviewPage />} />
+                  <Route path="orders" element={<OrdersPage />} />
+                  <Route path="orders/:orderId" element={<OrderDetailPage />} />
+                  <Route path="wishlist" element={<AccountWishlistPage />} />
+                  <Route path="addresses" element={<AddressesPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
+                <Route path="collections" element={<CollectionsPage />} />
+                <Route path="collections/:slug" element={<CollectionPage />} />
+                <Route path="about" element={<AboutPage />} />
+                <Route path="help" element={<HelpPage />} />
+                {/* Not under AuthLayout: it redirects signed-in users away, and this link is often opened signed in. */}
+                <Route path="verify-email" element={<VerifyEmailPage />} />
+                <Route path="legal" element={<Navigate to="/legal/privacy" replace />} />
+                <Route path="legal/:doc" element={<LegalPage />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Route>
-              <Route path="collections" element={<CollectionsPage />} />
-              <Route path="collections/:slug" element={<CollectionPage />} />
-              <Route path="about" element={<AboutPage />} />
-              <Route path="help" element={<HelpPage />} />
-              {/* Not under AuthLayout: it redirects signed-in users away, and this link is often opened signed in. */}
-              <Route path="verify-email" element={<VerifyEmailPage />} />
-              <Route path="legal" element={<Navigate to="/legal/privacy" replace />} />
-              <Route path="legal/:doc" element={<LegalPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-            <Route element={<AuthLayout />}>
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
-              <Route path="forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="reset-password" element={<ResetPasswordPage />} />
-            </Route>
-            <Route element={<CheckoutLayout />}>
-              <Route path="checkout" element={<CheckoutPage />} />
-              <Route path="checkout/confirmation/:orderId" element={<OrderConfirmationPage />} />
-            </Route>
-          </Routes>
-        </Suspense>
+              <Route element={<AuthLayout />}>
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
+                <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="reset-password" element={<ResetPasswordPage />} />
+              </Route>
+              <Route element={<CheckoutLayout />}>
+                <Route path="checkout" element={<CheckoutPage />} />
+                <Route path="checkout/confirmation/:orderId" element={<OrderConfirmationPage />} />
+              </Route>
+            </Routes>
+          </Suspense>
+        </PageErrorBoundary>
       </AppProviders>
     </BrowserRouter>
   );

@@ -40,8 +40,10 @@ The data model behind these endpoints is in [DATA_MODEL.md](DATA_MODEL.md). How 
 Every error response has this body:
 
 ```json
-{ "message": "An account with this email already exists.", "code": "email_taken" }
+{ "message": "An account with this email already exists.", "code": "email_taken", "requestId": "req_V_4xtAWopXpC" }
 ```
+
+- `requestId` is also in the `X-Request-Id` header of **every** response, and on every server log line about that request. For a 500, the message quotes it as a reference, so a shopper's support message leads to the exact log line.
 
 - `message` is shown to the user as-is, so write it for shoppers: plain, specific, no stack traces.
 - `code` is stable and lowercase. The UI branches on some codes, so don't rename them.
@@ -546,6 +548,12 @@ Send through a transactional email provider from a background job, so a slow ema
 - shipped (with tracking)
 - cancelled or refunded
 - support message received
+
+## 10a. Health checks and error reports
+
+- `GET /health` → **200** `{ "status": "ok", "uptimeSeconds" }`. Liveness: the process is answering. Doesn't touch the database, so it's cheap enough for an uptime monitor to poll every few seconds.
+- `GET /health/ready` → **200** or **503** `{ "status": "ok" | "unavailable", "checks": { "database": { "ok", "ms" }, "migrations": { "ok" }, "email": { "ok", "detail" } }, "memoryMb", "uptimeSeconds" }`. Readiness: can this instance serve shoppers? 503 when the database is unreachable (2 s timeout) or migrations are missing, so a load balancer stops routing to it and a monitor alerts. Email is reported but doesn't fail the check. No hostnames, versions or data, because it's public; the reason for a failure is in the logs.
+- `POST /client-errors` → **204**. The storefront reports crashes here: `{ kind: "render" | "error" | "unhandledrejection" | "request", message, name?, stack?, componentStack?, url?, requestId?, reference? }`. `requestId` is the failed API call it followed; `reference` is the one shown to the shopper. Logged, not stored. 20 per minute per IP.
 
 ## 11. Frontend changes these require
 

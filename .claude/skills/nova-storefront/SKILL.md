@@ -28,6 +28,14 @@ This matters most. The goal is the *simplest best* fix: the smallest change that
 6. **Verify.** Repeat the original reproduction, then run `npm run build` and the smoke script. Tell the user what you checked and what you didn't.
 7. **Explain it simply.** Say what was wrong, why, what you changed, and how you confirmed it. One short paragraph is usually enough.
 
+### Tracing an error with the logs
+
+- **A reference from a shopper**: `ui_…` (the crash page) or `req_…` (a "something went wrong" message). Search the API's logs for it: the `Storefront error` or `Unhandled error` line has the stack, the component or route, the user and, for database failures, the PostgreSQL `code`, `constraint` and `detail`.
+- **A failed request in the browser**: read `X-Request-Id` in the Network tab (also `error.requestId` in code), then search the logs for it.
+- **The API won't start**: the `Startup failed while …` line names the step and the database's reason.
+- **Is it up?** `GET /api/health/ready` checks the database and migrations, and answers 503 with the failing check.
+- Set `LOG_LEVEL=debug` on the API for more detail. Never log secrets yourself: pass objects to the logger and let it redact them.
+
 ### Rules of thumb
 
 - Fix the bug where it starts, not where it shows up. If a page shows `$NaN`, the bug is in whatever produced the number.

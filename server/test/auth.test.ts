@@ -56,7 +56,11 @@ describe('login and logout', () => {
     const wrong = await api.call('POST', '/auth/login', { body: { email: DEMO_ACCOUNT.email, password: 'Wrong2026' } });
     const unknown = await api.call('POST', '/auth/login', { body: { email: 'nobody@example.com', password: 'Wrong2026' } });
     assert.equal(wrong.status, 401);
-    assert.deepEqual(wrong.body, unknown.body);
+    // Identical apart from each request's own id, so the answer can't reveal whether the email exists.
+    const { requestId: _a, ...wrongAnswer } = wrong.body;
+    const { requestId: _b, ...unknownAnswer } = unknown.body;
+    assert.deepEqual(wrongAnswer, unknownAnswer);
+    assert.notEqual(wrong.body.requestId, unknown.body.requestId);
     assert.equal(wrong.body.code, 'invalid_credentials');
   });
 

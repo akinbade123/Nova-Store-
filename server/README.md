@@ -88,3 +88,12 @@ server/
 5. If the API runs behind a proxy (a Vercel rewrite, a load balancer), set `TRUST_PROXY_HOPS` to the number of proxies, usually `1`. Otherwise every request looks like it comes from the proxy, and all shoppers share one rate limit. Never set it when clients reach the API directly: they could then fake their IP to dodge the limits.
 6. The rate limiter keeps its counters in memory. That's fine for one instance; with several, move the counters to the database or Redis.
 7. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
+
+## Logs, errors and health
+
+- **Logs** go through `src/lib/logger.ts`: one JSON line per event in production (for your log service), readable lines in development. `LOG_LEVEL` sets the minimum: `debug`, `info` (production default), `warn`, `error` or `silent`. Fields named like passwords, tokens or authorization headers are written as `[redacted]`, and query strings are never logged.
+- **Every request** gets an id (`X-Request-Id` header; a valid id from a proxy is kept) and one summary line: method, path, status, duration, user and error code. Requests over 1 second are logged as warnings.
+- **Unexpected errors** are logged with the request id, route, user, the database rule that failed (PostgreSQL `code`, `constraint`, `detail`), the stack and its causes. The shopper sees a plain message quoting the request id as a reference. To trace a report, search the logs for that id.
+- **Storefront crashes** are sent to `POST /api/client-errors` and logged as `Storefront error`, with the reference the shopper saw (`ui_…`), the component stack and the request id of any API call that failed just before.
+- **Startup failures** log one line naming the step (connecting to the database, applying migrations) and the database's reason. Errors outside any request (unhandled rejections, uncaught exceptions) are logged too; an uncaught exception exits so the host restarts the process.
+- **Health:** point an uptime monitor at `/api/health` and your load balancer or host's health check at `/api/health/ready`, which answers 503 when the database is unreachable or migrations are missing.
