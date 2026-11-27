@@ -92,6 +92,23 @@ server/
 9. Make each migration safe to roll back from, and take a backup before releasing one: see [docs/ROLLBACK.md](../docs/ROLLBACK.md).
 10. Product images are seeded as Unsplash photo IDs, which the storefront expands. Real products should store full CDN URLs; the storefront accepts those too.
 
+## Database roles
+
+The API never runs as the tables' owner. Every connection switches to **`nova_app`**, a role that can read and write rows but owns nothing: it can't change the schema, drop or truncate tables, delete accounts or orders, or switch off row-level security. Migrations create the role and grant it (`src/db/roles.ts`), and re-grant it on every run, since backups leave privileges out.
+
+**Row-level security** (migration 0005) is a second lock behind the code's ownership checks. Each request says who it acts for (`withAccess` in `src/db/access.ts`), and the database then returns only that user's addresses and orders, and lets an account change only itself, even if a query has no `WHERE` clause. A query that doesn't say who it acts for sees no private rows. Tables reached before anyone is signed in (sessions, reset and verification links) store only token hashes and aren't covered; docs/DATA_MODEL.md has the details.
+
+**When you write code that touches `addresses`, `orders`, `order_items` or updates `users`**, run it inside `withAccess(db, accessFor(user), tx => …)`. Without it, reads come back empty and updates change nothing, silently. Tests run with the same role, so a missing `withAccess` shows up as a failing test. Test setup that writes rows the API can't (orders, until checkout exists) uses `api.asOwner`.
+
+**In production, use two logins:**
+
+```sql
+-- As the owner, after the first `npm run db:migrate` has created nova_app:
+CREATE ROLE nova_api LOGIN PASSWORD '<long random password>' IN ROLE nova_app;
+```
+
+Then set `DATABASE_URL` to log in as `nova_api`, and `DATABASE_MIGRATION_URL` as the owner. With a single owner login the API still runs as `nova_app`, but a SQL injection could switch back with `RESET ROLE`; the API logs a warning at startup in that case. If a connection pooler rejects startup options (some PgBouncer setups), the two-login setup is required.
+
 ## Logs, errors and health
 
 - **Logs** go through `src/lib/logger.ts`: one JSON line per event in production (for your log service), readable lines in development. `LOG_LEVEL` sets the minimum: `debug`, `info` (production default), `warn`, `error` or `silent`. Fields named like passwords, tokens or authorization headers are written as `[redacted]`, and query strings are never logged.

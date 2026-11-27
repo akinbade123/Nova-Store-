@@ -4,6 +4,7 @@
  * aren't linked to it: that needs proof the address belongs to the account holder.
  */
 import { Hono } from 'hono';
+import { setAccess } from '../../db/access.ts';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../../db/client.ts';
@@ -61,6 +62,8 @@ export function verificationRoutes(deps: Deps) {
         .where(and(eq(emailVerifications.tokenHash, sha256(token)), isNull(emailVerifications.usedAt), gt(emailVerifications.expiresAt, new Date())))
         .returning({ userId: emailVerifications.userId, email: emailVerifications.email });
       if (!link) return null;
+      // The link proves who this is: act as that account for the change.
+      await setAccess(tx, { userId: link.userId });
       // Only if the account still has the address the link was sent to.
       const [user] = await tx
         .update(users)

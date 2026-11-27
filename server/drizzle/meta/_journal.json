@@ -36,6 +36,13 @@
       "when": 1795795095578,
       "tag": "0004_shared_rate_limits_and_search_index",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795796473707,
+      "tag": "0005_row_level_security",
+      "breakpoints": true
     }
   ]
 }

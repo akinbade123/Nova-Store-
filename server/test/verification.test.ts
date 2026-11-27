@@ -73,13 +73,13 @@ describe('email verification', () => {
   it('links guest orders placed with the email only once it’s confirmed', async () => {
     const { token, user } = await api.register();
     const address = { firstName: 'A', lastName: 'B', address1: '1 High St', city: 'London', postalCode: 'SW1A 1AA', country: 'GB' };
-    await api.db.insert(orders).values({
+    await api.asOwner((db) => db.insert(orders).values({
       id: 'NV-GUESTLINK', checkoutId: crypto.randomUUID(), userId: null, status: 'paid', currency: 'USD', email: user.email, phone: '1',
       marketing: false, shippingAddress: address, billingAddress: address, shippingLabel: 'Standard', shippingEta: '3–5 days',
       deliveryMinDate: '2026-12-01', deliveryMaxDate: '2026-12-03', subtotalCents: 1000, discountCents: 0, shippingCents: 0,
       totalCents: 1000, paymentMethod: 'card',
-    });
-    await api.db.insert(orderItems).values({ id: 'oi-guestlink', orderId: 'NV-GUESTLINK', slug: 'x', name: 'Item', imageUrl: 'x', unitPriceCents: 1000, quantity: 1 });
+    }));
+    await api.asOwner((db) => db.insert(orderItems).values({ id: 'oi-guestlink', orderId: 'NV-GUESTLINK', slug: 'x', name: 'Item', imageUrl: 'x', unitPriceCents: 1000, quantity: 1 }));
     assert.equal((await api.call('GET', '/me/orders', { token })).body.items.length, 0, 'not before confirming');
     await settle();
     await verify(confirmLinkFor(user.email)!);

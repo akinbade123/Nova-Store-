@@ -361,6 +361,20 @@ These are the places where getting it wrong costs money or leaks data. Each shou
    - Keep orders, since accounting needs them. Clear their `user_id`, and replace the contact details and addresses with placeholders. Keep the totals, items and dates.
 6. **Unpaid orders** in `pending_payment` for more than 30 minutes are cancelled by a scheduled job. They never held stock.
 
+### Row-level security
+
+The API runs as the restricted role `nova_app` (server/README.md, "Database roles"). Migration 0005 adds policies that apply to it, keyed on transaction-local settings each request sets (`withAccess`): `app.user_id`, `app.user_email` (only once verified) and `app.order_token` (the hash of a guest order's token). Unset settings match nothing.
+
+| Table | Who can see rows | Who can change rows |
+|---|---|---|
+| `addresses` | Their owner | Their owner |
+| `orders` | The account that placed them, a verified owner of the email, or the holder of the guest token | Their owner (anonymising on account deletion). Never deleted: `nova_app` has no `DELETE`. |
+| `order_items` | Whoever can see the order | Whoever can see the order |
+| `users` | Anyone (sign-in and registration need lookups by email) | Only the account itself. Never deleted. |
+| `support_messages` | Nobody through the API: support staff use their own role | Anyone can file one |
+
+Not covered: `sessions`, `password_resets` and `email_verifications` are looked up by token before anyone is signed in, and store only SHA-256 hashes of the tokens. `newsletter_subscribers` holds emails without accounts. All of them are still limited by `nova_app`'s privileges.
+
 ## 9. Seeding from the sample data
 
 The frontend's sample data in `src/data/` already has the production shape. A seed script should load it, so local and staging data match what the UI expects:

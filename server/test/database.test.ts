@@ -13,7 +13,7 @@ after(() => api.close());
 
 /** Runs `query` and asserts PostgreSQL rejects it with the constraint `name`. */
 async function refusedBy(name: string, query: SQL) {
-  await assert.rejects(api.db.execute(query), (error: any) => {
+  await assert.rejects(api.asOwner((db) => db.execute(query)), (error: any) => {
     const message = `${error.message} ${error.cause?.message ?? ''} ${error.cause?.constraint ?? ''}`;
     assert.match(message, new RegExp(name), `expected ${name}, got: ${message}`);
     return true;
@@ -36,7 +36,7 @@ function order(overrides: Record<string, string | number> = {}) {
 
 describe('allowed values are enforced by the database', () => {
   it('accepts a valid order', async () => {
-    await api.db.execute(order());
+    await api.asOwner((db) => db.execute(order()));
   });
 
   it('refuses statuses, methods and kinds outside their lists', async () => {
@@ -81,11 +81,11 @@ describe('duplicates the database refuses', () => {
     const review = (id: string, product: string, user: string | null, orderItem: string | null) =>
       sql`INSERT INTO reviews (id, product_id, user_id, order_item_id, rating, title, body, display_name, location)
           VALUES (${id}, ${product}, ${user}, ${orderItem}, 5, 't', 'b', 'n', 'l')`;
-    await api.db.execute(review('r-1', 'p-001', 'u-demo', 'oi-1'));
+    await api.asOwner((db) => db.execute(review('r-1', 'p-001', 'u-demo', 'oi-1')));
     await refusedBy('reviews_user_product_idx', review('r-2', 'p-001', 'u-demo', null));
     await refusedBy('reviews_order_item_idx', review('r-3', 'p-104', null, 'oi-1'));
-    await api.db.execute(review('r-4', 'p-104', 'u-demo', null)); // a different product is fine
-    await api.db.execute(review('r-5', 'p-001', null, null)); // imported reviews have no user and are exempt
+    await api.asOwner((db) => db.execute(review('r-4', 'p-104', 'u-demo', null))); // a different product is fine
+    await api.asOwner((db) => db.execute(review('r-5', 'p-001', null, null))); // imported reviews have no user and are exempt
   });
 
   it('keeps one image per slot and one product per collection position', async () => {

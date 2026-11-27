@@ -6,6 +6,7 @@ import { createDb } from './db/client.ts';
 import { products } from './db/schema.ts';
 import { seed } from './db/seed.ts';
 import { purgeExpired } from './db/purge.ts';
+import { loginCanBypassRestrictions } from './db/roles.ts';
 import { env } from './env.ts';
 import { createConsoleMailer, createProductionMailer } from './lib/email.ts';
 import { logger } from './lib/logger.ts';
@@ -30,9 +31,14 @@ async function step<T>(name: string, run: () => Promise<T>): Promise<T> {
 }
 
 const database = await step('connecting to the database', () =>
-  createDb({ url: env.databaseUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } }),
+  createDb({ url: env.databaseUrl, migrationUrl: env.databaseMigrationUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } }),
 );
 await step('applying migrations', () => database.migrate());
+if (env.isProduction && (await loginCanBypassRestrictions(database.db))) {
+  logger.warn(
+    'DATABASE_URL logs in as the tables’ owner. The API still runs as the restricted role nova_app, but a SQL injection could switch back. Log in as a role that is only a member of nova_app, and put the owner in DATABASE_MIGRATION_URL (server/README.md, "Database roles").',
+  );
+}
 
 // Development convenience: an empty embedded database is filled with the storefront's sample data.
 if (!env.databaseUrl) {

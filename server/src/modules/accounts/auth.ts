@@ -1,5 +1,6 @@
 /** docs/API.md, section 4: register, login, logout, forgot and reset password. */
 import { Hono } from 'hono';
+import { setAccess, withAccess } from '../../db/access.ts';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { passwordResets, users } from '../../db/schema.ts';
@@ -91,7 +92,8 @@ export function authRoutes(deps: Deps) {
     }
     // The only moment the plain password is available: upgrade a hash made with older settings.
     if (needsRehash(user.passwordHash)) {
-      await db.update(users).set({ passwordHash: await hashPassword(body.password) }).where(eq(users.id, user.id));
+      const passwordHash = await hashPassword(body.password);
+      await withAccess(db, { userId: user.id }, (tx) => tx.update(users).set({ passwordHash }).where(eq(users.id, user.id)));
     }
     const token = await createSession(db, user.id);
     return c.json({ user: toPublicUser(user), token });
@@ -138,6 +140,8 @@ export function authRoutes(deps: Deps) {
         .where(and(eq(passwordResets.tokenHash, sha256(body.token)), isNull(passwordResets.usedAt), gt(passwordResets.expiresAt, new Date())))
         .returning({ userId: passwordResets.userId });
       if (!row) return null;
+      // The link proves who this is: act as that account for the change.
+      await setAccess(tx, { userId: row.userId });
       const [user] = await tx
         .update(users)
         .set({ passwordHash, updatedAt: new Date() })

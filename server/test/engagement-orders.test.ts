@@ -73,14 +73,14 @@ describe('orders (reading only, until payments are connected)', () => {
     for (const [i, status] of statuses.entries()) {
       const id = `NV-${userId.slice(-4)}-${String(i).padStart(3, '0')}`;
       ids.push(id);
-      await api.db.insert(orders).values({
+      await api.asOwner((db) => db.insert(orders).values({
         id, checkoutId: crypto.randomUUID(), userId, status, currency: 'USD', email, phone: '+44 20 7946 0958', marketing: false,
         shippingAddress: address, billingAddress: address, shippingLabel: 'Standard', shippingEta: '3–5 days',
         deliveryMinDate: '2026-12-01', deliveryMaxDate: '2026-12-03', subtotalCents: 1000, discountCents: 0, shippingCents: 0,
         totalCents: 1000, paymentMethod: 'card', paymentBrand: 'visa', paymentLast4: '4242',
         ...(createdAt ? { createdAt } : {}),
-      });
-      await api.db.insert(orderItems).values({ id: `oi-${id}`, orderId: id, slug: 'x', name: 'Item', imageUrl: 'x', unitPriceCents: 1000, quantity: 1 });
+      }));
+      await api.asOwner((db) => db.insert(orderItems).values({ id: `oi-${id}`, orderId: id, slug: 'x', name: 'Item', imageUrl: 'x', unitPriceCents: 1000, quantity: 1 }));
     }
     return ids;
   }

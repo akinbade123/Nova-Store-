@@ -76,7 +76,9 @@ try {
   }
 
   // 4. The API itself can use the restored database.
+  // As at startup: migrations (none pending) and the restricted role's grants, which backups leave out.
   const database = await createDb({ url });
+  await database.migrate();
   const app = createApp({ db: database.db, mailer: createConsoleMailer({ quiet: true }), rateLimits: false });
   for (const path of ['/api/health', '/api/categories', '/api/products?limit=1']) {
     const res = await app.request(path);

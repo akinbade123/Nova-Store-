@@ -1,5 +1,6 @@
 /** docs/API.md, section 5: update profile, change password, delete account. */
 import { Hono } from 'hono';
+import { accessFor, withAccess } from '../../db/access.ts';
 import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { addresses, emailVerifications, newsletterSubscribers, orders, passwordResets, users } from '../../db/schema.ts';
@@ -65,7 +66,7 @@ export function profileRoutes(deps: Deps) {
     const changes = Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined));
     const emailChanged = Boolean(patch.email && patch.email !== user.email);
     if (emailChanged) Object.assign(changes, { emailVerifiedAt: null });
-    const updated = await db.transaction(async (tx) => {
+    const updated = await withAccess(db, accessFor(user), async (tx) => {
       const [row] = await tx
         .update(users)
         .set({ ...changes, updatedAt: new Date() })
@@ -87,7 +88,7 @@ export function profileRoutes(deps: Deps) {
     const body = await readBody(c, passwordBody);
     if (!(await verifyPassword(body.currentPassword, user.passwordHash))) throw wrongPassword();
     const passwordHash = await hashPassword(body.newPassword);
-    await db.transaction(async (tx) => {
+    await withAccess(db, accessFor(user), async (tx) => {
       await tx.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, user.id));
       await revokeUserSessions(tx, user.id, c.get('sessionId')); // other devices are signed out; this one stays in
       await cancelResetLinks(tx, user.id); // a reset link requested earlier (maybe by an intruder) stops working
@@ -106,7 +107,7 @@ export function profileRoutes(deps: Deps) {
     await confirmPassword(user, password, 'Enter your password to confirm', 'password');
     // Lowercase like every stored email (a database check enforces it). Ids use only capitals and digits, so this stays unique.
     const placeholderEmail = `deleted+${user.id.toLowerCase()}@nova.invalid`;
-    await db.transaction(async (tx) => {
+    await withAccess(db, accessFor(user), async (tx) => {
       await revokeUserSessions(tx, user.id);
       await tx.delete(addresses).where(eq(addresses.userId, user.id));
       await tx.delete(passwordResets).where(eq(passwordResets.userId, user.id));

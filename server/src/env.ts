@@ -18,6 +18,11 @@ export const env = {
   port: Number(process.env.PORT ?? 4000),
   /** PostgreSQL connection string. Without it, an embedded PGlite database is used (development only). */
   databaseUrl,
+  /**
+   * The tables' owner, for migrations only. Defaults to DATABASE_URL. In production set both:
+   * DATABASE_URL logs in as a role that is only a member of nova_app (server/README.md).
+   */
+  databaseMigrationUrl: process.env.DATABASE_MIGRATION_URL || databaseUrl,
   /** Where the embedded development database keeps its files. */
   pgliteDir: process.env.PGLITE_DIR ?? '.data/dev',
   /** The storefront's public URL, used for links in emails. Required in production. */

@@ -43,5 +43,10 @@ export async function testApi({ rateLimits = false, trustProxyHops = 0, logger }
     return { token: res.body.token as string, user: res.body.user, password: body.password as string };
   }
 
-  return { app, db: database.db, mailer, call, signIn, register, close: database.close };
+  /**
+   * `db` is the API's own connection: the restricted role, subject to row-level security, so tests
+   * exercise the same rules production does. `asOwner` is for setting up data the API can't write
+   * directly (orders placed by checkout, older rows), as an admin script would.
+   */
+  return { app, db: database.db, asOwner: database.asOwner, mailer, call, signIn, register, close: database.close };
 }

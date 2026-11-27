@@ -3,6 +3,7 @@
  * so they answer 501 until the next phase (quote, payment hand-off, webhook).
  */
 import { Hono } from 'hono';
+import { accessFor, withAccess } from '../../db/access.ts';
 import { and, asc, count, desc, eq, inArray, notInArray, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../../db/client.ts';
@@ -119,15 +120,19 @@ export function orderRoutes(deps: Deps) {
     const after = cursor
       ? sql`(${orders.createdAt}, ${orders.id}) < (SELECT o.created_at, o.id FROM ${orders} o WHERE o.id = ${cursor})`
       : undefined;
-    const [rows, grouped] = await Promise.all([
-      db
-        .select()
-        .from(orders)
-        .where(and(visible, status ? inArray(orders.status, statusesFor(status)) : undefined, after))
-        .orderBy(desc(orders.createdAt), desc(orders.id))
-        .limit(limit + 1), // one extra tells us whether there's another page
-      db.select({ status: orders.status, n: count() }).from(orders).where(visible).groupBy(orders.status),
-    ]);
+    // As the signed-in user, so the row-level policies also limit this to their orders.
+    const { rows, grouped, items } = await withAccess(db, accessFor(user), async (tx) => {
+      const [rows, grouped] = await Promise.all([
+        tx
+          .select()
+          .from(orders)
+          .where(and(visible, status ? inArray(orders.status, statusesFor(status)) : undefined, after))
+          .orderBy(desc(orders.createdAt), desc(orders.id))
+          .limit(limit + 1), // one extra tells us whether there's another page
+        tx.select({ status: orders.status, n: count() }).from(orders).where(visible).groupBy(orders.status),
+      ]);
+      return { rows, grouped, items: await withItems(tx, rows.slice(0, limit)) };
+    });
     const page = rows.slice(0, limit);
     const counts: Record<'All' | Label, number> = { All: 0, Processing: 0, Shipped: 0, Delivered: 0, Cancelled: 0 };
     for (const { status: stored, n } of grouped) {
@@ -135,7 +140,7 @@ export function orderRoutes(deps: Deps) {
       counts.All += n;
     }
     return c.json({
-      items: await withItems(db, page),
+      items,
       nextCursor: rows.length > limit ? page.at(-1)!.id : null,
       counts,
     });
@@ -145,15 +150,24 @@ export function orderRoutes(deps: Deps) {
   // never forbidden, so the API doesn't reveal that an order exists.
   app.get('/orders/:id', async (c) => {
     const missing = notFound('We couldn’t find that order.');
-    const [order] = await db.select().from(orders).where(eq(orders.id, c.req.param('id'))).limit(1);
-    if (!order) throw missing;
     const token = c.req.query('token');
     const auth = await authenticate(db, c);
-    const isGuest = Boolean(token && order.guestTokenHash && sha256(token) === order.guestTokenHash);
-    const isOwner =
-      auth != null && (order.userId === auth.user.id || (auth.user.emailVerifiedAt != null && order.email === auth.user.email));
-    if (!isGuest && !isOwner) throw missing;
-    const [result] = await withItems(db, [order]);
+    // The row-level policies only return the order to its owner or to someone with its guest token;
+    // the checks below say the same thing in code, so either one alone keeps other orders private.
+    const result = await withAccess(
+      db,
+      { ...(auth ? accessFor(auth.user) : {}), orderTokenHash: token ? sha256(token) : null },
+      async (tx) => {
+        const [order] = await tx.select().from(orders).where(eq(orders.id, c.req.param('id'))).limit(1);
+        if (!order) return null;
+        const isGuest = Boolean(token && order.guestTokenHash && sha256(token) === order.guestTokenHash);
+        const isOwner =
+          auth != null && (order.userId === auth.user.id || (auth.user.emailVerifiedAt != null && order.email === auth.user.email));
+        if (!isGuest && !isOwner) return null;
+        return (await withItems(tx, [order]))[0]!;
+      },
+    );
+    if (!result) throw missing;
     return c.json(result);
   });
 
