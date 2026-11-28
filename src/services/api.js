@@ -67,5 +67,10 @@ export function nullIfNotFound(error) {
   throw error;
 }
 
-/** Simulates network latency for sample data so loading states are exercised during development. */
-export const mockDelay = (data, ms = 650) => new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), ms));
+/**
+ * Simulates network latency for sample data so loading states are exercised during development.
+ * Production builds (the public demo) answer straight away: visitors shouldn't wait for nothing.
+ */
+const SIMULATE_LATENCY = import.meta.env.DEV;
+export const mockDelay = (data, ms = 650) =>
+  new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), SIMULATE_LATENCY ? ms : 0));

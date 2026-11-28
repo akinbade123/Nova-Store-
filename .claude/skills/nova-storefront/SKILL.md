@@ -75,7 +75,7 @@ This matters most. The goal is the *simplest best* fix: the smallest change that
 
 These look like bugs in sample-data mode but are deliberate:
 
-- Pages take 300–1600 ms to load. `mockDelay` adds this on purpose so loading states actually appear.
+- In `npm run dev`, pages take 300–1600 ms to load. `mockDelay` adds this on purpose so loading states actually appear. Production builds skip it.
 - A card number ending in `0002` is always declined, so the payment error state can be tested.
 - Promo `WELCOME15` is kept in the cart but marked inactive under $150 (`promoShortfall`).
 - In sample-data mode, the forgot-password page shows the reset link, because no email is sent.

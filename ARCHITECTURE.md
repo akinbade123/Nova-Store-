@@ -101,7 +101,7 @@ async getThing(id) {
 }
 ```
 
-`mockDelay` adds a short artificial delay (about 300–1600 ms) and returns a deep copy of the data. The delay means loading states actually appear during development, and the copy stops components from accidentally changing the sample data.
+`mockDelay` adds a short artificial delay (about 300–1600 ms) and returns a deep copy of the data. The delay means loading states actually appear during development, and the copy stops components from accidentally changing the sample data. Production builds (the public demo) skip the delay, so visitors don't wait for nothing; `npm run preview` behaves the same way.
 
 ### Product queries: one contract for `GET /products`
 
