@@ -72,6 +72,13 @@ export const env = {
   emailDailyLimit: Number(process.env.EMAIL_DAILY_LIMIT ?? 2000),
   /** Most emails to one address per hour, whatever triggered them. */
   emailPerAddressPerHour: Number(process.env.EMAIL_PER_ADDRESS_PER_HOUR ?? 5),
+  /**
+   * On SIGTERM, how long readiness answers 503 before the server stops taking requests, so the load
+   * balancer notices first (it checks every few seconds). 0 in development, where Ctrl+C should be quick.
+   */
+  shutdownDrainSeconds: Number(process.env.SHUTDOWN_DRAIN_SECONDS ?? (isProduction ? 5 : 0)),
+  /** Then the longest it waits for requests in progress to finish before closing them. */
+  shutdownTimeoutSeconds: Number(process.env.SHUTDOWN_TIMEOUT_SECONDS ?? 10),
   /** How many proxies sit in front of the API (e.g. 1 behind a Vercel rewrite). 0: ignore X-Forwarded-For. */
   trustProxyHops: Number(process.env.TRUST_PROXY_HOPS ?? 0),
 };

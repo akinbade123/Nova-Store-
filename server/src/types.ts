@@ -14,6 +14,8 @@ export type Deps = {
   rateLimit: RateLimiter['perIp'];
   /** Counters for limits that aren't per IP, such as failed logins per email. */
   limiter: RateLimiter;
+  /** True once the process has been told to stop: readiness then answers 503 so traffic moves away. */
+  isShuttingDown: () => boolean;
 };
 
 export type UserRow = typeof users.$inferSelect;

@@ -55,8 +55,10 @@ const usage = createUsageMeter();
 const usageTimer = setInterval(() => logger.info('Usage summary', usage.flush()), 60 * 60 * 1000);
 usageTimer.unref();
 
+let shuttingDown = false;
 const app = createApp({
   usage,
+  isShuttingDown: () => shuttingDown,
   db: database.db,
   mailer,
   appUrl: env.appUrl,
@@ -84,16 +86,45 @@ const server = serve({ fetch: app.fetch, port: env.port }, ({ port }) => {
   });
 });
 
-const shutdown = (signal: string) => {
-  logger.info('Shutting down', { signal });
+/**
+ * Graceful shutdown, for deploys and scaling down. Hosts send SIGTERM, then kill the process if it
+ * hasn't exited (Render and Railway allow about 30 s; on Fly.io raise kill_timeout to 20 s).
+ * 1. Readiness answers 503, so the load balancer stops sending new requests here.
+ * 2. After a short wait for it to notice, the server stops accepting connections.
+ * 3. Requests in progress finish (up to SHUTDOWN_TIMEOUT_SECONDS), then the database pool closes.
+ * A second Ctrl+C or SIGTERM exits straight away.
+ */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+async function shutdown(signal: string) {
+  if (shuttingDown) {
+    logger.warn('Second stop signal: exiting without waiting', { signal });
+    process.exit(1);
+  }
+  shuttingDown = true;
+  logger.info('Shutting down: readiness now answers 503', { signal, drainSeconds: env.shutdownDrainSeconds, timeoutSeconds: env.shutdownTimeoutSeconds });
   clearInterval(purgeTimer);
   clearInterval(usageTimer);
+  await sleep(env.shutdownDrainSeconds * 1000);
+  const http = server as unknown as import('node:http').Server;
+  const finished = await new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => resolve(false), env.shutdownTimeoutSeconds * 1000);
+    http.close(() => {
+      clearTimeout(timer);
+      resolve(true);
+    });
+    http.closeIdleConnections(); // keep-alive connections with no request in progress
+  });
+  if (!finished) {
+    logger.warn('Requests still running at the shutdown timeout: closing them', { timeoutSeconds: env.shutdownTimeoutSeconds });
+    http.closeAllConnections();
+  }
   logger.info('Usage summary', usage.flush()); // the partial hour, so a deploy or restart doesn't lose it
-  server.close();
-  database.close().finally(() => process.exit(0));
-};
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+  await database.close();
+  logger.info('Stopped', { signal, requestsFinished: finished });
+  process.exit(0);
+}
+process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 // Errors outside any request (a timer, a background email, a forgotten await). Logged with the stack, so
 // they can be traced. An uncaught exception leaves the process in an unknown state, so it exits and the

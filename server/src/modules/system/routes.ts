@@ -51,6 +51,9 @@ export function systemRoutes(deps: Deps) {
    * Names and timings only: no hostnames, versions or data, because the endpoint is public.
    */
   app.get('/health/ready', async (c) => {
+    // Shutting down: tell the load balancer first, so it stops sending new requests here while the
+    // ones in progress finish (src/index.ts).
+    if (deps.isShuttingDown()) return c.json({ status: 'shutting-down' }, 503);
     const checks: Record<string, Check> = {};
     const started = performance.now();
     try {

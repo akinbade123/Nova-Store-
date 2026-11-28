@@ -34,6 +34,8 @@ type Options = {
   emailLimits?: Partial<Pick<EmailLimits, 'perRecipientPerHour' | 'perDay'>>;
   /** Counts requests and emails for the hourly "Usage summary" log line (src/index.ts). */
   usage?: UsageMeter;
+  /** Set by src/index.ts when it receives SIGTERM, so readiness reports the copy is leaving. */
+  isShuttingDown?: () => boolean;
 };
 
 /** Builds the API. Everything is under /api, matching the storefront's VITE_API_URL default. */
@@ -47,6 +49,7 @@ export function createApp({
   logger = rootLogger,
   emailLimits = {},
   usage,
+  isShuttingDown = () => false,
 }: Options) {
   // rateLimits: false is for tests that make many requests from one client.
   const limiter = rateLimits ? createRateLimiter({ db, trustProxyHops }) : noRateLimits;
@@ -58,7 +61,7 @@ export function createApp({
     logger,
     usage,
   );
-  const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter };
+  const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter, isShuttingDown };
 
   const api = new Hono<AppEnv>();
   // Standard protective headers on every API response (nosniff, no framing, HSTS, no referrer…).

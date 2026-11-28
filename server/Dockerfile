@@ -16,6 +16,6 @@ COPY src/ src/
 WORKDIR /app/server
 USER node
 EXPOSE 4000
-# Migrations run at startup, then the server listens on $PORT (default 4000). server/README.md,
-# "Deploying", has the host setup.
+# Migrations run at startup, then the server listens on $PORT (default 4000). On SIGTERM it stops
+# taking new requests, finishes the ones in progress and exits (server/README.md, "Deploying").
 CMD ["node", "src/index.ts"]

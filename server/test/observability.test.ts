@@ -236,3 +236,16 @@ describe('usage summary', () => {
     }
   });
 });
+
+describe('shutting down', () => {
+  it('reports not ready as soon as the process is told to stop, while still serving requests', async () => {
+    let stopping = false;
+    const app = createApp({ db: api.db, mailer: createConsoleMailer({ quiet: true }), isShuttingDown: () => stopping });
+    assert.equal((await app.request('/api/health/ready')).status, 200);
+    stopping = true;
+    const ready = await app.request('/api/health/ready');
+    assert.equal(ready.status, 503);
+    assert.deepEqual(await ready.json(), { status: 'shutting-down' });
+    assert.equal((await app.request('/api/categories')).status, 200, 'requests already routed here still work');
+  });
+});

@@ -11,7 +11,7 @@ services:
     region: frankfurt # pick the region closest to your database and shoppers
     plan: standard
     # The load balancer sends traffic only to copies whose readiness check answers 200. It answers 503
-    # when the database is unreachable or migrations are missing.
+    # when the database is unreachable, migrations are missing, or the copy is shutting down.
     healthCheckPath: /api/health/ready
     scaling:
       minInstances: 2 # a deploy or a crash never takes the API down

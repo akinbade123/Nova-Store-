@@ -136,6 +136,13 @@ It runs on any container host. [render.yaml](../render.yaml) sets it up on Rende
 
 The storefront then calls its own domain (no CORS, and the CSP allows it), and Vercel's CDN can cache catalogue answers (docs/API.md, section 7).
 
+**Deploys and scaling down don't fail requests.** On SIGTERM the API:
+1. answers 503 from `/api/health/ready` straight away, so the load balancer stops sending it new requests (still serving any that arrive meanwhile);
+2. after `SHUTDOWN_DRAIN_SECONDS` (default 5 in production, 0 in development), stops accepting connections;
+3. lets requests in progress finish, for up to `SHUTDOWN_TIMEOUT_SECONDS` (default 10), then closes the database pool and exits.
+
+That's at most about 15 seconds. Render and Railway wait 30 before forcing a stop; on Fly.io, set `kill_timeout = 20`. Tested: a request still sending its body when SIGTERM arrived finished with 200 (before this, it was cut off), and one that outlived the timeout was closed on time.
+
 **Check the client IP once.** With Vercel's rewrite and the host's load balancer in front, `TRUST_PROXY_HOPS` is usually 2. After the first deploy, sign in once and look at the API's request log: rate limits key on that IP, so it must be yours, not a proxy's. If every request shows the same address, the number is wrong.
 
 ## Logs, errors and health
