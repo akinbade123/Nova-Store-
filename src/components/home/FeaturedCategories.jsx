@@ -22,7 +22,7 @@ export function FeaturedCategories() {
           action={{ label: 'Browse all', to: '/collections' }}
         />
         <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
-          {categories.map((category, index) => (
+          {categories.map((category) => (
             <li key={category.id}>
               <Link
                 to={`/shop?category=${category.slug}`}
@@ -32,7 +32,6 @@ export function FeaturedCategories() {
                   src={category.image}
                   alt=""
                   ratio={4 / 3}
-                  priority={index < 2}
                   sizes="(min-width: 1024px) 25vw, 50vw"
                   imgClassName="transition-transform duration-700 ease-out-soft group-hover:scale-[1.04]"
                 />

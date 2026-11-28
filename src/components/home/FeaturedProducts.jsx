@@ -64,7 +64,7 @@ export function FeaturedProducts() {
             <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-14">
               {loading
                 ? Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)
-                : data.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)}
+                : data.map((product) => <ProductCard key={product.id} product={product} />)}
             </div>
           )}
         </div>
