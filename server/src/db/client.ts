@@ -9,6 +9,7 @@ import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
 import { migrate as migratePg } from 'drizzle-orm/node-postgres/migrator';
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import pg from 'pg';
+import { sql } from 'drizzle-orm';
 import * as schema from './schema.ts';
 import { APP_ROLE, ensureAppRole } from './roles.ts';
 
@@ -31,6 +32,9 @@ export type PoolOptions = {
   /** Longest any one query may run before PostgreSQL cancels it, in ms. Default 15 s. */
   statementTimeoutMs?: number;
 };
+
+/** Any fixed number: the advisory lock key that serialises migrations across copies of the API. */
+const MIGRATION_LOCK = 7_431_209;
 
 export type Database = {
   /** The API's connection: the restricted role nova_app, subject to row-level security. */
@@ -85,10 +89,19 @@ export async function createDb({
     };
     return {
       db,
+      // Every copy migrates as it starts, and copies start together. The lock makes the others wait
+      // while the first one migrates, then find nothing to do; without it, two copies applying the
+      // same migration at once crash with "already exists". The owner pool has one connection, so
+      // the lock and the migration share a session.
       migrate: () =>
         asOwner(async (owner) => {
-          await migratePg(owner as never, { migrationsFolder });
-          await ensureAppRole(owner);
+          await owner.execute(sql`SELECT pg_advisory_lock(${MIGRATION_LOCK})`);
+          try {
+            await migratePg(owner as never, { migrationsFolder });
+            await ensureAppRole(owner);
+          } finally {
+            await owner.execute(sql`SELECT pg_advisory_unlock(${MIGRATION_LOCK})`);
+          }
         }),
       asOwner,
       close: () => pool.end(),
