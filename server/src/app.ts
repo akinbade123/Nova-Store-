@@ -22,6 +22,8 @@ const MAX_BODY_BYTES = 100 * 1024;
 
 type Options = {
   db: Db;
+  /** The catalogue's database: a read replica if configured. Defaults to `db`. */
+  readDb?: Db;
   mailer: Mailer;
   appUrl?: string;
   supportEmail?: string;
@@ -41,6 +43,7 @@ type Options = {
 /** Builds the API. Everything is under /api, matching the storefront's VITE_API_URL default. */
 export function createApp({
   db,
+  readDb = db,
   mailer: provider,
   appUrl = 'http://localhost:5173',
   supportEmail = 'support@example.com',
@@ -61,7 +64,7 @@ export function createApp({
     logger,
     usage,
   );
-  const deps: Deps = { db, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter, isShuttingDown };
+  const deps: Deps = { db, readDb, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter, isShuttingDown };
 
   const api = new Hono<AppEnv>();
   // Standard protective headers on every API response (nosniff, no framing, HSTS, no referrer…).

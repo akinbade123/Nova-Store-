@@ -7,6 +7,8 @@ import type { Logger } from './lib/logger.ts';
 /** What every route module is built from. Passed in, so tests can use their own database and mailer. */
 export type Deps = {
   db: Db;
+  /** For the public catalogue: a read replica if one is configured, otherwise `db`. */
+  readDb: Db;
   mailer: Mailer;
   appUrl: string;
   supportEmail: string;

@@ -32,7 +32,7 @@ async function step<T>(name: string, run: () => Promise<T>): Promise<T> {
 }
 
 const database = await step('connecting to the database', () =>
-  createDb({ url: env.databaseUrl, migrationUrl: env.databaseMigrationUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } }),
+  createDb({ url: env.databaseUrl, migrationUrl: env.databaseMigrationUrl, readUrl: env.databaseReadUrl, dataDir: env.databaseUrl ? undefined : env.pgliteDir, pool: { max: env.dbPoolMax, statementTimeoutMs: env.dbStatementTimeoutMs } }),
 );
 await step('applying migrations', () => database.migrate());
 if (env.isProduction && (await loginCanBypassRestrictions(database.db))) {
@@ -57,6 +57,7 @@ usageTimer.unref();
 
 let shuttingDown = false;
 const app = createApp({
+  readDb: database.readDb,
   usage,
   isShuttingDown: () => shuttingDown,
   db: database.db,

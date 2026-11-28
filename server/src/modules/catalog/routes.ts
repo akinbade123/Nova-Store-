@@ -33,7 +33,8 @@ const findProduct = async (db: Db, column: 'slug' | 'id', value: string) => {
  */
 export const CATALOG_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=300';
 
-export function catalogRoutes({ db, rateLimit }: Deps) {
+// Public and fine a moment out of date, so it reads from the replica when there is one.
+export function catalogRoutes({ readDb: db, rateLimit }: Deps) {
   const app = new Hono<AppEnv>();
 
   app.use('*', etag(), async (c, next) => {

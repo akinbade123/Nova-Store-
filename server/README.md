@@ -145,6 +145,21 @@ That's at most about 15 seconds. Render and Railway wait 30 before forcing a sto
 
 **Check the client IP once.** With Vercel's rewrite and the host's load balancer in front, `TRUST_PROXY_HOPS` is usually 2. After the first deploy, sign in once and look at the API's request log: rate limits key on that IP, so it must be yours, not a proxy's. If every request shows the same address, the number is wrong.
 
+## Scaling the database
+
+One PostgreSQL is plenty at launch. Scale it in this order, and only when the numbers say so (the hourly `Usage summary` log lines and the database host's metrics):
+
+1. **Cache the catalogue at the edge.** Catalogue answers can be cached for a minute (docs/API.md, section 7), so with the API behind Vercel's rewrite most catalogue traffic never reaches the database. This takes more load off than a replica would, for free.
+2. **Add a connection pooler** (PgBouncer, or the host's own) when `instances × DB_POOL_MAX` approaches the database's connection limit. PgBouncer rejects the startup settings the API sends (`options`, `statement_timeout`), so set `ignore_startup_parameters = options, statement_timeout` and put them on the login role instead:
+   ```sql
+   ALTER ROLE nova_api SET role = 'nova_app';
+   ALTER ROLE nova_api SET statement_timeout = '15s';
+   ```
+   (With PgBouncer in transaction mode, row-level security still works: each request's access settings are transaction-local.)
+3. **Add a read replica** when the database is busy with reads that can't be cached. Set `DATABASE_READ_URL` to it (with `sslmode=verify-full`). Only the public catalogue reads from it: it's fine a second or two behind. Accounts, addresses and orders stay on the main database, so nobody sees stale data about themselves. The read pool is read-only even when it points at the main database, so a write sent there by mistake fails in development rather than on the replica. Readiness checks the replica too.
+
+Tested on PostgreSQL 17: with `DATABASE_READ_URL` set, catalogue requests used the `nova-api-read` connections, account requests the main ones, and a write through the read pool was refused.
+
 ## Logs, errors and health
 
 - **Logs** go through `src/lib/logger.ts`: one JSON line per event in production (for your log service), readable lines in development. `LOG_LEVEL` sets the minimum: `debug`, `info` (production default), `warn`, `error` or `silent`. Fields named like passwords, tokens or authorization headers are written as `[redacted]`, and query strings are never logged.

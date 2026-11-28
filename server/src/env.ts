@@ -29,7 +29,7 @@ export function databaseUrlProblem(name: string, value: string | undefined): str
 export function productionProblems(vars: Record<string, string | undefined>): string[] {
   const problems: string[] = [];
   if (!vars.DATABASE_URL) problems.push('DATABASE_URL is required in production. The embedded database is for development only.');
-  for (const name of ['DATABASE_URL', 'DATABASE_MIGRATION_URL']) {
+  for (const name of ['DATABASE_URL', 'DATABASE_MIGRATION_URL', 'DATABASE_READ_URL']) {
     const problem = databaseUrlProblem(name, vars[name]);
     if (problem) problems.push(problem);
   }
@@ -58,6 +58,11 @@ export const env = {
    * DATABASE_URL logs in as a role that is only a member of nova_app (server/README.md).
    */
   databaseMigrationUrl: process.env.DATABASE_MIGRATION_URL || databaseUrl,
+  /**
+   * Optional read replica for the public catalogue (README, "Scaling the database"). Unset: the
+   * catalogue reads the main database, like everything else.
+   */
+  databaseReadUrl: process.env.DATABASE_READ_URL || undefined,
   /** Where the embedded development database keeps its files. */
   pgliteDir: process.env.PGLITE_DIR ?? '.data/dev',
   /** The storefront's public URL, used for links in emails. Required in production. */

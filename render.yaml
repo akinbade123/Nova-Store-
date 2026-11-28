@@ -27,6 +27,9 @@ services:
       # The tables' owner, for migrations at startup, with ?sslmode=verify-full.
       - key: DATABASE_MIGRATION_URL
         sync: false
+      # Optional: a read replica for the catalogue (server/README.md, "Scaling the database").
+      - key: DATABASE_READ_URL
+        sync: false
       - key: APP_URL # the storefront's https:// address
         sync: false
       - key: SUPPORT_EMAIL
