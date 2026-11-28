@@ -1,5 +1,32 @@
 @import 'tailwindcss';
 
+/*
+ * Fonts, served from this site (src/assets/fonts) rather than Google Fonts: no render-blocking
+ * stylesheet from another domain, no extra connections, and the files get hashed names and a
+ * one-year cache like the rest of /assets. Each is one variable file covering every weight used,
+ * Latin characters only; anything outside the range falls back to the system font (font-display:
+ * swap shows text in it until the font arrives). Both fonts are under the SIL Open Font License.
+ *
+ * Deliberately not preloaded: on a throttled phone, preloading both (73 KB) took early bandwidth
+ * from the hero photo and made LCP about 0.15 s worse, for no gain in first paint.
+ */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./assets/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('./assets/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* ------------------------------------------------------------------
    NOVA design tokens
    ------------------------------------------------------------------ */

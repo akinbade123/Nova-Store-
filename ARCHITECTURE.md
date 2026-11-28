@@ -194,7 +194,7 @@ This mode is for development only. Hashing passwords in the browser and storing 
 - **Type scale:** Tailwind's `text-xs`…`text-9xl` plus five NOVA sizes: `text-2xs` (11px), `text-caption` (13px), `text-body` (15px), `text-heading` (28px, section headings on phones) and `text-title` (32px, page titles on phones). Use these rather than `text-[Npx]`. The small uppercase label above section headings is the `eyebrow` utility. Text colours must meet WCAG AA (4.5:1) on every background they sit on; the comments next to `muted`, `sale` and `success` give their ratios.
 - The custom variant `can-hover:` applies hover styles only on devices with a precise pointer, so they don't stick on touch screens.
 - `cn()` in [src/utils/cn.js](src/utils/cn.js) joins conditional class names.
-- The fonts are Inter and Manrope, loaded from Google Fonts in `index.html`.
+- The fonts are Inter and Manrope, self-hosted as variable WOFF2 files in `src/assets/fonts` and declared with `@font-face` in `index.css` (why they aren't preloaded is explained there).
 - Reusable building blocks (Button, Field, Sheet, Accordion, Toaster…) live in [src/components/ui/](src/components/ui/).
 
 ## Accessibility
