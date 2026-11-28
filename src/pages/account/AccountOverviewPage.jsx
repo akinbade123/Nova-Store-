@@ -87,7 +87,7 @@ export default function AccountOverviewPage() {
                       key={item.productId + (item.size ?? '')}
                       src={imageUrl(item.image, { w: 112, h: 140 })}
                       alt=""
-                      className="h-[70px] w-14 rounded-xl bg-surface object-cover ring-2 ring-white"
+                      className="h-17 w-14 rounded-xl bg-surface object-cover ring-2 ring-white"
                     />
                   ))}
                 </div>
@@ -167,7 +167,7 @@ export default function AccountOverviewPage() {
               {saved.map((product) => (
                 <li key={product.id}>
                   <Link to={`/product/${product.slug}`} className="group block">
-                    <div className="aspect-[4/5] overflow-hidden rounded-xl bg-surface">
+                    <div className="aspect-4/5 overflow-hidden rounded-xl bg-surface">
                       <img
                         src={imageUrl(product.images[0].src, { w: 280, h: 350 })}
                         alt=""

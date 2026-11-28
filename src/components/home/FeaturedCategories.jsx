@@ -26,7 +26,7 @@ export function FeaturedCategories() {
             <li key={category.id}>
               <Link
                 to={`/shop?category=${category.slug}`}
-                className="group relative block aspect-[3/4] overflow-hidden rounded-2xl bg-surface sm:aspect-[4/5] lg:aspect-[3/4]"
+                className="group relative block aspect-3/4 overflow-hidden rounded-2xl bg-surface sm:aspect-[4/5] lg:aspect-[3/4]"
               >
                 <SmartImage
                   src={category.image}
@@ -35,7 +35,7 @@ export function FeaturedCategories() {
                   sizes="(min-width: 1024px) 25vw, 50vw"
                   imgClassName="transition-transform duration-700 ease-out-soft group-hover:scale-[1.04]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" aria-hidden="true" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" aria-hidden="true" />
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 text-white sm:p-6">
                   <div className="min-w-0">
                     <p className="hidden text-xs text-white/75 sm:block">{category.tagline}</p>

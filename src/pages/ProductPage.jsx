@@ -23,9 +23,9 @@ function ProductSkeleton() {
     <div className="grid gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16" aria-busy="true" aria-label="Loading product">
       <div className="lg:col-span-7 lg:grid lg:grid-cols-[76px_1fr] lg:gap-4 xl:grid-cols-[88px_1fr] xl:gap-5">
         <div className="hidden flex-col gap-3 lg:flex">
-          {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton aspect-[4/5] rounded-xl" />)}
+          {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton aspect-4/5 rounded-xl" />)}
         </div>
-        <div className="skeleton aspect-[4/5] rounded-2xl lg:rounded-3xl" />
+        <div className="skeleton aspect-4/5 rounded-2xl lg:rounded-3xl" />
       </div>
       <div className="space-y-4 lg:col-span-5 lg:pt-2">
         <Skeleton className="h-3.5 w-24" />
