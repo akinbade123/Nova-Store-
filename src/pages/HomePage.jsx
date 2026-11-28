@@ -11,8 +11,9 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 export default function HomePage() {
   useDocumentTitle();
 
+  // Everything after the hero is off screen on load (render-when-visible in index.css).
   return (
-    <>
+    <div className="[&>section:not(:first-child)]:render-when-visible">
       <Hero />
       <FeaturedCategories />
       <FeaturedProducts />
@@ -21,6 +22,6 @@ export default function HomePage() {
       <ValueProps />
       <Testimonials />
       <Newsletter />
-    </>
+    </div>
   );
 }
