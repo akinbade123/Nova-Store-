@@ -21,13 +21,13 @@ import { discountPercent } from '../utils/format';
 function ProductSkeleton() {
   return (
     <div className="grid gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16" aria-busy="true" aria-label="Loading product">
-      <div className="lg:col-span-7 lg:grid lg:grid-cols-[76px_1fr] lg:gap-4 xl:grid-cols-[88px_1fr] xl:gap-5">
+      <div className="mx-auto w-full max-w-[560px] lg:col-span-6 lg:grid lg:grid-cols-[64px_1fr] lg:gap-3 xl:grid-cols-[72px_1fr] xl:gap-4">
         <div className="hidden flex-col gap-3 lg:flex">
           {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton aspect-[4/5] rounded-xl" />)}
         </div>
         <div className="skeleton aspect-[4/5] rounded-2xl lg:rounded-3xl" />
       </div>
-      <div className="space-y-4 lg:col-span-5 lg:pt-2">
+      <div className="space-y-4 lg:col-span-6 lg:pt-2">
         <Skeleton className="h-3.5 w-24" />
         <Skeleton className="h-10 w-4/5" />
         <Skeleton className="h-4 w-40" />
@@ -38,8 +38,8 @@ function ProductSkeleton() {
         <div className="flex gap-3 pt-6">
           {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-12 flex-1 rounded-xl" />)}
         </div>
-        <Skeleton className="mt-4 h-13 w-full rounded-full" />
-        <Skeleton className="h-13 w-full rounded-full" />
+        <Skeleton className="mt-4 h-13 w-full rounded-md" />
+        <Skeleton className="h-13 w-full rounded-md" />
       </div>
     </div>
   );
@@ -124,7 +124,7 @@ export default function ProductPage() {
         ) : (
           <>
             <div className="grid gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16">
-              <div className="-mx-4 sm:mx-0 lg:col-span-7">
+              <div className="-mx-4 sm:mx-0 lg:col-span-6">
                 <div className="lg:sticky lg:top-24">
                   <ProductGallery key={product.id} images={product.gallery} name={product.name}>
                     <div className="pointer-events-none absolute left-4 top-4 flex flex-col items-start gap-1.5">
@@ -135,7 +135,7 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              <div className="lg:col-span-5">
+              <div className="lg:col-span-6">
                 <ProductPurchase key={product.id} product={product} />
                 <div className="mt-10">
                   <ProductAccordion product={product} />

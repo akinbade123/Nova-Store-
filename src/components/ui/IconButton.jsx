@@ -5,7 +5,7 @@ import { cn } from '../../utils/cn';
 /** Square icon control with an optional count badge. `label` is required for accessibility. */
 export const IconButton = forwardRef(function IconButton({ to, label, count, className, children, ...props }, ref) {
   const classes = cn(
-    'relative inline-flex size-10 items-center justify-center rounded-full text-ink transition-colors duration-200 hover:bg-surface',
+    'relative inline-flex size-10 items-center justify-center rounded-md text-ink transition-colors duration-200 hover:bg-surface',
     className,
   );
   const badge =

@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductCard, ProductCardSkeleton } from './ProductCard';
 import { cn } from '../../utils/cn';
 
-const slideClass = 'w-[72%] shrink-0 snap-start sm:w-[44%] md:w-[31%] xl:w-[calc((100%-4.5rem)/4)]';
+const slideClass = 'w-[58%] shrink-0 snap-start sm:w-[36%] md:w-[26%] lg:w-[23%] xl:w-[calc((100%-6rem)/5)]';
 
 /** Horizontal product rail with native scroll-snap, swipe and arrow controls. */
 export function ProductCarousel({ products, loading, label, renderHeader }) {
@@ -50,7 +50,7 @@ export function ProductCarousel({ products, loading, label, renderHeader }) {
           disabled={disabled}
           aria-label={ariaLabel}
           className={cn(
-            'inline-flex size-11 items-center justify-center rounded-full ring-1 ring-inset ring-line-strong transition-colors duration-200',
+            'inline-flex size-11 items-center justify-center rounded-md ring-1 ring-inset ring-line-strong transition-colors duration-200',
             'hover:bg-ink hover:text-white hover:ring-ink disabled:pointer-events-none disabled:opacity-35',
           )}
         >

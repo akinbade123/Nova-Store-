@@ -50,7 +50,7 @@ export function Toaster() {
                 toast.action.onClick();
                 dismiss(toast.id);
               }}
-              className="shrink-0 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink underline-offset-4 hover:underline"
+              className="shrink-0 rounded-md px-3 py-1.5 text-[13px] font-semibold text-ink underline-offset-4 hover:underline"
             >
               {toast.action.label}
             </button>
@@ -58,7 +58,7 @@ export function Toaster() {
           <button
             type="button"
             onClick={() => dismiss(toast.id)}
-            className={cn('inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface hover:text-ink')}
+            className={cn('inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted hover:bg-surface hover:text-ink')}
             aria-label="Dismiss notification"
           >
             <X className="size-4" />

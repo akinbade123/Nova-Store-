@@ -30,7 +30,7 @@ export function PromoCodeForm() {
               removePromo();
               toast({ variant: 'info', title: `${promo.code} removed` });
             }}
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted hover:bg-white hover:text-ink"
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-white hover:text-ink"
             aria-label={`Remove promo code ${promo.code}`}
           >
             <X className="size-4" />
@@ -95,7 +95,7 @@ export function PromoCodeForm() {
                 aria-invalid={Boolean(error)}
                 aria-describedby={error ? `${id}-error` : undefined}
                 className={cn(
-                  'h-11 w-full rounded-full bg-white px-4 text-sm uppercase tracking-wide outline-none ring-1 ring-inset transition-shadow placeholder:normal-case placeholder:tracking-normal placeholder:text-subtle focus:ring-2',
+                  'h-11 w-full rounded-md bg-white px-4 text-sm uppercase tracking-wide outline-none ring-1 ring-inset transition-shadow placeholder:normal-case placeholder:tracking-normal placeholder:text-subtle focus:ring-2',
                   error ? 'ring-danger focus:ring-danger' : 'ring-line-strong focus:ring-ink',
                 )}
               />
@@ -103,7 +103,7 @@ export function PromoCodeForm() {
             <button
               type="submit"
               disabled={loading || !code.trim()}
-              className="inline-flex h-11 min-w-[84px] items-center justify-center rounded-full bg-ink px-5 text-sm font-medium text-white transition-colors hover:bg-ink-soft disabled:bg-ink/30"
+              className="inline-flex h-11 min-w-[84px] items-center justify-center rounded-md bg-ink px-5 text-sm font-medium text-white transition-colors hover:bg-ink-soft disabled:bg-ink/30"
             >
               {loading ? (
                 <span className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" aria-label="Applying" />

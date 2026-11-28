@@ -81,7 +81,7 @@ export function AccountLayout() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="mt-14 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-medium text-muted ring-1 ring-inset ring-line-strong hover:text-ink lg:hidden"
+            className="mt-14 flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-medium text-muted ring-1 ring-inset ring-line-strong hover:text-ink lg:hidden"
           >
             <LogOut className="size-4" aria-hidden="true" />
             Sign out

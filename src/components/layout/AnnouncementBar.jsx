@@ -25,7 +25,7 @@ export function AnnouncementBar() {
       <button
         type="button"
         onClick={() => setDismissedId(announcement.id)}
-        className="absolute right-2 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:right-4"
+        className="absolute right-2 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:right-4"
         aria-label="Dismiss announcement"
       >
         <X className="size-4" />

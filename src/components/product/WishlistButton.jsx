@@ -27,7 +27,7 @@ export function WishlistButton({ product, className }) {
       aria-pressed={saved}
       aria-label={saved ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}
       className={cn(
-        'inline-flex size-9 items-center justify-center rounded-full bg-white/90 text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur',
+        'inline-flex size-9 items-center justify-center rounded-md bg-white/90 text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)] backdrop-blur',
         'transition-[transform,background-color] duration-200 hover:scale-105 hover:bg-white active:scale-95',
         className,
       )}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Heart, Menu, Search, ShoppingBag } from 'lucide-react';
 import { AccountMenu } from './AccountMenu';
 import { Logo } from '../ui/Logo';
@@ -12,11 +12,43 @@ import { cn } from '../../utils/cn';
 
 const iconProps = { className: 'size-[21px]', strokeWidth: 1.6 };
 
+/** Always-visible search field; submits to the shop with a ?q= query. */
+function NavSearch({ className }) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+
+  const submit = (event) => {
+    event.preventDefault();
+    const term = query.trim();
+    navigate(term ? `/shop?q=${encodeURIComponent(term)}` : '/shop');
+    setQuery('');
+  };
+
+  return (
+    <form onSubmit={submit} role="search" className={className}>
+      <label className="flex h-10 w-full items-center gap-2.5 rounded-md bg-surface px-3.5 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-ink">
+        <Search className="size-4 shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
+        <span className="sr-only">Search products</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search products…"
+          className="h-full w-full min-w-0 bg-transparent text-sm text-ink outline-none placeholder:text-subtle [&::-webkit-search-cancel-button]:hidden"
+          autoComplete="off"
+          enterKeyHint="search"
+        />
+      </label>
+    </form>
+  );
+}
+
 export function Navbar() {
   const { count: cartCount } = useCart();
   const { count: wishlistCount } = useWishlist();
   const { openCart, openSearch, openMenu } = useUI();
   const [scrolled, setScrolled] = useState(false);
+  const isHome = useLocation().pathname === '/';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -70,7 +102,8 @@ export function Navbar() {
 
         {/* Right: actions */}
         <div className="flex items-center justify-end gap-0.5">
-          <IconButton label="Search" onClick={openSearch} className="max-lg:hidden">
+          {isHome && <NavSearch className="mr-1 hidden w-56 xl:block 2xl:w-64" />}
+          <IconButton label="Search" onClick={openSearch} className={cn('max-lg:hidden', isHome && 'xl:hidden')}>
             <Search {...iconProps} />
           </IconButton>
           <AccountMenu className="max-lg:hidden" />

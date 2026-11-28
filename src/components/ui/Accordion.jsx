@@ -27,7 +27,7 @@ export function AccordionItem({ title, defaultOpen = false, open: controlledOpen
           />
         </button>
       </Heading>
-      <div id={id} hidden={!open} className="pb-6 text-[14.5px] leading-relaxed text-ink/75">
+      <div id={id} hidden={!open} className="pb-5 text-[14.5px] leading-relaxed text-ink/75">
         {children}
       </div>
     </div>

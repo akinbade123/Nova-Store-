@@ -1,10 +1,12 @@
 import { Check } from 'lucide-react';
 import { AccordionItem } from '../ui/Accordion';
 
+const itemClass = 'rounded-md border border-line px-4';
+
 export function ProductAccordion({ product }) {
   return (
-    <div className="border-t border-line">
-      <AccordionItem title="Details" defaultOpen>
+    <div className="space-y-2">
+      <AccordionItem className={itemClass} title="Details" defaultOpen>
         <p>{product.description}</p>
         {product.highlights?.length > 0 && (
           <ul className="mt-4 space-y-2.5">
@@ -19,8 +21,8 @@ export function ProductAccordion({ product }) {
       </AccordionItem>
 
       {product.specs?.length > 0 && (
-        <AccordionItem title="Specifications">
-          <dl className="divide-y divide-line rounded-xl ring-1 ring-line">
+        <AccordionItem className={itemClass} title="Specifications">
+          <dl className="divide-y divide-line rounded-md ring-1 ring-line">
             {product.specs.map(([label, value]) => (
               <div key={label} className="grid grid-cols-[minmax(110px,40%)_1fr] gap-4 px-4 py-3">
                 <dt className="text-muted">{label}</dt>
@@ -32,12 +34,12 @@ export function ProductAccordion({ product }) {
       )}
 
       {product.care && (
-        <AccordionItem title="Materials & care">
+        <AccordionItem className={itemClass} title="Materials & care">
           <p>{product.care}</p>
         </AccordionItem>
       )}
 
-      <AccordionItem title="Delivery & returns">
+      <AccordionItem className={itemClass} title="Delivery & returns">
         <ul className="space-y-2.5">
           <li>
             <span className="font-medium text-ink">Express (1–2 business days):</span> free on orders over $100, otherwise $9.95.

@@ -34,7 +34,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
 
   return (
     <article className="group relative flex flex-col" aria-labelledby={`product-${product.id}`}>
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-surface">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-surface">
         <Link to={href} tabIndex={-1} aria-hidden="true" className="absolute inset-0">
           <SmartImage
             src={product.images[0].src}
@@ -70,7 +70,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
             <button
               type="button"
               onClick={handleQuickAdd}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white/95 text-[13px] font-semibold text-ink shadow-soft backdrop-blur transition-colors duration-200 hover:bg-ink hover:text-white"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-white/95 text-[13px] font-semibold text-ink shadow-soft backdrop-blur transition-colors duration-200 hover:bg-ink hover:text-white"
             >
               {justAdded ? <Check className="size-4" /> : <Plus className="size-4" />}
               {justAdded ? 'Added to bag' : needsSize ? 'Quick add — select size' : 'Quick add'}
@@ -85,7 +85,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
             type="button"
             onClick={handleQuickAdd}
             aria-label={`Quick add ${product.name} to bag`}
-            className="absolute bottom-3 right-3 inline-flex size-10 items-center justify-center rounded-full bg-white text-ink shadow-soft transition-transform active:scale-95 can-hover:hidden"
+            className="absolute bottom-3 right-3 inline-flex size-9 items-center justify-center rounded-md bg-white text-ink shadow-soft transition-transform active:scale-95 can-hover:hidden"
           >
             {justAdded ? <Check className="size-[18px]" /> : <ShoppingBag className="size-[18px]" strokeWidth={1.75} />}
           </button>
@@ -103,7 +103,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
               <button
                 type="button"
                 onClick={() => setPickingSize(false)}
-                className="-mr-1 inline-flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface hover:text-ink"
+                className="-mr-1 inline-flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface hover:text-ink"
                 aria-label="Close size selection"
               >
                 <X className="size-3.5" />
@@ -115,7 +115,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
                   key={size}
                   type="button"
                   onClick={() => chooseSize(size)}
-                  className="h-8 min-w-9 rounded-full px-2.5 text-xs font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
+                  className="h-8 min-w-9 rounded-md px-2.5 text-xs font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
                 >
                   {size}
                 </button>
@@ -125,7 +125,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
         )}
       </div>
 
-      <div className="flex flex-1 flex-col pt-4">
+      <div className="flex flex-1 flex-col pt-3">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-muted">{categoryName(product.category)}</p>
           {product.colors.length > 1 && (
@@ -141,7 +141,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
             </div>
           )}
         </div>
-        <h3 id={`product-${product.id}`} className="mt-1 font-sans text-[15px] font-medium leading-snug tracking-normal">
+        <h3 id={`product-${product.id}`} className="mt-1 font-sans text-sm font-medium leading-snug tracking-normal">
           <Link to={href} className="line-clamp-1 underline-offset-4 hover:underline">
             {product.name}
           </Link>
@@ -159,7 +159,7 @@ export function ProductCard({ product, sizes = '(min-width: 1280px) 22vw, (min-w
 export function ProductCardSkeleton() {
   return (
     <div aria-hidden="true">
-      <div className="skeleton aspect-[4/5] rounded-2xl" />
+      <div className="skeleton aspect-[4/5] rounded-xl" />
       <div className="space-y-2.5 pt-4">
         <div className="skeleton h-3 w-16 rounded" />
         <div className="skeleton h-4 w-4/5 rounded" />

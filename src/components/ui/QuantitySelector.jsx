@@ -7,13 +7,13 @@ export function QuantitySelector({ value, onChange, min = 1, max = 10, size = 'm
     <div
       role="group"
       aria-label={label}
-      className={cn('inline-flex items-center rounded-full ring-1 ring-inset ring-line-strong', dims, className)}
+      className={cn('inline-flex items-center rounded-md ring-1 ring-inset ring-line-strong', dims, className)}
     >
       <button
         type="button"
         onClick={() => onChange(Math.max(min, value - 1))}
         disabled={value <= min}
-        className="inline-flex items-center justify-center rounded-full transition-colors hover:bg-surface disabled:opacity-30"
+        className="inline-flex items-center justify-center rounded-md transition-colors hover:bg-surface disabled:opacity-30"
         aria-label="Decrease quantity"
       >
         <Minus className="size-4" />
@@ -25,7 +25,7 @@ export function QuantitySelector({ value, onChange, min = 1, max = 10, size = 'm
         type="button"
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="inline-flex items-center justify-center rounded-full transition-colors hover:bg-surface disabled:opacity-30"
+        className="inline-flex items-center justify-center rounded-md transition-colors hover:bg-surface disabled:opacity-30"
         aria-label="Increase quantity"
       >
         <Plus className="size-4" />

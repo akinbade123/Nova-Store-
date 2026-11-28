@@ -43,7 +43,7 @@ export function SearchPanel() {
       <div className="relative max-h-dvh animate-slide-down overflow-y-auto bg-white shadow-lift">
         <div className="mx-auto max-w-3xl px-4 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-6">
           <form onSubmit={submit} role="search" className="flex items-center gap-2">
-            <label className="flex h-14 flex-1 items-center gap-3 rounded-full bg-surface px-5 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-ink">
+            <label className="flex h-14 flex-1 items-center gap-3 rounded-md bg-surface px-5 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-ink">
               <Search className="size-5 shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
               <span className="sr-only">Search NOVA</span>
               <input
@@ -63,7 +63,7 @@ export function SearchPanel() {
                     setQuery('');
                     inputRef.current?.focus();
                   }}
-                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-line-strong/70 text-ink hover:bg-line-strong"
+                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-line-strong/70 text-ink hover:bg-line-strong"
                   aria-label="Clear search"
                 >
                   <X className="size-3.5" />
@@ -73,7 +73,7 @@ export function SearchPanel() {
             <button
               type="button"
               onClick={close}
-              className="h-11 shrink-0 rounded-full px-3 text-sm font-medium text-ink hover:bg-surface"
+              className="h-11 shrink-0 rounded-md px-3 text-sm font-medium text-ink hover:bg-surface"
             >
               Cancel
             </button>
@@ -89,7 +89,7 @@ export function SearchPanel() {
                       <button
                         type="button"
                         onClick={() => setQuery(term)}
-                        className="h-9 rounded-full px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
+                        className="h-9 rounded-md px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
                       >
                         {term}
                       </button>

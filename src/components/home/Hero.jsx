@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, RotateCcw, Star } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, ArrowUpRight, RotateCcw, Search, Star } from 'lucide-react';
 import { Container } from '../ui/Container';
 import { Button } from '../ui/Button';
 import { SmartImage } from '../ui/SmartImage';
@@ -11,6 +12,15 @@ const HERO_IMAGE = '1490481651871-ab68de25d43d';
 const spotlight = products.find((product) => product.slug === 'moto-leather-jacket');
 
 export function Hero() {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    const term = query.trim();
+    navigate(term ? `/shop?q=${encodeURIComponent(term)}` : '/shop');
+  };
+
   return (
     <section aria-labelledby="hero-heading" className="pt-3 sm:pt-4 lg:pt-6">
       <Container className="px-3 sm:px-6">
@@ -42,7 +52,25 @@ export function Hero() {
             <p className="mt-5 max-w-[440px] text-base leading-relaxed text-ink/70 sm:text-[17px]">
               Thoughtfully chosen electronics, fashion and home essentials — designed to be lived with and made to last.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <form onSubmit={submitSearch} role="search" className="mt-7 hidden w-full max-w-[460px] items-center gap-2 lg:flex">
+              <label className="flex h-12 flex-1 items-center gap-3 rounded-md bg-white px-4 ring-1 ring-inset ring-line-strong transition focus-within:ring-2 focus-within:ring-ink">
+                <Search className="size-[18px] shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
+                <span className="sr-only">Search products</span>
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search products, categories…"
+                  className="h-full w-full min-w-0 bg-transparent text-[15px] text-ink outline-none placeholder:text-subtle"
+                  autoComplete="off"
+                  enterKeyHint="search"
+                />
+              </label>
+              <Button type="submit" className="h-12">
+                Search
+              </Button>
+            </form>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button to="/shop" size="lg" className="group">
                 Shop Now
                 <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
@@ -54,7 +82,7 @@ export function Hero() {
             <dl className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px] text-ink/70">
               <div className="flex items-center gap-2">
                 <dt className="sr-only">Customer rating</dt>
-                <Star className="size-4 fill-ink text-ink" strokeWidth={0} aria-hidden="true" />
+                <Star className="size-4 fill-current text-star" strokeWidth={0} aria-hidden="true" />
                 <dd>
                   <span className="font-semibold text-ink">4.9/5</span> from 12,000+ reviews
                 </dd>

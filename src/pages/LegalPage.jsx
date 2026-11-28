@@ -28,7 +28,7 @@ export default function LegalPage() {
                 to={`/legal/${key}`}
                 className={({ isActive }) =>
                   cn(
-                    'inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 text-[13px] font-medium transition-colors',
+                    'inline-flex h-9 items-center whitespace-nowrap rounded-md px-4 text-[13px] font-medium transition-colors',
                     isActive ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong hover:ring-ink',
                   )
                 }

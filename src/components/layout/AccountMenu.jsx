@@ -66,7 +66,7 @@ export function AccountMenu({ className }) {
         aria-expanded={open}
         aria-controls={menuId}
         aria-label={`Account menu for ${user.firstName}`}
-        className="inline-flex size-10 items-center justify-center rounded-full transition-colors hover:bg-surface"
+        className="inline-flex size-10 items-center justify-center rounded-md transition-colors hover:bg-surface"
       >
         <span className="flex size-8 items-center justify-center rounded-full bg-ink text-[11px] font-semibold tracking-wide text-white">
           {initials(user)}

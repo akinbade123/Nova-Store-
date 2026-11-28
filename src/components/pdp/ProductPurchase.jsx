@@ -289,7 +289,7 @@ export function ProductPurchase({ product }) {
                   onClick={handleWishlist}
                   aria-pressed={saved}
                   aria-label={saved ? 'Remove from wishlist' : 'Save to wishlist'}
-                  className="inline-flex size-13 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ring-line-strong transition-colors hover:ring-ink"
+                  className="inline-flex size-13 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-line-strong transition-colors hover:ring-ink"
                 >
                   <Heart className={cn('size-5', saved && 'fill-sale text-sale')} strokeWidth={1.75} />
                 </button>
@@ -317,7 +317,7 @@ export function ProductPurchase({ product }) {
                 onClick={handleWishlist}
                 aria-pressed={saved}
                 aria-label={saved ? 'Remove from wishlist' : 'Save to wishlist'}
-                className="inline-flex size-13 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ring-line-strong hover:ring-ink"
+                className="inline-flex size-13 shrink-0 items-center justify-center rounded-md ring-1 ring-inset ring-line-strong hover:ring-ink"
               >
                 <Heart className={cn('size-5', saved && 'fill-sale text-sale')} strokeWidth={1.75} />
               </button>

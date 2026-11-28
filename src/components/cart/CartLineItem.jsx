@@ -84,7 +84,7 @@ export function CartLineItem({ item }) {
             <button
               type="button"
               onClick={handleSaveForLater}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] text-muted transition-colors hover:bg-surface hover:text-ink"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] text-muted transition-colors hover:bg-surface hover:text-ink"
             >
               <Heart className="size-4" strokeWidth={1.75} aria-hidden="true" />
               <span className="hidden sm:inline">Save for later</span>
@@ -93,7 +93,7 @@ export function CartLineItem({ item }) {
             <button
               type="button"
               onClick={handleRemove}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] text-muted transition-colors hover:bg-surface hover:text-danger"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] text-muted transition-colors hover:bg-surface hover:text-danger"
             >
               <Trash2 className="size-4" strokeWidth={1.75} aria-hidden="true" />
               <span className="hidden sm:inline">Remove</span>

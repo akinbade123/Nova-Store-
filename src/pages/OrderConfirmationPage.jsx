@@ -97,7 +97,7 @@ export default function OrderConfirmationPage() {
           <button
             type="button"
             onClick={copyId}
-            className="inline-flex size-8 items-center justify-center rounded-full hover:bg-white"
+            className="inline-flex size-8 items-center justify-center rounded-md hover:bg-white"
             aria-label={copied ? 'Order number copied' : 'Copy order number'}
           >
             {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" strokeWidth={1.75} />}

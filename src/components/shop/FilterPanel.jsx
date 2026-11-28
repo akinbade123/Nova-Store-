@@ -118,7 +118,7 @@ function PriceFilter({ minPrice, maxPrice, onChange }) {
                 aria-pressed={active}
                 onClick={() => (active ? onChange(null, null) : onChange(range.min, range.max))}
                 className={cn(
-                  'h-8 rounded-full px-3 text-[13px] font-medium transition-colors',
+                  'h-8 rounded-md px-3 text-[13px] font-medium transition-colors',
                   active ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong hover:ring-ink',
                 )}
               >

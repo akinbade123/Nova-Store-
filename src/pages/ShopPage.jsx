@@ -60,7 +60,7 @@ function ShopSearch({ value, onSearch, className }) {
       }}
       className={className}
     >
-      <label className="flex h-11 items-center gap-2.5 rounded-full bg-surface px-4 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-ink">
+      <label className="flex h-11 items-center gap-2.5 rounded-md bg-surface px-4 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-ink">
         <Search className="size-[18px] shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
         <span className="sr-only">Search products</span>
         <input
@@ -78,7 +78,7 @@ function ShopSearch({ value, onSearch, className }) {
               setTerm('');
               onSearch('');
             }}
-            className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-line-strong/70 hover:bg-line-strong"
+            className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-line-strong/70 hover:bg-line-strong"
             aria-label="Clear search"
           >
             <X className="size-3" />
@@ -151,7 +151,7 @@ export default function ShopPage() {
                       onClick={() => update({ categories: category.slug ? [category.slug] : [] })}
                       aria-pressed={active}
                       className={cn(
-                        'h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-[13px] font-medium transition-colors',
+                        'h-9 shrink-0 whitespace-nowrap rounded-md px-4 text-[13px] font-medium transition-colors',
                         active ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong',
                       )}
                     >
@@ -172,7 +172,7 @@ export default function ShopPage() {
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong hover:ring-ink lg:hidden"
+              className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong hover:ring-ink lg:hidden"
             >
               <SlidersHorizontal className="size-4" strokeWidth={1.75} aria-hidden="true" />
               Filters
@@ -187,7 +187,7 @@ export default function ShopPage() {
               onClick={() => setSidebarVisible((value) => !value)}
               aria-expanded={sidebarVisible}
               aria-controls="shop-filters"
-              className="hidden h-10 items-center gap-2 rounded-full pr-2 text-sm font-medium hover:text-ink lg:inline-flex"
+              className="hidden h-10 items-center gap-2 rounded-md pr-2 text-sm font-medium hover:text-ink lg:inline-flex"
             >
               {sidebarVisible ? (
                 <PanelLeftClose className="size-[18px]" strokeWidth={1.75} aria-hidden="true" />
@@ -349,8 +349,8 @@ function ProductGrid({ wide, children }) {
   return (
     <div
       className={cn(
-        'grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 md:grid-cols-3 lg:gap-x-6 lg:gap-y-14',
-        wide && 'xl:grid-cols-4',
+        'grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-4',
+        wide && 'lg:grid-cols-4 xl:grid-cols-5',
       )}
     >
       {children}

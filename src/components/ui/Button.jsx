@@ -20,14 +20,14 @@ const sizes = {
 };
 
 /**
- * Pill button. Renders a <Link> when `to` is supplied, otherwise a <button>.
+ * Button (rounded-md). Renders a <Link> when `to` is supplied, otherwise a <button>.
  */
 export const Button = forwardRef(function Button(
   { to, variant = 'primary', size = 'md', loading = false, fullWidth = false, className, children, disabled, ...props },
   ref,
 ) {
   const classes = cn(
-    'inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-full font-medium tracking-[-0.005em]',
+    'inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium tracking-[-0.005em]',
     'transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.98] disabled:pointer-events-none',
     variants[variant],
     sizes[size],

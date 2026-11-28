@@ -97,7 +97,7 @@ export default function CollectionPage() {
 
         <div
           aria-busy={loading}
-          className={`grid grid-cols-2 gap-x-3 gap-y-10 transition-opacity duration-300 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-14 ${loading && current ? 'opacity-50' : ''}`}
+          className={`grid grid-cols-2 gap-x-3 gap-y-10 transition-opacity duration-300 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-5 ${loading && current ? 'opacity-50' : ''}`}
         >
           {current
             ? current.products.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)

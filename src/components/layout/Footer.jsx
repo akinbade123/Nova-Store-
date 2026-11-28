@@ -68,7 +68,7 @@ export function Footer() {
                     target="_blank"
                     rel="noreferrer noopener"
                     aria-label={`NOVA on ${label}`}
-                    className="inline-flex size-10 items-center justify-center rounded-full bg-white/[0.07] text-white/80 transition-colors hover:bg-white hover:text-ink"
+                    className="inline-flex size-10 items-center justify-center rounded-md bg-white/[0.07] text-white/80 transition-colors hover:bg-white hover:text-ink"
                   >
                     <Icon />
                   </a>

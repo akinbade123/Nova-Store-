@@ -105,11 +105,11 @@ export function CartDrawer() {
                   </div>
                   <p className="mt-1 text-[13px] text-muted">{[color, size && `Size ${size}`].filter(Boolean).join(' · ') || '\u00a0'}</p>
                   <div className="mt-auto flex items-center justify-between pt-3">
-                    <div className="flex h-9 items-center rounded-full ring-1 ring-inset ring-line-strong">
+                    <div className="flex h-9 items-center rounded-md ring-1 ring-inset ring-line-strong">
                       <button
                         type="button"
                         onClick={() => updateQuantity(key, quantity - 1)}
-                        className="inline-flex size-9 items-center justify-center rounded-full hover:bg-surface"
+                        className="inline-flex size-9 items-center justify-center rounded-md hover:bg-surface"
                         aria-label={`Decrease quantity of ${product.name}`}
                       >
                         <Minus className="size-3.5" />
@@ -121,7 +121,7 @@ export function CartDrawer() {
                         type="button"
                         onClick={() => updateQuantity(key, quantity + 1)}
                         disabled={quantity >= maxQuantityFor(product)}
-                        className="inline-flex size-9 items-center justify-center rounded-full hover:bg-surface disabled:opacity-30"
+                        className="inline-flex size-9 items-center justify-center rounded-md hover:bg-surface disabled:opacity-30"
                         aria-label={`Increase quantity of ${product.name}`}
                       >
                         <Plus className="size-3.5" />

@@ -73,7 +73,7 @@ export function Sheet({ open, onClose, side = 'right', title, label, headerExtra
             <button
               type="button"
               onClick={onClose}
-              className="-mr-2 inline-flex size-10 items-center justify-center rounded-full transition-colors hover:bg-surface"
+              className="-mr-2 inline-flex size-10 items-center justify-center rounded-md transition-colors hover:bg-surface"
               aria-label="Close"
             >
               <X className="size-5" strokeWidth={1.75} />

@@ -53,7 +53,7 @@ function ReviewItem({ review }) {
           onClick={() => setVoted((value) => !value)}
           aria-pressed={voted}
           className={cn(
-            'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] ring-1 ring-inset transition-colors',
+            'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] ring-1 ring-inset transition-colors',
             voted ? 'bg-ink text-white ring-ink' : 'text-muted ring-line-strong hover:text-ink hover:ring-ink',
           )}
         >
@@ -131,7 +131,7 @@ export function ProductReviews({ product }) {
                       >
                         <span className="text-left font-medium">{row.stars} star</span>
                         <span className="h-2 overflow-hidden rounded-full bg-line" aria-hidden="true">
-                          <span className="block h-full rounded-full bg-ink" style={{ width: `${(row.count / max) * 100}%` }} />
+                          <span className="block h-full rounded-full bg-star" style={{ width: `${(row.count / max) * 100}%` }} />
                         </span>
                         <span className="text-right tabular-nums text-muted">{row.count.toLocaleString()}</span>
                       </button>
@@ -163,7 +163,7 @@ export function ProductReviews({ product }) {
               <select
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
-                className="h-9 cursor-pointer appearance-none rounded-full bg-white pl-4 pr-9 text-[13px] font-medium ring-1 ring-inset ring-line-strong outline-none hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink"
+                className="h-9 cursor-pointer appearance-none rounded-md bg-white pl-4 pr-9 text-[13px] font-medium ring-1 ring-inset ring-line-strong outline-none hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink"
               >
                 {Object.entries(SORTS).map(([value, option]) => (
                   <option key={value} value={value}>

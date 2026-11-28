@@ -64,7 +64,7 @@ export function Newsletter() {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <div
                   className={cn(
-                    'flex h-13 shrink-0 items-center sm:flex-1 gap-3 rounded-full bg-white px-5 ring-1 ring-inset transition-shadow focus-within:ring-2',
+                    'flex h-13 shrink-0 items-center sm:flex-1 gap-3 rounded-md bg-white px-5 ring-1 ring-inset transition-shadow focus-within:ring-2',
                     error ? 'ring-danger focus-within:ring-danger' : 'ring-line-strong focus-within:ring-ink',
                   )}
                 >

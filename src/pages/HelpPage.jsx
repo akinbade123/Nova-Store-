@@ -152,7 +152,7 @@ export default function HelpPage() {
             <h1 className="text-[36px] font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl">How can we help?</h1>
             <p className="mt-4 text-[15px] text-muted sm:text-base">Search our answers, or get in touch — real people reply within hours.</p>
             <form role="search" onSubmit={(event) => event.preventDefault()} className="mt-8">
-              <label className="mx-auto flex h-14 max-w-xl items-center gap-3 rounded-full bg-white px-5 shadow-soft ring-1 ring-line transition focus-within:ring-2 focus-within:ring-ink">
+              <label className="mx-auto flex h-14 max-w-xl items-center gap-3 rounded-md bg-white px-5 shadow-soft ring-1 ring-line transition focus-within:ring-2 focus-within:ring-ink">
                 <Search className="size-5 shrink-0 text-muted" strokeWidth={1.75} aria-hidden="true" />
                 <span className="sr-only">Search help articles</span>
                 <input
@@ -163,7 +163,7 @@ export default function HelpPage() {
                   className="h-full w-full bg-transparent text-base outline-none placeholder:text-subtle [&::-webkit-search-cancel-button]:hidden"
                 />
                 {query && (
-                  <button type="button" onClick={() => setQuery('')} className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-surface hover:bg-line" aria-label="Clear search">
+                  <button type="button" onClick={() => setQuery('')} className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-surface hover:bg-line" aria-label="Clear search">
                     <X className="size-3.5" />
                   </button>
                 )}

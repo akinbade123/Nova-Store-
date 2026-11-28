@@ -78,10 +78,10 @@ export function ProductGallery({ images, name, children }) {
   }, [active]);
 
   return (
-    <div className="lg:grid lg:grid-cols-[76px_1fr] lg:gap-4 xl:grid-cols-[88px_1fr] xl:gap-5">
+    <div className="mx-auto w-full max-w-[560px] lg:grid lg:grid-cols-[64px_1fr] lg:gap-3 xl:grid-cols-[72px_1fr] xl:gap-4">
       {/* Main image */}
       <div
-        className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-surface max-sm:rounded-none lg:order-2 lg:rounded-3xl"
+        className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-surface max-sm:rounded-none lg:order-2 lg:rounded-2xl"
         role="region"
         aria-roledescription="carousel"
         aria-label={`${name} images`}
@@ -122,7 +122,7 @@ export function ProductGallery({ images, name, children }) {
                 disabled={disabled}
                 aria-label={label}
                 className={cn(
-                  'absolute top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow-soft backdrop-blur transition-opacity duration-200',
+                  'absolute top-1/2 hidden size-11 -translate-y-1/2 items-center justify-center rounded-md bg-white/90 shadow-soft backdrop-blur transition-opacity duration-200',
                   'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 disabled:!opacity-0 can-hover:flex',
                   side,
                 )}
