@@ -51,6 +51,9 @@ export function systemRoutes(deps: Deps) {
    * Names and timings only: no hostnames, versions or data, because the endpoint is public.
    */
   app.get('/health/ready', async (c) => {
+    // Shutting down: tell the load balancer first, so it stops sending new requests here while the
+    // ones in progress finish (src/index.ts).
+    if (deps.isShuttingDown()) return c.json({ status: 'shutting-down' }, 503);
     const checks: Record<string, Check> = {};
     const started = performance.now();
     try {
@@ -70,10 +73,21 @@ export function systemRoutes(deps: Deps) {
         checks.migrations = { ok: false, detail: 'migration table missing' };
       }
     }
+    // The catalogue's read replica, when there is one: without it the shop can't show products.
+    if (deps.readDb !== db) {
+      const readStarted = performance.now();
+      try {
+        await withTimeout(deps.readDb.execute(sql`SELECT 1`), DB_TIMEOUT_MS);
+        checks.readDatabase = { ok: true, ms: Math.round(performance.now() - readStarted) };
+      } catch (error) {
+        checks.readDatabase = { ok: false, ms: Math.round(performance.now() - readStarted), detail: 'not reachable' };
+        c.get('log').error('Health check: read database not reachable', { error });
+      }
+    }
     // Not critical for browsing, so it doesn't fail the check; reported so it's noticed.
     checks.email = { ok: process.env.NODE_ENV !== 'production' || mailer.name !== 'console', detail: mailer.name };
     const memoryMb = Math.round(process.memoryUsage().rss / 1048576);
-    const healthy = checks.database.ok && checks.migrations?.ok !== false;
+    const healthy = checks.database.ok && checks.migrations?.ok !== false && checks.readDatabase?.ok !== false;
     if (!healthy) c.get('log').warn('Health check failed', { checks });
     return c.json(
       { status: healthy ? 'ok' : 'unavailable', checks, memoryMb, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000) },

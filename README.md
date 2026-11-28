@@ -91,6 +91,8 @@ The site is deployed on Vercel. Every push to `main` goes live, and each pull re
 
 **Something broke after a deploy?** Roll back first, investigate second: [docs/ROLLBACK.md](docs/ROLLBACK.md) has the one-click and one-command steps.
 
+**The API** isn't hosted yet. [server/README.md](server/README.md), "Deploying", has the container, the Render blueprint ([render.yaml](render.yaml)) and the settings for any other host.
+
 **Costs.** Before taking real orders, move Vercel to a plan that allows commercial use and turn on its spending alerts. Set a budget on every service as you sign up for it: [docs/COSTS.md](docs/COSTS.md) has the steps and a monthly check.
 
 `npm run build` produces a static site in `dist/` that any static host can serve. Routing happens in the browser, so the host must answer every path that isn't a real file with `index.html`. Otherwise, refreshing a page like `/shop` gives a 404.

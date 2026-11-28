@@ -109,6 +109,57 @@ CREATE ROLE nova_api LOGIN PASSWORD '<long random password>' IN ROLE nova_app;
 
 Then set `DATABASE_URL` to log in as `nova_api`, and `DATABASE_MIGRATION_URL` as the owner. With a single owner login the API still runs as `nova_app`, but a SQL injection could switch back with `RESET ROLE`; the API logs a warning at startup in that case. If a connection pooler rejects startup options (some PgBouncer setups), the two-login setup is required.
 
+## Deploying
+
+The API ships as a container: [server/Dockerfile](Dockerfile), built from the repository root because it imports the storefront's shared rules from `../src`:
+
+```bash
+docker build -f server/Dockerfile -t nova-api .
+```
+
+It runs on any container host. [render.yaml](../render.yaml) sets it up on Render in one step (Render → New → Blueprint), and lists the values to copy if you use Railway, Fly.io or another host:
+
+| Setting | Value | Why |
+|---|---|---|
+| Copies | **at least 2**, at most 4 | One copy can restart or deploy while the other serves. The cap stops a spike or a bot from scaling the bill without limit. |
+| Scale up when | CPU above 70% (or memory above 80%) | Use requests per copy instead if your host offers it |
+| Health check | `GET /api/health/ready` | 503 takes a copy out of rotation (database unreachable, migrations missing) |
+| Connections | `maxInstances × DB_POOL_MAX` below the database's limit | 4 × 10 = 40 by default |
+
+**Several copies are safe.** Sessions, rate limits and email counters live in PostgreSQL, so any copy can serve any request: no sticky sessions or Redis. Each copy migrates as it starts, under a PostgreSQL advisory lock, so copies starting together don't collide (tested: three copies migrating a fresh database at once all start).
+
+**Serve it at `/api` on the shop's domain.** Add a rewrite to [vercel.json](../vercel.json), *before* the catch-all one, with your API's address:
+
+```json
+{ "source": "/api/:path*", "destination": "https://<your-api-host>/api/:path*" }
+```
+
+The storefront then calls its own domain (no CORS, and the CSP allows it), and Vercel's CDN can cache catalogue answers (docs/API.md, section 7).
+
+**Deploys and scaling down don't fail requests.** On SIGTERM the API:
+1. answers 503 from `/api/health/ready` straight away, so the load balancer stops sending it new requests (still serving any that arrive meanwhile);
+2. after `SHUTDOWN_DRAIN_SECONDS` (default 5 in production, 0 in development), stops accepting connections;
+3. lets requests in progress finish, for up to `SHUTDOWN_TIMEOUT_SECONDS` (default 10), then closes the database pool and exits.
+
+That's at most about 15 seconds. Render and Railway wait 30 before forcing a stop; on Fly.io, set `kill_timeout = 20`. Tested: a request still sending its body when SIGTERM arrived finished with 200 (before this, it was cut off), and one that outlived the timeout was closed on time.
+
+**Check the client IP once.** With Vercel's rewrite and the host's load balancer in front, `TRUST_PROXY_HOPS` is usually 2. After the first deploy, sign in once and look at the API's request log: rate limits key on that IP, so it must be yours, not a proxy's. If every request shows the same address, the number is wrong.
+
+## Scaling the database
+
+One PostgreSQL is plenty at launch. Scale it in this order, and only when the numbers say so (the hourly `Usage summary` log lines and the database host's metrics):
+
+1. **Cache the catalogue at the edge.** Catalogue answers can be cached for a minute (docs/API.md, section 7), so with the API behind Vercel's rewrite most catalogue traffic never reaches the database. This takes more load off than a replica would, for free.
+2. **Add a connection pooler** (PgBouncer, or the host's own) when `instances × DB_POOL_MAX` approaches the database's connection limit. PgBouncer rejects the startup settings the API sends (`options`, `statement_timeout`), so set `ignore_startup_parameters = options, statement_timeout` and put them on the login role instead:
+   ```sql
+   ALTER ROLE nova_api SET role = 'nova_app';
+   ALTER ROLE nova_api SET statement_timeout = '15s';
+   ```
+   (With PgBouncer in transaction mode, row-level security still works: each request's access settings are transaction-local.)
+3. **Add a read replica** when the database is busy with reads that can't be cached. Set `DATABASE_READ_URL` to it (with `sslmode=verify-full`). Only the public catalogue reads from it: it's fine a second or two behind. Accounts, addresses and orders stay on the main database, so nobody sees stale data about themselves. The read pool is read-only even when it points at the main database, so a write sent there by mistake fails in development rather than on the replica. Readiness checks the replica too.
+
+Tested on PostgreSQL 17: with `DATABASE_READ_URL` set, catalogue requests used the `nova-api-read` connections, account requests the main ones, and a write through the read pool was refused.
+
 ## Logs, errors and health
 
 - **Logs** go through `src/lib/logger.ts`: one JSON line per event in production (for your log service), readable lines in development. `LOG_LEVEL` sets the minimum: `debug`, `info` (production default), `warn`, `error` or `silent`. Fields named like passwords, tokens or authorization headers are written as `[redacted]`, and query strings are never logged.

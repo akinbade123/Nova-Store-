@@ -80,3 +80,28 @@ describe('search limit', () => {
     assert.equal((await api.app.request('/api/products?limit=4')).status, 200, 'browsing still works');
   });
 });
+
+describe('read replica routing', () => {
+  it('sends the public catalogue to the read database and everything else to the main one', async () => {
+    // Two views of the same database that count which one each request uses.
+    const used = { main: 0, read: 0 };
+    const counted = (name: 'main' | 'read') =>
+      new Proxy(api.db, { get: (target, key) => ((key === 'select' || key === 'execute') && used[name]++, Reflect.get(target, key)) }) as typeof api.db;
+    const app = createApp({ db: counted('main'), readDb: counted('read'), mailer: createConsoleMailer({ quiet: true }), rateLimits: false });
+
+    for (const path of ['/api/products?limit=2&facets=false', '/api/categories', '/api/products/moto-leather-jacket', '/api/reviews/featured']) {
+      assert.equal((await app.request(path)).status, 200, path);
+    }
+    assert.ok(used.read > 0, 'catalogue reads the read database');
+    assert.equal(used.main, 0, 'and never the main one');
+
+    used.read = 0;
+    const { token } = await api.register();
+    assert.equal((await app.request('/api/me/addresses', { headers: { Authorization: `Bearer ${token}` } })).status, 200);
+    assert.ok(used.main > 0, 'accounts read the main database, so nobody sees stale data about themselves');
+    assert.equal(used.read, 0);
+
+    const ready = await (await app.request('/api/health/ready')).json();
+    assert.equal(ready.checks.readDatabase.ok, true, 'readiness checks the read database too');
+  });
+});

@@ -46,3 +46,12 @@ jobs:
       - run: npm run typecheck
       # Uses the embedded PGlite database, so no PostgreSQL service is needed.
       - run: npm test
+
+  api-image:
+    name: API container builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # From the repository root: the API imports the storefront's shared rules from ../src.
+      - run: docker build -f server/Dockerfile -t nova-api .

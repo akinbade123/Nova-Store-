@@ -29,7 +29,7 @@ export function databaseUrlProblem(name: string, value: string | undefined): str
 export function productionProblems(vars: Record<string, string | undefined>): string[] {
   const problems: string[] = [];
   if (!vars.DATABASE_URL) problems.push('DATABASE_URL is required in production. The embedded database is for development only.');
-  for (const name of ['DATABASE_URL', 'DATABASE_MIGRATION_URL']) {
+  for (const name of ['DATABASE_URL', 'DATABASE_MIGRATION_URL', 'DATABASE_READ_URL']) {
     const problem = databaseUrlProblem(name, vars[name]);
     if (problem) problems.push(problem);
   }
@@ -58,6 +58,11 @@ export const env = {
    * DATABASE_URL logs in as a role that is only a member of nova_app (server/README.md).
    */
   databaseMigrationUrl: process.env.DATABASE_MIGRATION_URL || databaseUrl,
+  /**
+   * Optional read replica for the public catalogue (README, "Scaling the database"). Unset: the
+   * catalogue reads the main database, like everything else.
+   */
+  databaseReadUrl: process.env.DATABASE_READ_URL || undefined,
   /** Where the embedded development database keeps its files. */
   pgliteDir: process.env.PGLITE_DIR ?? '.data/dev',
   /** The storefront's public URL, used for links in emails. Required in production. */
@@ -72,6 +77,13 @@ export const env = {
   emailDailyLimit: Number(process.env.EMAIL_DAILY_LIMIT ?? 2000),
   /** Most emails to one address per hour, whatever triggered them. */
   emailPerAddressPerHour: Number(process.env.EMAIL_PER_ADDRESS_PER_HOUR ?? 5),
+  /**
+   * On SIGTERM, how long readiness answers 503 before the server stops taking requests, so the load
+   * balancer notices first (it checks every few seconds). 0 in development, where Ctrl+C should be quick.
+   */
+  shutdownDrainSeconds: Number(process.env.SHUTDOWN_DRAIN_SECONDS ?? (isProduction ? 5 : 0)),
+  /** Then the longest it waits for requests in progress to finish before closing them. */
+  shutdownTimeoutSeconds: Number(process.env.SHUTDOWN_TIMEOUT_SECONDS ?? 10),
   /** How many proxies sit in front of the API (e.g. 1 behind a Vercel rewrite). 0: ignore X-Forwarded-For. */
   trustProxyHops: Number(process.env.TRUST_PROXY_HOPS ?? 0),
 };

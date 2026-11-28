@@ -1,0 +1,43 @@
+# Render Blueprint for the NOVA API: load-balanced copies, autoscaling and health checks, kept in the
+# repository so they're reviewed like code. Render → New → Blueprint → this repository.
+# The image is host-neutral (server/Dockerfile); on Railway or Fly.io, set the same values there.
+# Check Render's current plans: autoscaling needs a paid instance type.
+services:
+  - type: web
+    name: nova-api
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: ./server/Dockerfile
+    region: frankfurt # pick the region closest to your database and shoppers
+    plan: standard
+    # The load balancer sends traffic only to copies whose readiness check answers 200. It answers 503
+    # when the database is unreachable, migrations are missing, or the copy is shutting down.
+    healthCheckPath: /api/health/ready
+    scaling:
+      minInstances: 2 # a deploy or a crash never takes the API down
+      maxInstances: 4 # a cap, so a traffic spike or a bot can't scale the bill without limit
+      targetCPUPercent: 70
+      targetMemoryPercent: 80
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # The restricted login (server/README.md, "Database roles"), with ?sslmode=verify-full.
+      - key: DATABASE_URL
+        sync: false
+      # The tables' owner, for migrations at startup, with ?sslmode=verify-full.
+      - key: DATABASE_MIGRATION_URL
+        sync: false
+      # Optional: a read replica for the catalogue (server/README.md, "Scaling the database").
+      - key: DATABASE_READ_URL
+        sync: false
+      - key: APP_URL # the storefront's https:// address
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      # maxInstances × DB_POOL_MAX must stay below the database plan's connection limit (4 × 10 = 40).
+      - key: DB_POOL_MAX
+        value: '10'
+      # Vercel's rewrite and Render's load balancer: two proxies. Check after the first deploy that
+      # the IP in the request logs is a shopper's, not a proxy's (server/README.md, "Deploying").
+      - key: TRUST_PROXY_HOPS
+        value: '2'
