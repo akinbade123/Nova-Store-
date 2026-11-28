@@ -163,6 +163,19 @@
   letter-spacing: 0.16em;
 }
 
+/*
+ * Lets the browser skip style, layout and paint for a section while it's off screen, until the
+ * shopper scrolls near it. On a phone about 90% of the home page is below the fold, and laying all
+ * of it out up front blocked the main thread for over half a second. The estimated height keeps the
+ * scrollbar steady; `auto` makes the browser remember each section's real height once it's seen it.
+ * Content stays in the accessibility tree and find-in-page. It clips paint at the section's edge,
+ * so don't use it where something deliberately overflows (a dropdown, a shadow past the edge).
+ */
+@utility render-when-visible {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 700px;
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
