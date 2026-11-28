@@ -6,13 +6,17 @@ export function SortSelect({ value, onChange, className }) {
   return (
     <label className={cn('relative inline-flex items-center', className)}>
       <span className="sr-only">Sort products</span>
-      <span className="pointer-events-none absolute left-4 text-[13px] text-muted" aria-hidden="true">
+      <span className="pointer-events-none absolute left-4 text-caption text-muted" aria-hidden="true">
         Sort:
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
+<<<<<<< HEAD
         className="h-10 w-full cursor-pointer appearance-none rounded-md bg-white pl-[52px] pr-10 text-[13px] font-medium ring-1 ring-inset ring-line-strong outline-none transition-shadow hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink"
+=======
+        className="h-10 w-full cursor-pointer appearance-none rounded-full bg-white pl-[52px] pr-10 text-caption font-medium ring-1 ring-inset ring-line-strong outline-none transition-shadow hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink"
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
       >
         {SORT_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>

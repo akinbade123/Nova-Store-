@@ -45,7 +45,7 @@ export function MobileMenu() {
           ))}
         </ul>
 
-        <p className="mb-3 mt-8 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Shop by category</p>
+        <p className="mb-3 mt-8 eyebrow text-muted">Shop by category</p>
         <ul className="grid grid-cols-2 gap-3">
           {categories.map((category) => (
             <li key={category.id}>
@@ -67,11 +67,11 @@ export function MobileMenu() {
         <ul className="mt-8 space-y-1 rounded-2xl bg-surface p-2">
           {accountLinks.map(({ label, to, Icon, count }) => (
             <li key={to}>
-              <Link to={to} onClick={close} className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium hover:bg-white">
+              <Link to={to} onClick={close} className="flex items-center gap-3 rounded-xl px-3 py-3 text-body font-medium hover:bg-white">
                 <Icon className="size-5" strokeWidth={1.6} aria-hidden="true" />
                 <span className="flex-1">{label}</span>
                 {count > 0 && (
-                  <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold text-white">{count}</span>
+                  <span className="rounded-full bg-ink px-2 py-0.5 text-2xs font-semibold text-white">{count}</span>
                 )}
               </Link>
             </li>
@@ -84,7 +84,7 @@ export function MobileMenu() {
                   close();
                   signOut();
                 }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium hover:bg-white"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-body font-medium hover:bg-white"
               >
                 <LogOut className="size-5" strokeWidth={1.6} aria-hidden="true" />
                 Sign out
@@ -93,7 +93,7 @@ export function MobileMenu() {
           )}
         </ul>
         {user && (
-          <p className="mt-3 px-3 text-[13px] text-muted">
+          <p className="mt-3 px-3 text-caption text-muted">
             Signed in as <span className="font-medium text-ink">{user.firstName} {user.lastName}</span>
           </p>
         )}

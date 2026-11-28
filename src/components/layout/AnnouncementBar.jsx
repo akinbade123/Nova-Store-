@@ -9,7 +9,7 @@ export function AnnouncementBar() {
 
   return (
     <div className="relative bg-ink text-white">
-      <div className="mx-auto flex min-h-10 max-w-[1440px] items-center justify-center px-12 py-2 text-center text-[12.5px] leading-snug sm:text-[13px]">
+      <div className="mx-auto flex min-h-10 max-w-[1440px] items-center justify-center px-12 py-2 text-center text-caption leading-snug sm:text-caption">
         <p>
           <span className="hidden sm:inline">{announcement.highlight}</span>
           <span className="mx-2.5 hidden text-white/40 sm:inline" aria-hidden="true">|</span>

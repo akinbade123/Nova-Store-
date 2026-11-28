@@ -1,0 +1,98 @@
+import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
+import { secureHeaders } from 'hono/secure-headers';
+import { errorHandler } from './lib/errors.ts';
+import { type Logger, logger as rootLogger } from './lib/logger.ts';
+import { requestContext } from './lib/requestContext.ts';
+import type { UsageMeter } from './lib/usage.ts';
+import { systemRoutes } from './modules/system/routes.ts';
+import { createRateLimiter, noRateLimits } from './lib/rateLimit.ts';
+import { type EmailLimits, type Mailer, withSendingLimits } from './lib/email.ts';
+import type { Db } from './db/client.ts';
+import type { AppEnv, Deps } from './types.ts';
+import { authRoutes } from './modules/accounts/auth.ts';
+import { profileRoutes } from './modules/accounts/profile.ts';
+import { addressRoutes } from './modules/accounts/addresses.ts';
+import { verificationRoutes } from './modules/accounts/verification.ts';
+import { catalogRoutes } from './modules/catalog/routes.ts';
+import { engagementRoutes } from './modules/engagement/routes.ts';
+import { orderRoutes } from './modules/orders/routes.ts';
+
+const MAX_BODY_BYTES = 100 * 1024;
+
+type Options = {
+  db: Db;
+  /** The catalogue's database: a read replica if configured. Defaults to `db`. */
+  readDb?: Db;
+  mailer: Mailer;
+  appUrl?: string;
+  supportEmail?: string;
+  rateLimits?: boolean;
+  /** How many proxies you run in front of the API. 0 means X-Forwarded-For is ignored. */
+  trustProxyHops?: number;
+  /** Where request and error logs go. Tests pass their own to read what was logged. */
+  logger?: Logger;
+  /** Email spending limits (see withSendingLimits). Defaults: 5 per address per hour, 2000 a day. */
+  emailLimits?: Partial<Pick<EmailLimits, 'perRecipientPerHour' | 'perDay'>>;
+  /** Counts requests and emails for the hourly "Usage summary" log line (src/index.ts). */
+  usage?: UsageMeter;
+  /** Set by src/index.ts when it receives SIGTERM, so readiness reports the copy is leaving. */
+  isShuttingDown?: () => boolean;
+};
+
+/** Builds the API. Everything is under /api, matching the storefront's VITE_API_URL default. */
+export function createApp({
+  db,
+  readDb = db,
+  mailer: provider,
+  appUrl = 'http://localhost:5173',
+  supportEmail = 'support@example.com',
+  rateLimits = true,
+  trustProxyHops = 0,
+  logger = rootLogger,
+  emailLimits = {},
+  usage,
+  isShuttingDown = () => false,
+}: Options) {
+  // rateLimits: false is for tests that make many requests from one client.
+  const limiter = rateLimits ? createRateLimiter({ db, trustProxyHops }) : noRateLimits;
+  // Every email the API sends goes through the spending limits.
+  const mailer = withSendingLimits(
+    provider,
+    limiter,
+    { perRecipientPerHour: emailLimits.perRecipientPerHour ?? 5, perDay: emailLimits.perDay ?? 2000, uncapped: [supportEmail] },
+    logger,
+    usage,
+  );
+  const deps: Deps = { db, readDb, mailer, appUrl, supportEmail, rateLimit: limiter.perIp, limiter, isShuttingDown };
+
+  const api = new Hono<AppEnv>();
+  // Standard protective headers on every API response (nosniff, no framing, HSTS, no referrer…).
+  // The API only returns JSON, so its own policy allows nothing to load or run, and no framing.
+  api.use('*', secureHeaders({ contentSecurityPolicy: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } }));
+  // The largest real request (a support message) is a few KB. Anything far bigger is refused before it's read.
+  api.use(
+    '*',
+    bodyLimit({
+      maxSize: MAX_BODY_BYTES,
+      onError: (c) => {
+        c.set('errorCode', 'payload_too_large');
+        return c.json({ message: 'That request is too large.', code: 'payload_too_large', requestId: c.get('requestId') }, 413);
+      },
+    }),
+  );
+  for (const routes of [systemRoutes, authRoutes, verificationRoutes, profileRoutes, addressRoutes, catalogRoutes, engagementRoutes, orderRoutes]) {
+    api.route('/', routes(deps));
+  }
+
+  const app = new Hono<AppEnv>();
+  // First, so every request (including 404s and errors) gets an id, a logger and a summary log line.
+  app.use('*', requestContext(logger, usage));
+  app.route('/api', api);
+  app.notFound((c) => {
+    c.set('errorCode', 'not_found');
+    return c.json({ message: 'We couldn’t find that.', code: 'not_found', requestId: c.get('requestId') }, 404);
+  });
+  app.onError(errorHandler);
+  return app;
+}

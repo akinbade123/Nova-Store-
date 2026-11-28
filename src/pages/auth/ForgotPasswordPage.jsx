@@ -7,6 +7,7 @@ import { TextField, fieldId } from '../../components/ui/Field';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useForm } from '../../hooks/useForm';
+import { waitLabel } from '../../hooks/useCooldown';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { EMAIL_PATTERN } from '../../utils/validation';
 
@@ -26,6 +27,7 @@ export default function ForgotPasswordPage() {
   const [status, setStatus] = useState('idle'); // idle | sending | sent
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
+  const [devResetPath, setDevResetPath] = useState(null);
 
   useEffect(() => {
     if (cooldown <= 0) return undefined;
@@ -37,13 +39,15 @@ export default function ForgotPasswordPage() {
     setError('');
     setStatus('sending');
     try {
-      await requestPasswordReset(form.values.email.trim());
+      const result = await requestPasswordReset(form.values.email.trim());
+      setDevResetPath(result?.devResetPath ?? null);
       setStatus('sent');
       setCooldown(RESEND_SECONDS);
       return true;
     } catch (err) {
       setStatus('idle');
       setError(err.userMessage ?? 'We couldn’t send the email right now. Please try again in a moment.');
+      if (err.retryAfter) setCooldown(Math.ceil(err.retryAfter));
       return false;
     }
   };
@@ -63,12 +67,20 @@ export default function ForgotPasswordPage() {
         <span className="flex size-14 items-center justify-center rounded-2xl bg-surface">
           <MailCheck className="size-7" strokeWidth={1.5} aria-hidden="true" />
         </span>
-        <h1 className="mt-6 text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Check your inbox</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted" role="status">
+        <h1 className="mt-6 text-title font-bold leading-tight tracking-tight sm:text-4xl">Check your inbox</h1>
+        <p className="mt-3 text-body leading-relaxed text-muted" role="status">
           If there’s a NOVA account for <span className="font-medium text-ink">{form.values.email.trim()}</span>, you’ll get an
           email with a link to reset your password. The link expires in 1 hour.
         </p>
-        <Alert tone="info" className="mt-8">
+        {devResetPath && (
+          <Alert tone="info" className="mt-8">
+            Sample-data mode doesn’t send emails.{' '}
+            <Link to={devResetPath} className="font-semibold underline underline-offset-4 hover:no-underline">
+              Open the reset link
+            </Link>
+          </Alert>
+        )}
+        <Alert tone="info" className={devResetPath ? 'mt-3' : 'mt-8'}>
           Can’t find it? Check your spam or promotions folder, or make sure you used the email linked to your account.
         </Alert>
         <div className="mt-8 grid gap-3">
@@ -104,8 +116,8 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Reset your password</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted">
+      <h1 className="text-title font-bold leading-tight tracking-tight sm:text-4xl">Reset your password</h1>
+      <p className="mt-3 text-body leading-relaxed text-muted">
         Enter the email you use for NOVA and we’ll send you a link to create a new password.
       </p>
       <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
@@ -113,8 +125,8 @@ export default function ForgotPasswordPage() {
         <fieldset disabled={status === 'sending'}>
           <TextField label="Email" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" {...form.field('email')} />
         </fieldset>
-        <Button type="submit" size="lg" fullWidth loading={status === 'sending'} className="!mt-8">
-          Send reset link
+        <Button type="submit" size="lg" fullWidth loading={status === 'sending'} disabled={cooldown > 0} className="!mt-8">
+          {cooldown > 0 ? `Try again in ${waitLabel(cooldown)}` : 'Send reset link'}
         </Button>
       </form>
       <Link to="/login" className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline">

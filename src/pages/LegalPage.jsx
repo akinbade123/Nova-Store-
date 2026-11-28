@@ -6,8 +6,9 @@ import { legalDocs } from '../data/legal';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import NotFoundPage from './NotFoundPage';
 import { cn } from '../utils/cn';
+import { formatDate } from '../utils/format';
+import { contactEmail } from '../data/site';
 
-const formatDate = (iso) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
 
 export default function LegalPage() {
   const { doc = 'privacy' } = useParams();
@@ -28,7 +29,11 @@ export default function LegalPage() {
                 to={`/legal/${key}`}
                 className={({ isActive }) =>
                   cn(
+<<<<<<< HEAD
                     'inline-flex h-9 items-center whitespace-nowrap rounded-md px-4 text-[13px] font-medium transition-colors',
+=======
+                    'inline-flex h-9 items-center whitespace-nowrap rounded-full px-4 text-caption font-medium transition-colors',
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                     isActive ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong hover:ring-ink',
                   )
                 }
@@ -43,7 +48,7 @@ export default function LegalPage() {
       <div className="mt-10 lg:mt-14 lg:grid lg:grid-cols-[220px_1fr] lg:gap-16">
         <aside className="hidden lg:block">
           <nav aria-label="On this page" className="sticky top-24">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">On this page</p>
+            <p className="eyebrow text-muted">On this page</p>
             <ol className="mt-4 space-y-2.5 border-l border-line">
               {content.sections.map((section) => (
                 <li key={section.id}>
@@ -57,18 +62,18 @@ export default function LegalPage() {
         </aside>
 
         <article className="max-w-3xl">
-          <h1 className="text-[34px] font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl">{content.title}</h1>
+          <h1 className="text-title font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl">{content.title}</h1>
           <p className="mt-4 text-sm text-muted">
             Last updated <time dateTime={content.updated}>{formatDate(content.updated)}</time>
           </p>
 
-          <p className="mt-8 flex items-start gap-3 rounded-2xl bg-surface p-4 text-[13px] leading-relaxed text-ink/75">
+          <p className="mt-8 flex items-start gap-3 rounded-2xl bg-surface p-4 text-caption leading-relaxed text-ink/75">
             <Info className="mt-px size-4 shrink-0" aria-hidden="true" />
             Sample policy text for this storefront design. It is not legal advice — replace it with policies reviewed by a qualified
             lawyer before launch.
           </p>
 
-          <p className="mt-8 text-[16px] leading-relaxed text-ink/80">{content.intro}</p>
+          <p className="mt-8 text-base leading-relaxed text-ink/80">{content.intro}</p>
 
           {content.sections.map((section, index) => (
             <section key={section.id} id={section.id} aria-labelledby={`${section.id}-title`} className="mt-12 scroll-mt-24">
@@ -76,7 +81,7 @@ export default function LegalPage() {
                 <span className="mr-2 text-muted tabular-nums">{index + 1}.</span>
                 {section.title}
               </h2>
-              <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-ink/75">
+              <div className="mt-4 space-y-4 text-body leading-relaxed text-ink/75">
                 {section.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
@@ -89,7 +94,7 @@ export default function LegalPage() {
             <Link to="/help#contact" className="font-medium text-ink underline underline-offset-4">
               Help centre
             </Link>{' '}
-            or email legal@nova.store.
+            or email {contactEmail.legal}.
           </p>
         </article>
       </div>

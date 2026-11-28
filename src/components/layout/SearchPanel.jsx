@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Search, X } from 'lucide-react';
@@ -6,6 +6,8 @@ import { useUI } from '../../context/UIContext';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { productService } from '../../services/productService';
+import { USE_MOCK_DATA } from '../../services/api';
+import { useAsync } from '../../hooks/useAsync';
 import { categories } from '../../data/categories';
 import { imageUrl } from '../../utils/image';
 import { formatPrice } from '../../utils/format';
@@ -17,8 +19,14 @@ export function SearchPanel() {
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const [query, setQuery] = useState('');
-  const deferredQuery = useDeferredValue(query);
-  const results = productService.searchLocal(deferredQuery, 5);
+  // Wait for a pause in typing before asking the API, so each keystroke isn't a request.
+  const [deferredQuery, setDeferredQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDeferredQuery(query), USE_MOCK_DATA ? 0 : 200);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const { data } = useAsync(() => productService.search(deferredQuery, 5), [deferredQuery]);
+  const results = data ?? [];
 
   useLockBodyScroll(isSearchOpen);
   useEscapeKey(isSearchOpen, close);
@@ -82,14 +90,18 @@ export function SearchPanel() {
           {!deferredQuery.trim() ? (
             <div className="mt-8 grid gap-8 sm:grid-cols-[1fr_1.4fr]">
               <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Popular searches</p>
+                <p className="mb-3 eyebrow text-muted">Popular searches</p>
                 <ul className="flex flex-wrap gap-2">
                   {popularSearches.map((term) => (
                     <li key={term}>
                       <button
                         type="button"
                         onClick={() => setQuery(term)}
+<<<<<<< HEAD
                         className="h-9 rounded-md px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
+=======
+                        className="h-9 rounded-full px-4 text-caption font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                       >
                         {term}
                       </button>
@@ -98,7 +110,7 @@ export function SearchPanel() {
                 </ul>
               </div>
               <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Shop by category</p>
+                <p className="mb-3 eyebrow text-muted">Shop by category</p>
                 <ul className="grid grid-cols-2 gap-2">
                   {categories.map((category) => (
                     <li key={category.id}>
@@ -123,7 +135,7 @@ export function SearchPanel() {
             <div className="mt-6" aria-live="polite">
               {results.length > 0 ? (
                 <>
-                  <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Products</p>
+                  <p className="mb-2 px-2 eyebrow text-muted">Products</p>
                   <ul className="divide-y divide-line">
                     {results.map((product) => (
                       <li key={product.id}>
@@ -139,7 +151,7 @@ export function SearchPanel() {
                           />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium">{product.name}</span>
-                            <span className="mt-0.5 block text-[13px] text-muted">{formatPrice(product.price)}</span>
+                            <span className="mt-0.5 block text-caption text-muted">{formatPrice(product.price)}</span>
                           </span>
                           <ArrowRight className="size-4 shrink-0 text-subtle" aria-hidden="true" />
                         </Link>

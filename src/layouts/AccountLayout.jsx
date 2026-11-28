@@ -5,6 +5,7 @@ import { initials } from '../components/layout/AccountMenu';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cn } from '../utils/cn';
+import { EmailVerificationBanner } from '../components/account/EmailVerificationBanner';
 
 const nav = [
   { label: 'Overview', to: '/account', Icon: LayoutGrid, end: true },
@@ -34,10 +35,11 @@ export function AccountLayout() {
           {initials(user)}
         </span>
         <div className="min-w-0">
-          <h1 className="truncate text-[28px] font-bold leading-tight tracking-tight sm:text-4xl">Hello, {user.firstName}</h1>
+          <h1 className="truncate text-heading font-bold leading-tight tracking-tight sm:text-4xl">Hello, {user.firstName}</h1>
           <p className="mt-1 text-sm text-muted">Member since {memberSince(user.createdAt)}</p>
         </div>
       </header>
+      <EmailVerificationBanner />
 
       <div className="mt-8 lg:mt-12 lg:grid lg:grid-cols-[220px_1fr] lg:gap-12 xl:grid-cols-[240px_1fr] xl:gap-16">
         {/* Navigation: scrollable tabs on mobile, sidebar on desktop */}
@@ -98,7 +100,7 @@ export function AccountSection({ title, description, action, children }) {
     <section>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-[28px]">{title}</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-heading">{title}</h2>
           {description && <p className="mt-1.5 text-sm text-muted">{description}</p>}
         </div>
         {action}

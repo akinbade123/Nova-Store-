@@ -37,8 +37,8 @@ export function PaymentMethods({ form, paymentError }) {
         <div role="alert" className="flex items-start gap-3 rounded-2xl bg-danger/[0.06] p-4 text-sm text-danger ring-1 ring-inset ring-danger/20">
           <CircleAlert className="mt-px size-5 shrink-0" aria-hidden="true" />
           <div>
-            <p className="font-semibold">Payment unsuccessful</p>
-            <p className="mt-0.5 text-danger/90">{paymentError}</p>
+            <p className="font-semibold">{paymentError.title}</p>
+            <p className="mt-0.5 text-danger/90">{paymentError.message}</p>
           </div>
         </div>
       )}

@@ -11,7 +11,7 @@ export function AccordionItem({ title, defaultOpen = false, open: controlledOpen
 
   return (
     <div className={cn('border-b border-line', className)}>
-      <Heading className="font-sans text-[15px] font-semibold tracking-normal">
+      <Heading className="font-sans text-body font-semibold tracking-normal">
         <button
           type="button"
           onClick={() => (onToggle ? onToggle(!open) : setLocalOpen(!open))}
@@ -27,7 +27,11 @@ export function AccordionItem({ title, defaultOpen = false, open: controlledOpen
           />
         </button>
       </Heading>
+<<<<<<< HEAD
       <div id={id} hidden={!open} className="pb-5 text-[14.5px] leading-relaxed text-ink/75">
+=======
+      <div id={id} hidden={!open} className="pb-6 text-body leading-relaxed text-ink/75">
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
         {children}
       </div>
     </div>

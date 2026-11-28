@@ -1,0 +1,13 @@
+# Everything public may be crawled. Pages that only make sense for one signed-in shopper are left
+# out: they have nothing to index, and crawling them only wastes the crawler's time.
+User-agent: *
+Allow: /
+Disallow: /account
+Disallow: /cart
+Disallow: /checkout
+Disallow: /wishlist
+Disallow: /reset-password
+Disallow: /verify-email
+
+# Add a Sitemap line once the shop has its own domain and the catalogue comes from the API:
+# Sitemap: https://<your domain>/sitemap.xml

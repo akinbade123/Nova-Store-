@@ -76,7 +76,11 @@ function AddressForm({ initial, onSave, onCancel, isOnlyAddress }) {
               />
               <span
                 className={cn(
+<<<<<<< HEAD
                   'inline-flex h-9 items-center rounded-md px-4 text-[13px] font-medium transition-colors',
+=======
+                  'inline-flex h-9 items-center rounded-full px-4 text-caption font-medium transition-colors',
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                   'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
                   form.values.label === label ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong hover:ring-ink',
                 )}
@@ -188,7 +192,7 @@ export default function AddressesPage() {
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold">{address.label}</p>
                 {address.isDefault && (
-                  <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">Default</span>
+                  <span className="rounded-full bg-ink px-2.5 py-1 text-2xs font-semibold uppercase tracking-wide text-white">Default</span>
                 )}
               </div>
               <address className="mt-3 flex-1 text-sm not-italic leading-relaxed text-ink/75">
@@ -212,7 +216,11 @@ export default function AddressesPage() {
                 <button
                   type="button"
                   onClick={() => setEditing(address)}
+<<<<<<< HEAD
                   className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium hover:bg-surface"
+=======
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-caption font-medium hover:bg-surface"
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                 >
                   <Pencil className="size-3.5" aria-hidden="true" />
                   Edit<span className="sr-only"> {address.label} address</span>
@@ -220,7 +228,11 @@ export default function AddressesPage() {
                 <button
                   type="button"
                   onClick={() => setDeleting(address)}
+<<<<<<< HEAD
                   className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium text-muted hover:bg-surface hover:text-danger"
+=======
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-caption font-medium text-muted hover:bg-surface hover:text-danger"
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                 >
                   <Trash2 className="size-3.5" aria-hidden="true" />
                   Delete<span className="sr-only"> {address.label} address</span>
@@ -229,7 +241,11 @@ export default function AddressesPage() {
                   <button
                     type="button"
                     onClick={() => makeDefault(address)}
+<<<<<<< HEAD
                     className="ml-auto h-9 rounded-md px-3 text-[13px] font-medium underline underline-offset-4 hover:text-muted"
+=======
+                    className="ml-auto h-9 rounded-full px-3 text-caption font-medium underline underline-offset-4 hover:text-muted"
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                   >
                     Set as default
                   </button>

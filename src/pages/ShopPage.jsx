@@ -95,12 +95,18 @@ export default function ShopPage() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
   // Pagination is tied to the filter set: changing any filter starts again at page one.
-  const [pagination, setPagination] = useState({ key, limit: PAGE_SIZE });
-  const limit = pagination.key === key ? pagination.limit : PAGE_SIZE;
+  const [pagination, setPagination] = useState({ key, offset: 0 });
+  const offset = pagination.key === key ? pagination.offset : 0;
 
   const { data, loading, error, retry } = useAsync(
-    () => productService.query({ ...filters, limit }).then((result) => ({ ...result, key })),
-    [key, limit],
+    () =>
+      productService.query({ ...filters, limit: PAGE_SIZE, offset }).then((result) => ({
+        ...result,
+        key,
+        // "Load more" fetches only the next page and adds it to what's already shown.
+        items: offset && data?.key === key ? [...data.items, ...result.items] : result.items,
+      })),
+    [key, offset],
   );
 
   const heading = useHeading(filters);
@@ -127,8 +133,8 @@ export default function ShopPage() {
           <Breadcrumbs items={crumbs} />
           <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <h1 className="text-[34px] font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl">{heading.title}</h1>
-              {heading.description && <p className="mt-3 text-[15px] leading-relaxed text-muted">{heading.description}</p>}
+              <h1 className="text-title font-bold leading-[1.05] tracking-[-0.03em] sm:text-5xl">{heading.title}</h1>
+              {heading.description && <p className="mt-3 text-body leading-relaxed text-muted">{heading.description}</p>}
             </div>
             <ShopSearch
               value={filters.q}
@@ -151,7 +157,11 @@ export default function ShopPage() {
                       onClick={() => update({ categories: category.slug ? [category.slug] : [] })}
                       aria-pressed={active}
                       className={cn(
+<<<<<<< HEAD
                         'h-9 shrink-0 whitespace-nowrap rounded-md px-4 text-[13px] font-medium transition-colors',
+=======
+                        'h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-caption font-medium transition-colors',
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                         active ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong',
                       )}
                     >
@@ -172,12 +182,16 @@ export default function ShopPage() {
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
+<<<<<<< HEAD
               className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong hover:ring-ink lg:hidden"
+=======
+              className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-caption font-medium ring-1 ring-inset ring-line-strong hover:ring-ink lg:hidden"
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
             >
               <SlidersHorizontal className="size-4" strokeWidth={1.75} aria-hidden="true" />
               Filters
               {activeCount > 0 && (
-                <span className="flex size-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-white">
+                <span className="flex size-5 items-center justify-center rounded-full bg-ink text-2xs font-semibold text-white">
                   {activeCount}
                 </span>
               )}
@@ -216,7 +230,7 @@ export default function ShopPage() {
           )}
 
           <section aria-label="Products" className="min-w-0 lg:pt-4">
-            <p className="mb-4 text-[13px] text-muted sm:hidden" aria-hidden="true">
+            <p className="mb-4 text-caption text-muted sm:hidden" aria-hidden="true">
               {firstLoad ? 'Loading…' : `${total} ${total === 1 ? 'product' : 'products'}`}
             </p>
 
@@ -293,7 +307,7 @@ export default function ShopPage() {
                         size="lg"
                         className="mt-6 min-w-[200px]"
                         loading={loadingMore}
-                        onClick={() => setPagination({ key, limit: limit + PAGE_SIZE })}
+                        onClick={() => setPagination({ key, offset: items.length })}
                       >
                         Load more
                       </Button>

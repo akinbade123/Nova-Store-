@@ -48,10 +48,10 @@ export default function WishlistPage() {
         <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Wishlist' }]} />
         <div className="mt-6 flex flex-wrap items-end justify-between gap-4 lg:mt-8">
           <div>
-            <h1 className="text-[34px] font-bold leading-none tracking-[-0.03em] sm:text-5xl">
+            <h1 className="text-title font-bold leading-none tracking-[-0.03em] sm:text-5xl">
               Wishlist {count > 0 && <span className="text-2xl font-semibold text-muted sm:text-3xl">({count})</span>}
             </h1>
-            <p className="mt-3 text-[15px] text-muted">Pieces you’ve saved for later. Prices and stock update live.</p>
+            <p className="mt-3 text-body text-muted">Pieces you’ve saved for later. Prices and stock update live.</p>
           </div>
           {count > 0 && (
             <Button to="/shop" variant="secondary">
@@ -65,8 +65,8 @@ export default function WishlistPage() {
             <p className="flex items-center gap-3 text-sm">
               <Heart className="size-5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
               <span>
-                <span className="font-semibold">Don’t lose your favourites.</span>{' '}
-                <span className="text-muted">Sign in to keep your wishlist across devices.</span>
+                <span className="font-semibold">Saved on this device.</span>{' '}
+                <span className="text-muted">Sign in to track orders and check out faster with your saved details.</span>
               </span>
             </p>
             <div className="flex shrink-0 gap-2">
@@ -88,7 +88,7 @@ export default function WishlistPage() {
                   <Heart className="size-8" strokeWidth={1.4} aria-hidden="true" />
                 </span>
                 <h2 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">Nothing saved yet</h2>
-                <p className="mt-3 text-[15px] leading-relaxed text-muted">
+                <p className="mt-3 text-body leading-relaxed text-muted">
                   Tap the heart on any product and it will be waiting for you here.{' '}
                   {!isAuthenticated && (
                     <>

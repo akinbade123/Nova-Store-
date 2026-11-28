@@ -7,7 +7,7 @@ export const fieldId = (name) => `field-${name}`;
 
 const controlClass = (error) =>
   cn(
-    'h-12 w-full rounded-xl bg-white px-4 text-[15px] text-ink outline-none ring-1 ring-inset transition-shadow duration-150 placeholder:text-subtle',
+    'h-12 w-full rounded-xl bg-white px-4 text-body text-ink outline-none ring-1 ring-inset transition-shadow duration-150 placeholder:text-subtle',
     'focus:ring-2 disabled:bg-surface disabled:text-muted',
     error ? 'ring-danger focus:ring-danger' : 'ring-line-strong hover:ring-subtle focus:ring-ink',
   );
@@ -16,7 +16,7 @@ function FieldShell({ name, label, optional, error, hint, labelAside, className,
   return (
     <div className={className}>
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <label htmlFor={fieldId(name)} className="flex flex-1 items-baseline justify-between gap-2 text-[13px] font-medium">
+        <label htmlFor={fieldId(name)} className="flex flex-1 items-baseline justify-between gap-2 text-caption font-medium">
           {label}
           {optional && <span className="text-xs font-normal text-muted">Optional</span>}
         </label>
@@ -24,7 +24,7 @@ function FieldShell({ name, label, optional, error, hint, labelAside, className,
       </div>
       {children}
       {error ? (
-        <p id={`${fieldId(name)}-error`} className="mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium text-danger">
+        <p id={`${fieldId(name)}-error`} className="mt-1.5 flex items-start gap-1.5 text-caption font-medium text-danger">
           <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
           {error}
         </p>
@@ -154,7 +154,7 @@ export function CheckboxField({ name, label, description, checked, onChange, err
         </span>
       </label>
       {error && (
-        <p id={errorId} className="ml-[30px] mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium text-danger">
+        <p id={errorId} className="ml-[30px] mt-1.5 flex items-start gap-1.5 text-caption font-medium text-danger">
           <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
           {error}
         </p>

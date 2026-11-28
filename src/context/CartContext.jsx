@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useProducts } from '../hooks/useProducts';
 import { productService } from '../services/productService';
 import { cartService } from '../services/cartService';
 import { computeTotals } from '../utils/pricing';
@@ -18,6 +19,8 @@ export function CartProvider({ children }) {
   // so prices stay current once they come from the API.
   const [lines, setLines] = useLocalStorage('nova:cart', []);
   const [promo, setPromo] = useLocalStorage('nova:promo', null);
+  // Resolves line product ids through the product cache, fetching any that aren't loaded yet.
+  const { products: lineProducts, loading } = useProducts(lines.map((line) => line.productId));
 
   const addItem = useCallback(
     (product, { quantity = 1, color, size } = {}) => {
@@ -79,9 +82,8 @@ export function CartProvider({ children }) {
   }, [setLines, setPromo]);
 
   const value = useMemo(() => {
-    const items = lines
-      .map((line) => ({ ...line, product: productService.findById(line.productId) }))
-      .filter((line) => line.product);
+    const byId = new Map(lineProducts.map((product) => [product.id, product]));
+    const items = lines.map((line) => ({ ...line, product: byId.get(line.productId) })).filter((line) => line.product);
     const count = items.reduce((sum, line) => sum + line.quantity, 0);
     const subtotal = items.reduce((sum, line) => sum + line.quantity * line.product.price, 0);
     const savings = items.reduce(
@@ -99,6 +101,8 @@ export function CartProvider({ children }) {
 
     return {
       items,
+      /** True while product details for the bag are still loading (API mode only). */
+      loading,
       count,
       subtotal,
       savings,
@@ -114,7 +118,7 @@ export function CartProvider({ children }) {
       restoreItem,
       clear,
     };
-  }, [lines, promo, setPromo, addItem, updateQuantity, removeItem, restoreItem, clear]);
+  }, [lines, lineProducts, loading, promo, setPromo, addItem, updateQuantity, removeItem, restoreItem, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

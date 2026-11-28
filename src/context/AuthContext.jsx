@@ -1,5 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { authService } from '../services/authService';
+import { SESSION_EXPIRED_EVENT } from '../services/api';
+import { useToast } from './ToastContext';
 
 const AuthContext = createContext(null);
 
@@ -30,6 +32,24 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readSession()?.user ?? null);
   // Where protected pages should send someone who just signed out on purpose (instead of the sign-in page).
   const [exitTo, setExitTo] = useState(null);
+  const { toast } = useToast();
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  // The API rejected the stored token: end the session locally so the UI stops acting signed in.
+  // exitTo stays null, so protected pages send the shopper to sign in and back again.
+  useEffect(() => {
+    const handleExpired = () => {
+      if (!userRef.current) return; // several requests can fail at once; react to the first
+      userRef.current = null;
+      persistSession(null);
+      setExitTo(null);
+      setUser(null);
+      toast({ variant: 'info', title: 'Your session has ended', description: 'Please sign in again to continue.' });
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleExpired);
+  }, [toast]);
 
   const signIn = useCallback(async ({ email, password, remember = true }) => {
     const session = await authService.signIn({ email, password });
@@ -46,6 +66,31 @@ export function AuthProvider({ children }) {
     setUser(session.user);
     return session.user;
   }, []);
+
+  /** Replaces the stored user in place (same storage the session was saved in). */
+  const storeUser = useCallback((updated) => {
+    const store = localStorage.getItem(SESSION_KEY) ? localStorage : sessionStorage;
+    store.setItem(SESSION_KEY, JSON.stringify({ user: updated }));
+    setUser(updated);
+  }, []);
+
+  /** Re-reads the signed-in user from the server, e.g. after the email was confirmed in another tab. */
+  const refreshUser = useCallback(async () => {
+    if (!userRef.current) return null;
+    const fresh = await authService.getMe(userRef.current.id);
+    if (fresh) storeUser(fresh);
+    return fresh;
+  }, [storeUser]);
+
+  /** Confirms an email from its link; if someone is signed in, refreshes them so banners update. */
+  const verifyEmail = useCallback(
+    async (token) => {
+      const result = await authService.verifyEmail(token);
+      if (userRef.current) await refreshUser().catch(() => {});
+      return result;
+    },
+    [refreshUser],
+  );
 
   /** Saves profile changes and refreshes the stored session in place. */
   const updateProfile = useCallback(
@@ -64,8 +109,8 @@ export function AuthProvider({ children }) {
     [user],
   );
 
-  /** Deletes the account on the server. Follow with signOut({ to: '/' }). */
-  const deleteAccount = useCallback(() => authService.deleteAccount(user.id), [user]);
+  /** Deletes the account on the server; needs the password. Follow with signOut({ to: '/' }). */
+  const deleteAccount = useCallback((password) => authService.deleteAccount(user.id, password), [user]);
 
   /** `to`: where protected pages should go after this sign-out (defaults to the home page). */
   const signOut = useCallback(async ({ to = '/' } = {}) => {
@@ -87,8 +132,12 @@ export function AuthProvider({ children }) {
       changePassword,
       deleteAccount,
       requestPasswordReset: authService.requestPasswordReset,
+      resetPassword: authService.resetPassword,
+      verifyEmail,
+      resendVerification: authService.resendVerification,
+      refreshUser,
     }),
-    [user, exitTo, signIn, register, signOut, updateProfile, changePassword, deleteAccount],
+    [user, exitTo, signIn, register, signOut, updateProfile, changePassword, deleteAccount, verifyEmail, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

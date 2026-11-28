@@ -46,7 +46,11 @@ export function FeaturedProducts() {
               aria-controls="featured-panel"
               onClick={() => setActive(tab.slug)}
               className={cn(
+<<<<<<< HEAD
                 'h-10 shrink-0 rounded-md px-5 text-[13px] font-medium transition-colors duration-200',
+=======
+                'h-10 shrink-0 rounded-full px-5 text-caption font-medium transition-colors duration-200',
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                 active === tab.slug
                   ? 'bg-ink text-white'
                   : 'bg-white text-ink ring-1 ring-inset ring-line-strong hover:ring-ink',
@@ -64,7 +68,7 @@ export function FeaturedProducts() {
             <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-5">
               {loading
                 ? Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)
-                : data.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)}
+                : data.map((product) => <ProductCard key={product.id} product={product} />)}
             </div>
           )}
         </div>

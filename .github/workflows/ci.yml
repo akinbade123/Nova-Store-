@@ -1,0 +1,57 @@
+# Runs on every pull request and every push to main. Vercel builds the preview separately;
+# this checks what Vercel doesn't: the API's type check and its tests.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  storefront:
+    name: Storefront build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  api:
+    name: API type check and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      # Uses the embedded PGlite database, so no PostgreSQL service is needed.
+      - run: npm test
+
+  api-image:
+    name: API container builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # From the repository root: the API imports the storefront's shared rules from ../src.
+      - run: docker build -f server/Dockerfile -t nova-api .

@@ -1,5 +1,9 @@
 import axios from 'axios';
+<<<<<<< HEAD
 import { attachLoadBalancer, createLoadBalancer, parseEndpoints } from './loadBalancer';
+=======
+import { reportError } from './errorReporter';
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
 
 export const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
 
@@ -19,19 +23,67 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+<<<<<<< HEAD
 // Round-robin + failover across API_ENDPOINTS. Registered before the error formatter
 // below so failed endpoints are retried before the user sees an error.
 attachLoadBalancer(api, createLoadBalancer(API_ENDPOINTS));
+=======
+/** Fired on `window` when the API rejects the stored session. AuthProvider listens for it. */
+export const SESSION_EXPIRED_EVENT = 'nova:session-expired';
+
+/*
+ * Error contract: the API responds with { message, code }. `userMessage` is safe to show;
+ * `code` (e.g. 'email_taken') lets callers handle specific cases, the same as in sample-data mode.
+ * After a 429, `retryAfter` is the number of seconds to wait (see useCooldown).
+ */
+/** Reads (GET) refused with 429 are retried once by themselves when the wait is this short or less. */
+const AUTO_RETRY_MAX_SECONDS = 5;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const body = error.response?.data;
+    // 429: the API says how long to wait, in the body and the Retry-After header. A read is safe to
+    // repeat, so a short wait is retried once without bothering the shopper. Anything else (sign-in,
+    // forms) is never retried automatically: repeating it would just use up the limit again.
+    const retryAfter = error.response?.status === 429 ? Number(body?.retryAfter ?? error.response.headers?.['retry-after']) || undefined : undefined;
+    const config = error.config;
+    if (retryAfter && retryAfter <= AUTO_RETRY_MAX_SECONDS && config && config.method === 'get' && !config.retriedAfter429) {
+      await wait(retryAfter * 1000);
+      return api.request({ ...config, retriedAfter429: true });
+    }
     const message =
-      error.response?.data?.message ??
+      body?.message ??
       (error.code === 'ECONNABORTED' ? 'The request timed out. Please try again.' : 'Something went wrong. Please try again.');
-    return Promise.reject(Object.assign(error, { userMessage: message }));
+    // A 401 on a request that carried a token means the session expired or was revoked.
+    // Requests without a token (e.g. a wrong password at sign-in) are left alone.
+    if (error.response?.status === 401 && error.config?.headers?.Authorization) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    }
+    // The server's id for this request (also in its logs), so an error can be traced end to end.
+    const requestId = body?.requestId ?? error.response?.headers?.['x-request-id'];
+    // No response at all (network down, API unreachable, timeout): the server never saw it, so report it.
+    if (!error.response) reportError({ kind: 'request', error, message: `${error.config?.method?.toUpperCase()} ${error.config?.url}: ${error.message}` });
+    return Promise.reject(Object.assign(error, { userMessage: message, code: body?.code ?? error.code, requestId, retryAfter }));
   },
 );
 
-/** Simulates network latency for sample data so loading states are exercised during development. */
-export const mockDelay = (data, ms = 650) => new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), ms));
+/**
+ * For lookups where "doesn't exist" is a normal answer: `.catch(nullIfNotFound)` turns a 404
+ * into `null`, the same as sample-data mode, so pages show their "not found" state.
+ * Every other error is re-thrown, so pages show their error state with "Try again".
+ */
+export function nullIfNotFound(error) {
+  if (error.response?.status === 404) return null;
+  throw error;
+}
+
+/**
+ * Simulates network latency for sample data so loading states are exercised during development.
+ * Production builds (the public demo) answer straight away: visitors shouldn't wait for nothing.
+ */
+const SIMULATE_LATENCY = import.meta.env.DEV;
+export const mockDelay = (data, ms = 650) =>
+  new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), SIMULATE_LATENCY ? ms : 0));

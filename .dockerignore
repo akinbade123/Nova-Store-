@@ -1,0 +1,13 @@
+# Keep the API image small and free of local data and secrets.
+**/node_modules
+**/.data
+**/.env
+**/.env.*
+!**/.env.example
+dist
+server/backups
+.git
+.github
+.claude
+docs
+public

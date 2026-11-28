@@ -7,7 +7,7 @@ import {
   validateExpiry,
   validatePhone,
   validatePostal,
-} from '../../utils/validation';
+} from '../../utils/validation.js';
 
 /** Address field name, optionally prefixed: ('billing', 'city') -> 'billingCity'. */
 export const addressField = (prefix, key) => (prefix ? `${prefix}${key[0].toUpperCase()}${key.slice(1)}` : key);

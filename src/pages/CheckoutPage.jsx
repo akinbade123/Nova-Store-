@@ -18,6 +18,31 @@ import { cardBrand } from '../utils/validation';
 import { deliveryWindow, formatPrice } from '../utils/format';
 
 const DRAFT_KEY = 'nova:checkout-draft';
+const CHECKOUT_ID_KEY = 'nova:checkout-id';
+
+/**
+ * The id the server uses to recognise a repeated "Place order" (see docs/API.md, POST /orders).
+ * One per cart: it survives reloads and retries of the same cart, and a changed cart gets a new one,
+ * so a retry can never return an order for different items.
+ */
+function checkoutIdFor(cartSignature) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(CHECKOUT_ID_KEY));
+    if (saved?.cart === cartSignature) return saved.id;
+  } catch {
+    /* start a new one */
+  }
+  const id = crypto.randomUUID();
+  sessionStorage.setItem(CHECKOUT_ID_KEY, JSON.stringify({ id, cart: cartSignature }));
+  return id;
+}
+
+/**
+ * True when we can't know whether the server created the order: no response, or a server error.
+ * 501 is excluded: it means the endpoint doesn't exist yet, so nothing was created.
+ */
+const outcomeUnknown = (err) =>
+  Boolean(err.isAxiosError) && (!err.response || (err.response.status >= 500 && err.response.status !== 501));
 
 /** Saved draft first, then the signed-in profile, then blanks. */
 function loadDraft(user) {
@@ -95,13 +120,14 @@ function ErrorSummary({ errors, innerRef }) {
 export default function CheckoutPage() {
   useDocumentTitle('Checkout');
   const navigate = useNavigate();
-  const { items, count, subtotal, promo, getTotals, clear } = useCart();
+  const { items, loading: cartLoading, count, subtotal, promo, getTotals, clear } = useCart();
   const { user } = useAuth();
   const form = useForm(loadDraft(user), validateCheckout);
   const { values, setField } = form;
 
   const [placing, setPlacing] = useState(false);
-  const [paymentError, setPaymentError] = useState('');
+  const placingRef = useRef(false);
+  const [paymentError, setPaymentError] = useState(null);
   const errorSummaryRef = useRef(null);
   const paymentRef = useRef(null);
 
@@ -116,8 +142,10 @@ export default function CheckoutPage() {
 
   // Clear a stale payment error once the shopper edits payment details.
   useEffect(() => {
-    setPaymentError('');
+    setPaymentError(null);
   }, [values.paymentMethod, values.cardNumber, values.cardExpiry, values.cardCvc]);
+
+  if (cartLoading) return <div className="min-h-[60vh]" aria-busy="true" />;
 
   if (items.length === 0) {
     return (
@@ -126,7 +154,7 @@ export default function CheckoutPage() {
           <ShoppingBag className="size-7" strokeWidth={1.5} aria-hidden="true" />
         </span>
         <h1 className="mt-6 text-3xl font-bold tracking-tight">Your bag is empty</h1>
-        <p className="mt-3 text-[15px] text-muted">Add something you love, then come back here to check out.</p>
+        <p className="mt-3 text-body text-muted">Add something you love, then come back here to check out.</p>
         <Button to="/shop" size="lg" className="mt-8">
           Continue shopping
         </Button>
@@ -143,7 +171,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setPaymentError('');
+    setPaymentError(null);
     const errors = form.submit();
     if (Object.keys(errors).length > 0) {
       requestAnimationFrame(() => {
@@ -153,10 +181,14 @@ export default function CheckoutPage() {
       return;
     }
 
+    // `placing` only updates after a re-render, so a double click could otherwise submit twice.
+    if (placingRef.current) return;
+    placingRef.current = true;
     setPlacing(true);
     try {
       const shippingAddress = pickAddress(values);
       const order = await orderService.placeOrder({
+        checkoutId: checkoutIdFor(items.map((item) => `${item.key}x${item.quantity}`).join(',')),
         userId: user?.id ?? null,
         contact: { email: values.email.trim(), phone: values.phone.trim(), marketing: values.marketing },
         shippingAddress,
@@ -166,7 +198,9 @@ export default function CheckoutPage() {
         payment: {
           method: values.paymentMethod,
           brand: values.paymentMethod === 'card' ? cardBrand(values.cardNumber) : null,
-          cardNumber: values.paymentMethod === 'card' ? values.cardNumber : null,
+          // Never send the full card number. With a real payment provider, its hosted card
+          // fields return a token, and that token is sent here instead.
+          last4: values.paymentMethod === 'card' ? values.cardNumber.replace(/\D/g, '').slice(-4) : null,
         },
         items: items.map(({ product, quantity, color, size }) => ({
           productId: product.id,
@@ -187,11 +221,24 @@ export default function CheckoutPage() {
         promo: totals.promoActive ? promo : null,
       });
       sessionStorage.removeItem(DRAFT_KEY);
+      sessionStorage.removeItem(CHECKOUT_ID_KEY);
       navigate(`/checkout/confirmation/${order.id}`, { replace: true, state: { order } });
       clear();
     } catch (err) {
+      // A definite "no" (e.g. card declined) means no order exists, so the next attempt is a new one.
+      // If the outcome is unknown, keep the id: the server returns the order if it was created.
+      if (!outcomeUnknown(err)) sessionStorage.removeItem(CHECKOUT_ID_KEY);
+      placingRef.current = false;
       setPlacing(false);
-      setPaymentError(err.userMessage ?? 'We couldn’t process your payment. Please try again.');
+      // Never say the payment failed when it may have gone through.
+      setPaymentError(
+        outcomeUnknown(err)
+          ? {
+              title: 'We couldn’t confirm your order',
+              message: 'We lost the connection before hearing back. Try again: if your first attempt went through, you’ll see that order and won’t be charged twice.',
+            }
+          : { title: 'Your order wasn’t placed', message: err.userMessage ?? 'We couldn’t process your payment. Please try again.' },
+      );
       requestAnimationFrame(() => paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
   };
@@ -205,7 +252,7 @@ export default function CheckoutPage() {
         <div className="flex-1 lg:flex lg:justify-end">
           <div className="mx-auto w-full max-w-xl px-4 pb-16 pt-8 sm:px-6 lg:mx-0 lg:max-w-[640px] lg:px-12 lg:pb-20 lg:pt-12 xl:pr-20">
             <nav aria-label="Checkout progress" className="mb-8">
-              <ol className="flex items-center gap-2 text-[13px] text-muted">
+              <ol className="flex items-center gap-2 text-caption text-muted">
                 <li>
                   <Link to="/cart" className="hover:text-ink">
                     Bag
@@ -235,11 +282,11 @@ export default function CheckoutPage() {
                   title="Contact"
                   aside={
                     user ? (
-                      <p className="text-[13px] text-muted">
+                      <p className="text-caption text-muted">
                         Signed in as <span className="font-medium text-ink">{user.firstName}</span>
                       </p>
                     ) : (
-                      <Link to="/login?redirect=/checkout" className="text-[13px] font-medium underline underline-offset-4 hover:text-muted">
+                      <Link to="/login?redirect=/checkout" className="text-caption font-medium underline underline-offset-4 hover:text-muted">
                         Sign in
                       </Link>
                     )

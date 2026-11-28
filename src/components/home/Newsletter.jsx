@@ -37,11 +37,11 @@ export function Newsletter() {
       <Container>
         <div className="grid items-center gap-8 rounded-[24px] bg-surface-warm px-6 py-12 sm:px-10 sm:py-14 lg:grid-cols-2 lg:gap-16 lg:rounded-[32px] lg:px-16 lg:py-20">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">The NOVA list</p>
-            <h2 id="newsletter-heading" className="mt-3 text-[30px] font-bold leading-[1.08] sm:text-[44px]">
+            <p className="eyebrow text-muted">The NOVA list</p>
+            <h2 id="newsletter-heading" className="mt-3 text-heading font-bold leading-[1.08] sm:text-[44px]">
               Get 10% off your first order.
             </h2>
-            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-ink/70">
+            <p className="mt-4 max-w-md text-body leading-relaxed text-ink/70">
               Be first to hear about new arrivals, members-only offers and stories from the makers behind our products.
             </p>
           </div>
@@ -82,7 +82,7 @@ export function Newsletter() {
                     }}
                     aria-invalid={Boolean(error)}
                     aria-describedby={error ? 'newsletter-error' : 'newsletter-hint'}
-                    className="h-full w-full bg-transparent text-[15px] outline-none placeholder:text-subtle"
+                    className="h-full w-full bg-transparent text-body outline-none placeholder:text-subtle"
                   />
                 </div>
                 <Button type="submit" size="lg" loading={status === 'loading'} className="sm:min-w-[140px]">
@@ -90,12 +90,12 @@ export function Newsletter() {
                 </Button>
               </div>
               {error ? (
-                <p id="newsletter-error" role="alert" className="mt-2.5 flex items-center gap-1.5 text-[13px] font-medium text-danger">
+                <p id="newsletter-error" role="alert" className="mt-2.5 flex items-center gap-1.5 text-caption font-medium text-danger">
                   <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
                   {error}
                 </p>
               ) : (
-                <p id="newsletter-hint" className="mt-2.5 text-[13px] text-muted">
+                <p id="newsletter-hint" className="mt-2.5 text-caption text-muted">
                   No spam. Unsubscribe anytime. Read our{' '}
                   <a href="/legal/privacy" className="underline underline-offset-2 hover:text-ink">
                     privacy policy

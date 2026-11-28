@@ -140,16 +140,16 @@ export function ProductPurchase({ product }) {
       <div className="flex items-center gap-2">
         <Link
           to={`/shop?category=${product.category}`}
-          className="text-[13px] font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
+          className="text-caption font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
         >
           {categoryName(product.category)}
         </Link>
         {product.badge && <Badge tone="dark">{product.badge}</Badge>}
       </div>
-      <h1 className="mt-3 text-[28px] font-bold leading-[1.1] tracking-[-0.025em] sm:text-4xl">{product.name}</h1>
+      <h1 className="mt-3 text-heading font-bold leading-[1.1] tracking-[-0.025em] sm:text-4xl">{product.name}</h1>
       <a href="#reviews" className="mt-3 inline-flex items-center gap-2 underline-offset-4 hover:underline">
         <Rating value={product.rating} size="md" />
-        <span className="text-[13px] text-muted">
+        <span className="text-caption text-muted">
           {product.rating.toFixed(1)} · {product.reviewCount.toLocaleString()} reviews
         </span>
       </a>
@@ -170,9 +170,9 @@ export function ProductPurchase({ product }) {
           </>
         )}
       </div>
-      <p className="mt-1 text-[13px] text-muted">Tax included. Or 4 interest-free payments of {formatPrice(product.price / 4)}.</p>
+      <p className="mt-1 text-caption text-muted">Tax included. Or 4 interest-free payments of {formatPrice(product.price / 4)}.</p>
 
-      <p className="mt-6 text-[15px] leading-relaxed text-ink/75">{product.description}</p>
+      <p className="mt-6 text-body leading-relaxed text-ink/75">{product.description}</p>
 
       <div className="mt-8 space-y-7">
         {/* Colour */}
@@ -214,13 +214,13 @@ export function ProductPurchase({ product }) {
             <div className="flex items-center justify-between">
               <legend className="text-sm">
                 <span className="font-semibold">Size:</span>{' '}
-                <span className={cn(size ? 'text-muted' : 'text-subtle')}>{size ?? 'Select a size'}</span>
+                <span className="text-muted">{size ?? 'Select a size'}</span>
               </legend>
               {guide && (
                 <button
                   type="button"
                   onClick={() => setGuideOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-[13px] font-medium underline underline-offset-4 hover:text-muted"
+                  className="inline-flex items-center gap-1.5 text-caption font-medium underline underline-offset-4 hover:text-muted"
                 >
                   <Ruler className="size-4" strokeWidth={1.75} aria-hidden="true" />
                   Size guide
@@ -252,7 +252,7 @@ export function ProductPurchase({ product }) {
               ))}
             </div>
             {sizeError && (
-              <p id="size-error" role="alert" className="mt-2.5 flex items-center gap-1.5 text-[13px] font-medium text-danger">
+              <p id="size-error" role="alert" className="mt-2.5 flex items-center gap-1.5 text-caption font-medium text-danger">
                 <CircleAlert className="size-4" aria-hidden="true" />
                 Please select a size to continue.
               </p>
@@ -372,7 +372,7 @@ export function ProductPurchase({ product }) {
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{product.name}</p>
-              <p className="text-[13px] tabular-nums text-muted">
+              <p className="text-caption tabular-nums text-muted">
                 {formatPrice(product.price)}
                 {size && ` · Size ${size}`}
               </p>

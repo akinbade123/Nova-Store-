@@ -6,11 +6,11 @@ export function SectionHeader({ eyebrow, title, description, action, actions, id
   return (
     <div className={cn('mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between', className)}>
       <div className="max-w-2xl">
-        {eyebrow && <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted">{eyebrow}</p>}
-        <h2 id={id} className="text-[28px] font-semibold leading-[1.1] sm:text-4xl">
+        {eyebrow && <p className="mb-3 eyebrow text-muted">{eyebrow}</p>}
+        <h2 id={id} className="text-heading font-semibold leading-[1.1] sm:text-4xl">
           {title}
         </h2>
-        {description && <p className="mt-3 text-[15px] leading-relaxed text-muted">{description}</p>}
+        {description && <p className="mt-3 text-body leading-relaxed text-muted">{description}</p>}
       </div>
       {(action || actions) && (
         <div className="flex shrink-0 items-center gap-3">

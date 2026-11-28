@@ -23,9 +23,9 @@ function ProductSkeleton() {
     <div className="grid gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16" aria-busy="true" aria-label="Loading product">
       <div className="mx-auto w-full max-w-[560px] lg:col-span-6 lg:grid lg:grid-cols-[64px_1fr] lg:gap-3 xl:grid-cols-[72px_1fr] xl:gap-4">
         <div className="hidden flex-col gap-3 lg:flex">
-          {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton aspect-[4/5] rounded-xl" />)}
+          {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton aspect-4/5 rounded-xl" />)}
         </div>
-        <div className="skeleton aspect-[4/5] rounded-2xl lg:rounded-3xl" />
+        <div className="skeleton aspect-4/5 rounded-2xl lg:rounded-3xl" />
       </div>
       <div className="space-y-4 lg:col-span-6 lg:pt-2">
         <Skeleton className="h-3.5 w-24" />
@@ -123,8 +123,13 @@ export default function ProductPage() {
           <ProductSkeleton />
         ) : (
           <>
+<<<<<<< HEAD
             <div className="grid gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16">
               <div className="-mx-4 sm:mx-0 lg:col-span-6">
+=======
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16">
+              <div className="-mx-4 sm:mx-0 lg:col-span-7">
+>>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
                 <div className="lg:sticky lg:top-24">
                   <ProductGallery key={product.id} images={product.gallery} name={product.name}>
                     <div className="pointer-events-none absolute left-4 top-4 flex flex-col items-start gap-1.5">

@@ -10,7 +10,7 @@ import { FREE_SHIPPING_THRESHOLD } from '../../data/site';
 
 export function CartDrawer() {
   const { isCartOpen, close } = useUI();
-  const { items, count, subtotal, amountToFreeShipping, updateQuantity, removeItem } = useCart();
+  const { items, loading, count, subtotal, amountToFreeShipping, updateQuantity, removeItem } = useCart();
   const progress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
   return (
@@ -23,11 +23,11 @@ export function CartDrawer() {
       footer={
         items.length > 0 && (
           <div>
-            <dl className="flex items-center justify-between text-[15px] font-semibold">
+            <dl className="flex items-center justify-between text-body font-semibold">
               <dt>Subtotal</dt>
               <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
             </dl>
-            <p className="mt-1 text-[13px] text-muted">Shipping and taxes calculated at checkout.</p>
+            <p className="mt-1 text-caption text-muted">Shipping and taxes calculated at checkout.</p>
             <div className="mt-5 grid gap-2.5">
               <Button to="/checkout" onClick={close} size="lg" fullWidth>
                 Checkout
@@ -40,13 +40,15 @@ export function CartDrawer() {
         )
       }
     >
-      {items.length === 0 ? (
+      {loading ? (
+        <div className="h-full" aria-busy="true" />
+      ) : items.length === 0 ? (
         <div className="flex h-full flex-col items-center justify-center px-8 py-16 text-center">
           <span className="flex size-16 items-center justify-center rounded-full bg-surface">
             <ShoppingBag className="size-7 text-ink" strokeWidth={1.5} />
           </span>
           <p className="mt-5 font-display text-xl font-semibold">Your bag is empty</p>
-          <p className="mt-2 max-w-[260px] text-sm leading-relaxed text-muted">
+          <p className="mt-2 max-w-65 text-sm leading-relaxed text-muted">
             Looks like you haven’t added anything yet. Let’s find your next favourite.
           </p>
           <Button to="/shop" onClick={close} className="mt-7">
@@ -56,7 +58,7 @@ export function CartDrawer() {
       ) : (
         <>
           <div className="border-b border-line bg-surface/60 px-5 py-4 sm:px-6">
-            <p className="flex items-center gap-2 text-[13px]">
+            <p className="flex items-center gap-2 text-caption">
               <Truck className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
               {amountToFreeShipping > 0 ? (
                 <span>
@@ -84,7 +86,7 @@ export function CartDrawer() {
                 <Link
                   to={`/product/${product.slug}`}
                   onClick={close}
-                  className="block h-[104px] w-[84px] shrink-0 overflow-hidden rounded-xl bg-surface"
+                  className="block h-26 w-21 shrink-0 overflow-hidden rounded-xl bg-surface"
                 >
                   <img
                     src={imageUrl(product.images[0].src, { w: 168, h: 208 })}
@@ -103,7 +105,7 @@ export function CartDrawer() {
                     </Link>
                     <p className="shrink-0 text-sm font-semibold tabular-nums">{formatPrice(product.price * quantity)}</p>
                   </div>
-                  <p className="mt-1 text-[13px] text-muted">{[color, size && `Size ${size}`].filter(Boolean).join(' · ') || '\u00a0'}</p>
+                  <p className="mt-1 text-caption text-muted">{[color, size && `Size ${size}`].filter(Boolean).join(' · ') || '\u00a0'}</p>
                   <div className="mt-auto flex items-center justify-between pt-3">
                     <div className="flex h-9 items-center rounded-md ring-1 ring-inset ring-line-strong">
                       <button
@@ -130,7 +132,7 @@ export function CartDrawer() {
                     <button
                       type="button"
                       onClick={() => removeItem(key)}
-                      className="text-[13px] text-muted underline underline-offset-4 hover:text-ink"
+                      className="text-caption text-muted underline underline-offset-4 hover:text-ink"
                     >
                       Remove
                     </button>

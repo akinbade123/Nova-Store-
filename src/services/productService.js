@@ -1,95 +1,91 @@
-import { api, mockDelay, USE_MOCK_DATA } from './api';
-import { products } from '../data/products';
-import { categories } from '../data/categories';
-import { testimonials } from '../data/testimonials';
-import { findCollection } from '../data/collections';
-import { getProductDetails, getSampleReviews, ratingBreakdown } from '../data/productDetails';
+import { api, mockDelay, nullIfNotFound, USE_MOCK_DATA } from './api';
 
-const discountRatio = (item) => (item.compareAtPrice ? (item.compareAtPrice - item.price) / item.compareAtPrice : 0);
+/** The sample catalogue, loaded only in sample-data mode so API builds never download it. */
+const sample = () => import('./mock/catalog.js');
 
-const sorters = {
-  featured: (a, b) => Number(b.isFeatured) - Number(a.isFeatured) || b.reviewCount - a.reviewCount,
-  popular: (a, b) => b.reviewCount - a.reviewCount,
-  newest: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-  'price-asc': (a, b) => a.price - b.price,
-  'price-desc': (a, b) => b.price - a.price,
-  rating: (a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount,
-  discount: (a, b) => discountRatio(b) - discountRatio(a) || b.reviewCount - a.reviewCount,
-};
+/*
+ * Product cache behind the synchronous lookups used by lists kept as ids (cart, wishlist).
+ * Sample-data mode: the whole catalogue. API mode: every product the API has returned
+ * this session, plus anything requested with loadByIds(). Fresh API responses overwrite
+ * older entries, so prices and stock stay current. Subscribe to re-render when it changes.
+ */
+const cache = new Map();
+const unavailable = new Set(); // asked the API for these ids and got nothing back
+const inFlight = new Set();
+const listeners = new Set();
+let cacheVersion = 0;
 
-const matchesSearch = (item, term) =>
-  `${item.name} ${item.category} ${item.description}`.toLowerCase().includes(term.trim().toLowerCase());
-
-/** Simple list used by homepage rails. */
-function listMock({ category, featured, bestSeller, search, sort, limit } = {}) {
-  let result = [...products];
-  if (category) result = result.filter((item) => item.category === category);
-  if (featured) result = result.filter((item) => item.isFeatured);
-  if (bestSeller) result = result.filter((item) => item.isBestSeller);
-  if (search) result = result.filter((item) => matchesSearch(item, search));
-  if (sort && sorters[sort]) result.sort(sorters[sort]);
-  if (limit) result = result.slice(0, limit);
-  return result;
+function notify() {
+  cacheVersion += 1;
+  listeners.forEach((listener) => listener());
 }
 
-/**
- * Catalogue query for the Shop page. Mirrors the expected
- * GET /products response: { items, total, facets }.
- * Category facet counts ignore the category filter itself, so each option
- * shows how many results selecting it would add.
+function remember(items) {
+  const list = (Array.isArray(items) ? items : [items]).filter((item) => item?.id);
+  if (!list.length) return;
+  list.forEach((item) => {
+    cache.set(item.id, item);
+    unavailable.delete(item.id);
+  });
+  notify();
+}
+
+/** Sample-data mode: the whole catalogue goes into the cache as soon as it has loaded. */
+const sampleReady = USE_MOCK_DATA ? sample().then((mock) => remember(mock.products)) : null;
+
+/*
+ * The one contract for GET /products. Every caller goes through fetchProducts, so the
+ * backend sees one set of parameter names and always answers { items, total, facets }.
+ *
+ *   q           search text           categories  comma-separated slugs
+ *   ids         comma-separated ids   featured, bestSeller, inStock, onSale  'true' when set
+ *   minPrice, maxPrice, minRating     sort (see SORT_OPTIONS)   limit (max 100)   offset (skip that many)
  */
-function catalogueMock({
-  q,
-  categories: selected = [],
-  minPrice,
-  maxPrice,
-  minRating,
-  inStock,
-  onSale,
-  sort = 'featured',
-  limit = 12,
-}) {
-  const passesOtherFilters = (item) =>
-    (!q || matchesSearch(item, q)) &&
-    (minPrice == null || item.price >= minPrice) &&
-    (maxPrice == null || item.price <= maxPrice) &&
-    (!minRating || item.rating >= minRating) &&
-    (!inStock || item.inStock) &&
-    (!onSale || discountRatio(item) > 0);
+const joinList = (values) => (values?.length ? values.join(',') : undefined);
+const flag = (value) => (value ? 'true' : undefined);
 
-  const base = products.filter(passesOtherFilters);
-  const facets = {
-    categories: Object.fromEntries(
-      categories.map((category) => [category.slug, base.filter((item) => item.category === category.slug).length]),
-    ),
-  };
-  const matched = (selected.length ? base.filter((item) => selected.includes(item.category)) : base).sort(
-    sorters[sort] ?? sorters.featured,
-  );
-
-  return { items: matched.slice(0, limit), total: matched.length, facets };
+async function fetchProducts({ q, category, categories, ids, featured, bestSeller, inStock, onSale, minPrice, maxPrice, minRating, sort, limit, offset, facets = true } = {}) {
+  const { data } = await api.get('/products', {
+    params: {
+      q: q?.trim() || undefined,
+      categories: joinList(categories ?? (category ? [category] : undefined)),
+      ids: joinList(ids),
+      featured: flag(featured),
+      bestSeller: flag(bestSeller),
+      inStock: flag(inStock),
+      onSale: flag(onSale),
+      minPrice: minPrice ?? undefined,
+      maxPrice: maxPrice ?? undefined,
+      minRating: minRating || undefined,
+      sort,
+      limit,
+      offset: offset || undefined,
+      // Lists without filters don't need the per-category counts; skipping them saves two queries.
+      facets: facets ? undefined : 'false',
+    },
+  });
+  remember(data.items);
+  return data;
 }
 
 export const productService = {
+  /** Plain array of products for rails and suggestions: { category, featured, bestSeller, search, sort, limit }. */
   async list(params = {}) {
-    if (USE_MOCK_DATA) return mockDelay(listMock(params));
-    const { data } = await api.get('/products', { params });
-    return data;
+    if (USE_MOCK_DATA) return mockDelay((await sample()).list(params));
+    const { search, ...rest } = params;
+    return (await fetchProducts({ ...rest, q: search, facets: false })).items;
   },
 
   /** Filtered, sorted and paginated catalogue: { items, total, facets }. */
   async query(params = {}) {
-    if (USE_MOCK_DATA) return mockDelay(catalogueMock(params), 450);
-    const { categories: selected, ...rest } = params;
-    const { data } = await api.get('/products', {
-      params: { ...rest, categories: selected?.length ? selected.join(',') : undefined },
-    });
-    return data;
+    if (USE_MOCK_DATA) return mockDelay((await sample()).query(params), 450);
+    return fetchProducts(params);
   },
 
   async getBySlug(slug) {
-    if (USE_MOCK_DATA) return mockDelay(products.find((item) => item.slug === slug) ?? null);
+    if (USE_MOCK_DATA) return mockDelay((await sample()).bySlug(slug));
     const { data } = await api.get(`/products/${slug}`);
+    remember(data);
     return data;
   },
 
@@ -99,27 +95,19 @@ export const productService = {
    */
   async getDetail(slug) {
     if (!USE_MOCK_DATA) {
-      const { data } = await api.get(`/products/${slug}`, { params: { include: 'details' } });
+      const data = await api
+        .get(`/products/${slug}`, { params: { include: 'details' } })
+        .then((response) => response.data, nullIfNotFound);
+      remember(data);
       return data;
     }
-    const product = products.find((item) => item.slug === slug);
-    if (!product) return mockDelay(null, 400);
-    const src = product.images[0].src;
-    const details = getProductDetails(product);
-    // Sample data has one photo per product, so the gallery adds close-up crops of it.
-    // Products can set their own focal points where the subject is off-centre.
-    const crops = details.crops ?? [
-      { zoom: 1.6, x: 0.5, y: 0.5 },
-      { zoom: 2.2, x: 0.5, y: 0.42 },
-      { zoom: 2.2, x: 0.5, y: 0.62 },
-    ];
-    const { crops: _omit, ...rest } = details;
-    return mockDelay({ ...product, ...rest, gallery: [{ src }, ...crops.map((crop) => ({ src, ...crop }))] }, 500);
+    const product = (await sample()).detail(slug);
+    return mockDelay(product, product ? 500 : 400);
   },
 
   async reviews(product) {
     if (USE_MOCK_DATA) {
-      return mockDelay({ items: getSampleReviews(product), breakdown: ratingBreakdown(product.rating, product.reviewCount) }, 600);
+      return mockDelay((await sample()).reviews(product), 600);
     }
     const { data } = await api.get(`/products/${product.id}/reviews`);
     return data;
@@ -129,25 +117,73 @@ export const productService = {
   async related(product, limit = 8) {
     if (!USE_MOCK_DATA) {
       const { data } = await api.get(`/products/${product.id}/related`, { params: { limit } });
+      remember(data);
       return data;
     }
-    const others = products.filter((item) => item.id !== product.id);
-    const same = others.filter((item) => item.category === product.category).sort(sorters.popular);
-    const rest = others.filter((item) => item.category !== product.category).sort(sorters.popular);
-    return mockDelay([...same, ...rest].slice(0, limit), 700);
+    return mockDelay((await sample()).related(product, limit), 700);
   },
 
-  /** Synchronous lookup used by the instant search panel and the cart. */
-  searchLocal(term, limit = 5) {
-    return term.trim() ? listMock({ search: term, limit }) : [];
+  /** Quick results for the search panel. Resolves to an array of products. */
+  async search(term, limit = 5) {
+    const q = term.trim();
+    if (!q) return [];
+    if (USE_MOCK_DATA) return (await sample()).list({ search: q, limit });
+    return (await fetchProducts({ q, limit, facets: false })).items;
   },
 
+  /** Synchronous cache lookup. Returns null until the product has been loaded (see loadByIds). */
   findById(id) {
-    return products.find((item) => item.id === id) ?? null;
+    return cache.get(id) ?? null;
+  },
+
+  /** True once an id is loaded, or the API has confirmed it no longer exists. */
+  isResolved(id) {
+    return cache.has(id) || unavailable.has(id);
+  },
+
+  /**
+   * Fetches products that aren't cached yet, in one request: GET /products?ids=a,b,c.
+   * Never rejects. Ids the API doesn't return (or can't, on a network error) are marked
+   * unavailable, so lists drop them instead of loading forever.
+   */
+  async loadByIds(ids) {
+    const missing = [...new Set(ids)].filter((id) => !cache.has(id) && !unavailable.has(id) && !inFlight.has(id));
+    if (!missing.length) return;
+    if (USE_MOCK_DATA) {
+      // Once the sample catalogue is cached, anything still missing doesn't exist.
+      await sampleReady;
+      missing.filter((id) => !cache.has(id)).forEach((id) => unavailable.add(id));
+      notify();
+      return;
+    }
+    missing.forEach((id) => inFlight.add(id));
+    try {
+      // The API takes at most 100 ids per request.
+      const chunks = [];
+      for (let i = 0; i < missing.length; i += 100) chunks.push(missing.slice(i, i + 100));
+      await Promise.all(chunks.map((chunk) => fetchProducts({ ids: chunk, limit: chunk.length })));
+    } catch {
+      /* fall through: treated as unavailable for this session */
+    } finally {
+      missing.forEach((id) => {
+        inFlight.delete(id);
+        if (!cache.has(id)) unavailable.add(id);
+      });
+      notify();
+    }
+  },
+
+  subscribe(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  },
+
+  cacheVersion() {
+    return cacheVersion;
   },
 
   async categories() {
-    if (USE_MOCK_DATA) return mockDelay(categories, 300);
+    if (USE_MOCK_DATA) return mockDelay((await sample()).categories, 300);
     const { data } = await api.get('/categories');
     return data;
   },
@@ -155,18 +191,16 @@ export const productService = {
   /** A curated collection with its products: { collection, products } or null. */
   async collection(slug, { sort = 'curated' } = {}) {
     if (!USE_MOCK_DATA) {
-      const { data } = await api.get(`/collections/${slug}`, { params: { sort } });
+      const data = await api.get(`/collections/${slug}`, { params: { sort } }).then((response) => response.data, nullIfNotFound);
+      remember(data?.products);
       return data;
     }
-    const collection = findCollection(slug);
-    if (!collection) return mockDelay(null, 400);
-    const items = collection.productIds.map((id) => products.find((item) => item.id === id)).filter(Boolean);
-    if (sort !== 'curated' && sorters[sort]) items.sort(sorters[sort]);
-    return mockDelay({ collection, products: items }, 500);
+    const found = (await sample()).collection(slug, sort);
+    return mockDelay(found, found ? 500 : 400);
   },
 
   async testimonials() {
-    if (USE_MOCK_DATA) return mockDelay(testimonials, 300);
+    if (USE_MOCK_DATA) return mockDelay((await sample()).testimonials, 300);
     const { data } = await api.get('/reviews/featured');
     return data;
   },

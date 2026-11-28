@@ -73,9 +73,9 @@ const trust = [
 ];
 
 export default function CartPage() {
-  const { items, count, subtotal, savings, amountToFreeShipping, promo, getTotals } = useCart();
+  const { items, loading: cartLoading, count, subtotal, savings, amountToFreeShipping, promo, getTotals } = useCart();
   const totals = getTotals();
-  const isEmpty = items.length === 0;
+  const isEmpty = !cartLoading && items.length === 0;
   useDocumentTitle('Your bag');
 
   // Room for the mobile checkout bar.
@@ -87,6 +87,8 @@ export default function CartPage() {
 
   const crumbs = [{ label: 'Home', to: '/' }, { label: 'Bag' }];
 
+  if (cartLoading) return <div className="min-h-[60vh]" aria-busy="true" />;
+
   if (isEmpty) {
     return (
       <>
@@ -97,7 +99,7 @@ export default function CartPage() {
               <ShoppingBag className="size-8" strokeWidth={1.4} aria-hidden="true" />
             </span>
             <h1 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">Your bag is empty</h1>
-            <p className="mt-3 text-[15px] leading-relaxed text-muted">
+            <p className="mt-3 text-body leading-relaxed text-muted">
               Nothing here yet. Explore new arrivals and best sellers — or pick up where you left off in your wishlist.
             </p>
             <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
@@ -120,7 +122,7 @@ export default function CartPage() {
       <Container className="pb-16 pt-6 lg:pb-24 lg:pt-10">
         <Breadcrumbs items={crumbs} />
         <div className="mt-6 flex items-end justify-between gap-4 lg:mt-8">
-          <h1 className="text-[34px] font-bold leading-none tracking-[-0.03em] sm:text-5xl">
+          <h1 className="text-title font-bold leading-none tracking-[-0.03em] sm:text-5xl">
             Your bag <span className="text-2xl font-semibold text-muted sm:text-3xl">({count})</span>
           </h1>
           <Link
@@ -146,7 +148,7 @@ export default function CartPage() {
             </ul>
             <ul className="mt-8 grid gap-4 sm:grid-cols-3">
               {trust.map(({ Icon, text }) => (
-                <li key={text} className="flex items-center gap-2.5 text-[13px] text-muted">
+                <li key={text} className="flex items-center gap-2.5 text-caption text-muted">
                   <Icon className="size-[18px] shrink-0 text-ink" strokeWidth={1.5} aria-hidden="true" />
                   {text}
                 </li>

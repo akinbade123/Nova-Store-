@@ -4,6 +4,7 @@ import { Check, Copy, CreditCard, Mail, MapPin, PackageSearch, Truck } from 'luc
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
 import { useAsync } from '../hooks/useAsync';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useToast } from '../context/ToastContext';
@@ -12,6 +13,7 @@ import { BRAND_LABELS, countryByCode } from '../utils/validation';
 import { formatPrice } from '../utils/format';
 import { imageUrl } from '../utils/image';
 import { cn } from '../utils/cn';
+import { contactEmail } from '../data/site';
 
 const paymentLabel = (payment) => {
   if (payment.method === 'paypal') return 'PayPal';
@@ -22,7 +24,7 @@ const paymentLabel = (payment) => {
 function InfoCard({ Icon, title, children }) {
   return (
     <div className="rounded-2xl p-5 ring-1 ring-inset ring-line">
-      <p className="flex items-center gap-2 text-[13px] font-semibold">
+      <p className="flex items-center gap-2 text-caption font-semibold">
         <Icon className="size-4" strokeWidth={1.75} aria-hidden="true" />
         {title}
       </p>
@@ -40,7 +42,7 @@ export default function OrderConfirmationPage() {
   const [copied, setCopied] = useState(false);
 
   const passed = state?.order?.id === orderId ? state.order : null;
-  const { data, loading } = useAsync(() => (passed ? Promise.resolve(passed) : orderService.getOrder(orderId)), [orderId]);
+  const { data, loading, error, retry } = useAsync(() => (passed ? Promise.resolve(passed) : orderService.getOrder(orderId)), [orderId]);
   const order = passed ?? data;
   useDocumentTitle(order ? `Order ${order.id} confirmed` : 'Order confirmation');
 
@@ -51,6 +53,15 @@ export default function OrderConfirmationPage() {
         <Skeleton className="mx-auto h-9 w-2/3" />
         <Skeleton className="mx-auto h-4 w-1/2" />
         <Skeleton className="h-40 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  // A failed request isn't a missing order: offer a retry instead of "couldn't find".
+  if (!order && error) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <ErrorState message={error.userMessage ?? 'We couldn’t load your order.'} onRetry={retry} />
       </div>
     );
   }
@@ -84,11 +95,11 @@ export default function OrderConfirmationPage() {
         <span className="mx-auto flex size-16 animate-fade-in items-center justify-center rounded-full bg-success text-white">
           <Check className="size-8" strokeWidth={2.25} aria-hidden="true" />
         </span>
-        <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-muted">Order confirmed</p>
-        <h1 className="mt-3 text-[32px] font-bold leading-tight tracking-tight sm:text-5xl">
+        <p className="mt-6 eyebrow text-muted">Order confirmed</p>
+        <h1 className="mt-3 text-title font-bold leading-tight tracking-tight sm:text-5xl">
           Thank you, {address.firstName}!
         </h1>
-        <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-muted">
+        <p className="mx-auto mt-4 max-w-md text-body leading-relaxed text-muted">
           We’ve received your order and sent a confirmation to <span className="font-medium text-ink">{order.contact.email}</span>.
         </p>
         <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-surface py-1.5 pl-4 pr-1.5 text-sm">
@@ -167,7 +178,7 @@ export default function OrderConfirmationPage() {
               </Link>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{item.name}</p>
-                <p className="mt-0.5 text-[13px] text-muted">
+                <p className="mt-0.5 text-caption text-muted">
                   {[item.color, item.size && `Size ${item.size}`, `Qty ${item.quantity}`].filter(Boolean).join(' · ')}
                 </p>
               </div>
@@ -207,7 +218,7 @@ export default function OrderConfirmationPage() {
       </div>
       <p className="mt-8 text-center text-sm text-muted">
         Questions about your order?{' '}
-        <a href="mailto:support@nova.store" className="font-medium text-ink underline underline-offset-4">
+        <a href={`mailto:${contactEmail.support}`} className="font-medium text-ink underline underline-offset-4">
           Contact support
         </a>
       </p>

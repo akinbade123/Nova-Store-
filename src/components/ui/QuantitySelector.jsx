@@ -18,7 +18,7 @@ export function QuantitySelector({ value, onChange, min = 1, max = 10, size = 'm
       >
         <Minus className="size-4" />
       </button>
-      <output className="w-8 text-center text-[15px] font-medium tabular-nums" aria-live="polite">
+      <output className="w-8 text-center text-body font-medium tabular-nums" aria-live="polite">
         {value}
       </output>
       <button

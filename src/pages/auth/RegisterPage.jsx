@@ -9,6 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { useForm } from '../../hooks/useForm';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useRedirectTarget } from '../../layouts/AuthLayout';
+import { useCooldown, waitLabel } from '../../hooks/useCooldown';
 import { EMAIL_PATTERN } from '../../utils/validation';
 
 const validate = (values) => {
@@ -32,6 +33,7 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const form = useForm({ firstName: '', lastName: '', email: '', password: '', marketing: false, terms: false }, validate);
   const [submitting, setSubmitting] = useState(false);
+  const cooldown = useCooldown();
   const [formError, setFormError] = useState(null); // { code, message }
   const alertRef = useRef(null);
 
@@ -52,14 +54,15 @@ export default function RegisterPage() {
     } catch (err) {
       setSubmitting(false);
       setFormError({ code: err.code, message: err.userMessage ?? 'We couldn’t create your account. Please try again.' });
+      if (err.retryAfter) cooldown.start(err.retryAfter);
       requestAnimationFrame(() => alertRef.current?.focus());
     }
   };
 
   return (
     <div className="animate-fade-in">
-      <h1 className="text-[32px] font-bold leading-tight tracking-tight sm:text-4xl">Create your account</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted">
+      <h1 className="text-title font-bold leading-tight tracking-tight sm:text-4xl">Create your account</h1>
+      <p className="mt-3 text-body leading-relaxed text-muted">
         Already a member?{' '}
         <Link to={`/login${search}`} className="font-medium text-ink underline underline-offset-4 hover:no-underline">
           Sign in
@@ -110,8 +113,8 @@ export default function RegisterPage() {
             />
           </div>
         </fieldset>
-        <Button type="submit" size="lg" fullWidth loading={submitting} className="!mt-8">
-          Create account
+        <Button type="submit" size="lg" fullWidth loading={submitting} disabled={cooldown.secondsLeft > 0} className="!mt-8">
+          {cooldown.secondsLeft > 0 ? `Try again in ${waitLabel(cooldown.secondsLeft)}` : 'Create account'}
         </Button>
       </form>
     </div>

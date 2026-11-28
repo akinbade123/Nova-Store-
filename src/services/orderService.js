@@ -1,4 +1,4 @@
-import { api, mockDelay, USE_MOCK_DATA } from './api';
+import { api, mockDelay, nullIfNotFound, USE_MOCK_DATA } from './api';
 
 const STORAGE_KEY = 'nova:orders';
 
@@ -14,10 +14,20 @@ const reject = (code, message) => Promise.reject(Object.assign(new Error(message
 
 const newOrderId = () => `NV-${Date.now().toString(36).toUpperCase().slice(-6)}`;
 
+export const ORDERS_PAGE_SIZE = 10;
+
+/** Sample-data mode: the user's orders, placed while signed in or as a guest with the same email. */
+function allMockOrders(user) {
+  const mine = (order) => order.userId === user.id || order.contact?.email === user.email;
+  const own = readOrders().filter(mine);
+  const seeded = user.id === 'u-demo' ? DEMO_ORDERS.filter((demo) => !own.some((order) => order.id === demo.id)) : [];
+  return [...own, ...seeded].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt) || (a.id < b.id ? 1 : -1));
+}
+
 export const orderService = {
   /**
    * Places an order. Payload: { contact, shippingAddress, billingAddress, shippingMethod, payment, items, totals, promo }.
-   * Card details never leave this function in full: only brand and last four digits are kept.
+   * `payment` is { method, brand, last4 }: the full card number never leaves the checkout form.
    * Sample-data mode: a card ending in 0002 is declined, to exercise the error state.
    */
   async placeOrder(payload) {
@@ -27,17 +37,18 @@ export const orderService = {
     }
 
     await mockDelay(null, 1600);
-    if (payload.payment.method === 'card' && payload.payment.cardNumber.replace(/\D/g, '').endsWith('0002')) {
+    // Same rule as the API: a repeated checkoutId returns the order already created for it.
+    const existing = payload.checkoutId && readOrders().find((order) => order.checkoutId === payload.checkoutId);
+    if (existing) return existing;
+    if (payload.payment.method === 'card' && payload.payment.last4 === '0002') {
       return reject('card_declined', 'Your card was declined. Please check the details, or use a different card or payment method.');
     }
 
-    const { cardNumber, ...payment } = payload.payment;
     const order = {
       id: newOrderId(),
       createdAt: new Date().toISOString(),
       status: 'Processing',
       ...payload,
-      payment: { ...payment, last4: cardNumber ? cardNumber.replace(/\D/g, '').slice(-4) : null },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify([order, ...readOrders()].slice(0, 50)));
     return order;
@@ -45,23 +56,29 @@ export const orderService = {
 
   async getOrder(id) {
     if (!USE_MOCK_DATA) {
-      const { data } = await api.get(`/orders/${id}`);
-      return data;
+      return api.get(`/orders/${id}`).then((response) => response.data, nullIfNotFound);
     }
     return mockDelay(readOrders().find((order) => order.id === id) ?? null, 300);
   },
 
-  /** Orders belonging to a signed-in user: placed while signed in, or as a guest with the same email. */
-  async listOrders(user) {
+  /**
+   * One page of a signed-in user's orders, newest first (docs/API.md, GET /me/orders):
+   * `{ items, nextCursor, counts }`. Pass `nextCursor` back as `cursor` for the next page.
+   * `status` filters to one label; `counts` always covers every order, for the status tabs.
+   */
+  async listOrders(user, { limit = ORDERS_PAGE_SIZE, cursor, status } = {}) {
     if (!USE_MOCK_DATA) {
-      const { data } = await api.get('/me/orders');
+      const { data } = await api.get('/me/orders', { params: { limit, cursor: cursor || undefined, status: status || undefined } });
       return data;
     }
-    const mine = (order) => order.userId === user.id || order.contact?.email === user.email;
-    const own = readOrders().filter(mine);
-    const seeded = user.id === 'u-demo' ? DEMO_ORDERS.filter((demo) => !own.some((order) => order.id === demo.id)) : [];
-    const all = [...own, ...seeded].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return mockDelay(all, 500);
+    const all = allMockOrders(user);
+    const counts = { All: all.length, Processing: 0, Shipped: 0, Delivered: 0, Cancelled: 0 };
+    all.forEach((order) => (counts[order.status] += 1));
+    const filtered = status ? all.filter((order) => order.status === status) : all;
+    const start = cursor ? filtered.findIndex((order) => order.id === cursor) + 1 : 0;
+    const items = start === 0 && cursor ? [] : filtered.slice(start, start + limit);
+    const nextCursor = start + limit < filtered.length ? items.at(-1)?.id ?? null : null;
+    return mockDelay({ items, nextCursor, counts }, 500);
   },
 
   /** Cancels an order that hasn't shipped yet. */
@@ -81,9 +98,10 @@ export const orderService = {
     return updated;
   },
 
+  /** One of the signed-in user's orders, or null. */
   async getUserOrder(user, id) {
-    const orders = await orderService.listOrders(user);
-    return orders.find((order) => order.id === id) ?? null;
+    if (!USE_MOCK_DATA) return orderService.getOrder(id); // the API checks it's theirs
+    return mockDelay(allMockOrders(user).find((order) => order.id === id) ?? null, 300);
   },
 };
 
@@ -113,7 +131,7 @@ function demoOrder({ id, createdAt, status, shippedAt, deliveredAt, tracking, it
     shippedAt,
     deliveredAt,
     tracking,
-    contact: { email: 'demo@nova.store', phone: '+234 803 555 0142', marketing: true },
+    contact: { email: 'demo@example.com', phone: '+234 803 555 0142', marketing: true },
     shippingAddress: DEMO_ADDRESS,
     billingAddress: DEMO_ADDRESS,
     shippingMethod: { id: 'express', label: 'Express', eta: '1–2 business days' },

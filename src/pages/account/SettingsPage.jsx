@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { PasswordField, TextField, fieldId } from '../../components/ui/Field';
+import { Toggle } from '../../components/ui/Toggle';
 import { PasswordStrength, passwordError } from '../../components/auth/PasswordStrength';
 import { AccountSection } from '../../layouts/AccountLayout';
 import { useAuth } from '../../context/AuthContext';
@@ -36,19 +37,25 @@ function focusFirst(errors) {
 
 /* ---------------- Personal details ---------------- */
 
-const validateDetails = (values) => {
+/** Password resets go to this email, so changing it needs the current password. */
+const emailChanged = (values, user) => values.email.trim().toLowerCase() !== user.email;
+
+const validateDetails = (values, user) => {
   const errors = {};
   if (!values.firstName.trim()) errors.firstName = 'Enter your first name';
   if (!values.lastName.trim()) errors.lastName = 'Enter your last name';
   if (!values.email.trim()) errors.email = 'Enter your email address';
   else if (!EMAIL_PATTERN.test(values.email.trim())) errors.email = 'Enter a valid email, like name@example.com';
+  if (emailChanged(values, user) && !values.currentPassword) errors.currentPassword = 'Enter your current password to change your email';
   return errors;
 };
 
 function DetailsForm() {
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
-  const form = useForm({ firstName: user.firstName, lastName: user.lastName, email: user.email }, validateDetails);
+  const validate = useCallback((values) => validateDetails(values, user), [user]);
+  const form = useForm({ firstName: user.firstName, lastName: user.lastName, email: user.email, currentPassword: '' }, validate);
+  const needsPassword = emailChanged(form.values, user);
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState({});
   const changed = ['firstName', 'lastName', 'email'].some((key) => form.values[key].trim() !== user[key]);
@@ -59,12 +66,17 @@ function DetailsForm() {
     if (focusFirst(form.submit())) return;
     setSaving(true);
     try {
-      await updateProfile(form.values);
+      const { currentPassword, ...details } = form.values;
+      await updateProfile(needsPassword ? { ...details, currentPassword } : details);
+      form.setField('currentPassword', '');
       toast({ title: 'Details saved' });
     } catch (err) {
       if (err.code === 'email_taken') {
         setServerError({ email: err.userMessage });
         document.getElementById(fieldId('email'))?.focus();
+      } else if (err.code === 'wrong_password' || err.code === 'validation_failed') {
+        setServerError({ currentPassword: err.userMessage });
+        document.getElementById(fieldId('currentPassword'))?.focus();
       } else {
         toast({ variant: 'error', title: 'Couldn’t save details', description: err.userMessage });
       }
@@ -87,6 +99,16 @@ function DetailsForm() {
           {...form.field('email')}
           error={form.errors.email ?? serverError.email}
         />
+        {needsPassword && (
+          <PasswordField
+            label="Current password"
+            autoComplete="current-password"
+            className="sm:col-span-2"
+            hint="Needed to change your email, because password resets are sent there."
+            {...form.field('currentPassword')}
+            error={form.errors.currentPassword ?? serverError.currentPassword}
+          />
+        )}
       </fieldset>
       <Button type="submit" className="mt-6" loading={saving} disabled={!changed}>
         Save changes
@@ -153,28 +175,6 @@ function PasswordForm({ onChanged }) {
 
 /* ---------------- Preferences ---------------- */
 
-function Toggle({ label, description, checked, onChange, disabled }) {
-  return (
-    <label className={cn('flex cursor-pointer items-start justify-between gap-6 py-4', disabled && 'cursor-wait opacity-60')}>
-      <span>
-        <span className="block text-sm font-medium">{label}</span>
-        <span className="mt-0.5 block text-[13px] text-muted">{description}</span>
-      </span>
-      <input type="checkbox" role="switch" checked={checked} onChange={onChange} disabled={disabled} className="peer sr-only" />
-      <span
-        aria-hidden="true"
-        className={cn(
-          'relative mt-0.5 h-6 w-10 shrink-0 rounded-full transition-colors duration-200',
-          'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
-          checked ? 'bg-ink' : 'bg-line-strong',
-        )}
-      >
-        <span className={cn('absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out-soft', checked && 'translate-x-4')} />
-      </span>
-    </label>
-  );
-}
-
 function Preferences() {
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
@@ -210,7 +210,7 @@ function Preferences() {
       />
       <div className="py-4">
         <p className="text-sm font-medium">Order and account emails</p>
-        <p className="mt-0.5 text-[13px] text-muted">Receipts, shipping and security emails are always sent.</p>
+        <p className="mt-0.5 text-caption text-muted">Receipts, shipping and security emails are always sent.</p>
       </div>
     </div>
   );
@@ -222,18 +222,25 @@ function DeleteAccount() {
   const { deleteAccount, signOut } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [confirmText, setConfirmText] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [deleting, setDeleting] = useState(false);
 
   const confirm = async () => {
     setDeleting(true);
+    setPasswordError('');
     try {
-      await deleteAccount();
+      await deleteAccount(password);
       await signOut({ to: '/' });
       toast({ variant: 'info', title: 'Your account has been deleted', description: 'We’re sorry to see you go.' });
     } catch (err) {
       setDeleting(false);
-      toast({ variant: 'error', title: 'Couldn’t delete account', description: err.userMessage });
+      if (err.code === 'wrong_password' || err.code === 'validation_failed') {
+        setPasswordError(err.userMessage);
+        document.getElementById(fieldId('delete-password'))?.focus();
+      } else {
+        toast({ variant: 'error', title: 'Couldn’t delete account', description: err.userMessage });
+      }
     }
   };
 
@@ -249,27 +256,27 @@ function DeleteAccount() {
         open={open}
         onClose={() => {
           setOpen(false);
-          setConfirmText('');
+          setPassword('');
+          setPasswordError('');
         }}
         onConfirm={confirm}
         loading={deleting}
-        confirmDisabled={confirmText !== 'DELETE'}
+        confirmDisabled={!password}
         title="Delete your account?"
         confirmLabel="Delete permanently"
       >
         <p>This can’t be undone. You’ll be signed out and your saved details will be erased.</p>
-        <TextField
-          name="confirm-delete"
-          label={
-            <>
-              Type <span className="font-mono font-semibold">DELETE</span> to confirm
-            </>
-          }
+        <PasswordField
+          name="delete-password"
+          label="Enter your password to confirm"
           className="mt-5"
-          autoComplete="off"
-          autoCapitalize="characters"
-          value={confirmText}
-          onChange={(event) => setConfirmText(event.target.value)}
+          autoComplete="current-password"
+          value={password}
+          error={passwordError || undefined}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setPasswordError('');
+          }}
         />
       </ConfirmDialog>
     </>
