@@ -78,8 +78,8 @@
   --animate-slide-down: slide-down 0.35s var(--ease-out-soft) both;
 
   @keyframes shimmer {
-    from { background-position: 200% 0; }
-    to { background-position: -200% 0; }
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
   }
   @keyframes fade-in {
     from { opacity: 0; }
@@ -181,8 +181,23 @@
   &::-webkit-scrollbar { display: none; }
 }
 
+/*
+ * Loading placeholder with a sweeping highlight. The highlight is a pseudo-element moved with
+ * transform, which the GPU animates on its own: animating background-position instead made the main
+ * thread repaint every skeleton on every frame. It's positioned against the skeleton, so a skeleton
+ * becomes `relative` unless it's already `absolute` (the image placeholder in SmartImage).
+ */
 @utility skeleton {
-  background: linear-gradient(90deg, #f1f1f0 0%, #f7f7f6 40%, #f1f1f0 80%);
-  background-size: 200% 100%;
-  animation: var(--animate-shimmer);
+  background-color: #f1f1f0;
+  overflow: hidden;
+  &:not(.absolute) {
+    position: relative;
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, #f7f7f6 50%, transparent 100%);
+    animation: var(--animate-shimmer);
+  }
 }
