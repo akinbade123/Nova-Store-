@@ -97,11 +97,7 @@ export function SearchPanel() {
                       <button
                         type="button"
                         onClick={() => setQuery(term)}
-<<<<<<< HEAD
-                        className="h-9 rounded-md px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
-=======
-                        className="h-9 rounded-full px-4 text-caption font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+                        className="h-9 rounded-md px-4 text-caption font-medium ring-1 ring-inset ring-line-strong transition-colors hover:bg-ink hover:text-white hover:ring-ink"
                       >
                         {term}
                       </button>

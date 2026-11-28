@@ -112,11 +112,7 @@ function WishlistItem({ product }) {
                   aria-invalid={sizeError}
                   aria-describedby={sizeError ? `${selectId}-error` : undefined}
                   className={cn(
-<<<<<<< HEAD
-                    'h-10 w-full cursor-pointer appearance-none rounded-md bg-white pl-4 pr-9 text-[13px] font-medium outline-none ring-1 ring-inset focus-visible:ring-2',
-=======
-                    'h-10 w-full cursor-pointer appearance-none rounded-full bg-white pl-4 pr-9 text-caption font-medium outline-none ring-1 ring-inset focus-visible:ring-2',
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+                    'h-10 w-full cursor-pointer appearance-none rounded-md bg-white pl-4 pr-9 text-caption font-medium outline-none ring-1 ring-inset focus-visible:ring-2',
                     sizeError ? 'ring-danger' : 'ring-line-strong hover:ring-ink focus-visible:ring-ink',
                     !size && 'text-muted',
                   )}

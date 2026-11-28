@@ -76,11 +76,7 @@ function AddressForm({ initial, onSave, onCancel, isOnlyAddress }) {
               />
               <span
                 className={cn(
-<<<<<<< HEAD
-                  'inline-flex h-9 items-center rounded-md px-4 text-[13px] font-medium transition-colors',
-=======
-                  'inline-flex h-9 items-center rounded-full px-4 text-caption font-medium transition-colors',
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+                  'inline-flex h-9 items-center rounded-md px-4 text-caption font-medium transition-colors',
                   'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
                   form.values.label === label ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong hover:ring-ink',
                 )}
@@ -216,11 +212,7 @@ export default function AddressesPage() {
                 <button
                   type="button"
                   onClick={() => setEditing(address)}
-<<<<<<< HEAD
-                  className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium hover:bg-surface"
-=======
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-caption font-medium hover:bg-surface"
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-medium hover:bg-surface"
                 >
                   <Pencil className="size-3.5" aria-hidden="true" />
                   Edit<span className="sr-only"> {address.label} address</span>
@@ -228,11 +220,7 @@ export default function AddressesPage() {
                 <button
                   type="button"
                   onClick={() => setDeleting(address)}
-<<<<<<< HEAD
-                  className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium text-muted hover:bg-surface hover:text-danger"
-=======
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-caption font-medium text-muted hover:bg-surface hover:text-danger"
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+                  className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption font-medium text-muted hover:bg-surface hover:text-danger"
                 >
                   <Trash2 className="size-3.5" aria-hidden="true" />
                   Delete<span className="sr-only"> {address.label} address</span>
@@ -241,11 +229,7 @@ export default function AddressesPage() {
                   <button
                     type="button"
                     onClick={() => makeDefault(address)}
-<<<<<<< HEAD
-                    className="ml-auto h-9 rounded-md px-3 text-[13px] font-medium underline underline-offset-4 hover:text-muted"
-=======
-                    className="ml-auto h-9 rounded-full px-3 text-caption font-medium underline underline-offset-4 hover:text-muted"
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+                    className="ml-auto h-9 rounded-md px-3 text-caption font-medium underline underline-offset-4 hover:text-muted"
                   >
                     Set as default
                   </button>

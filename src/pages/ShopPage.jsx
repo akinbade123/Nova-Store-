@@ -157,11 +157,7 @@ export default function ShopPage() {
                       onClick={() => update({ categories: category.slug ? [category.slug] : [] })}
                       aria-pressed={active}
                       className={cn(
-<<<<<<< HEAD
-                        'h-9 shrink-0 whitespace-nowrap rounded-md px-4 text-[13px] font-medium transition-colors',
-=======
-                        'h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-caption font-medium transition-colors',
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+                        'h-9 shrink-0 whitespace-nowrap rounded-md px-4 text-caption font-medium transition-colors',
                         active ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong',
                       )}
                     >
@@ -182,11 +178,7 @@ export default function ShopPage() {
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
-<<<<<<< HEAD
-              className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-[13px] font-medium ring-1 ring-inset ring-line-strong hover:ring-ink lg:hidden"
-=======
-              className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-caption font-medium ring-1 ring-inset ring-line-strong hover:ring-ink lg:hidden"
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+              className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-caption font-medium ring-1 ring-inset ring-line-strong hover:ring-ink lg:hidden"
             >
               <SlidersHorizontal className="size-4" strokeWidth={1.75} aria-hidden="true" />
               Filters

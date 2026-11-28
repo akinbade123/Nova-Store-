@@ -13,19 +13,16 @@ const HERO_IMAGE = '1490481651871-ab68de25d43d';
 const SPOTLIGHT_SLUG = 'moto-leather-jacket';
 
 export function Hero() {
-<<<<<<< HEAD
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  // Hidden if the product can't be loaded; the hero works without it.
+  const { data: spotlight } = useAsync(() => productService.getBySlug(SPOTLIGHT_SLUG), []);
 
   const submitSearch = (event) => {
     event.preventDefault();
     const term = query.trim();
     navigate(term ? `/shop?q=${encodeURIComponent(term)}` : '/shop');
   };
-=======
-  // Hidden if the product can't be loaded; the hero works without it.
-  const { data: spotlight } = useAsync(() => productService.getBySlug(SPOTLIGHT_SLUG), []);
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
 
   return (
     <section aria-labelledby="hero-heading" className="pt-3 sm:pt-4 lg:pt-6">

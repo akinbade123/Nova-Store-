@@ -113,11 +113,7 @@ export default function OrdersPage() {
               aria-selected={filter === status}
               onClick={() => setFilter(status)}
               className={cn(
-<<<<<<< HEAD
-                'h-9 shrink-0 rounded-md px-4 text-[13px] font-medium transition-colors',
-=======
-                'h-9 shrink-0 rounded-full px-4 text-caption font-medium transition-colors',
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+                'h-9 shrink-0 rounded-md px-4 text-caption font-medium transition-colors',
                 filter === status ? 'bg-ink text-white' : 'ring-1 ring-inset ring-line-strong hover:ring-ink',
               )}
             >

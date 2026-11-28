@@ -123,13 +123,8 @@ export default function ProductPage() {
           <ProductSkeleton />
         ) : (
           <>
-<<<<<<< HEAD
-            <div className="grid gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16">
-              <div className="-mx-4 sm:mx-0 lg:col-span-6">
-=======
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 xl:gap-16">
-              <div className="-mx-4 sm:mx-0 lg:col-span-7">
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+              <div className="-mx-4 sm:mx-0 lg:col-span-6">
                 <div className="lg:sticky lg:top-24">
                   <ProductGallery key={product.id} images={product.gallery} name={product.name}>
                     <div className="pointer-events-none absolute left-4 top-4 flex flex-col items-start gap-1.5">

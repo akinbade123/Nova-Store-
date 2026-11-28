@@ -84,11 +84,7 @@ export function CartLineItem({ item }) {
             <button
               type="button"
               onClick={handleSaveForLater}
-<<<<<<< HEAD
-              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] text-muted transition-colors hover:bg-surface hover:text-ink"
-=======
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-caption text-muted transition-colors hover:bg-surface hover:text-ink"
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption text-muted transition-colors hover:bg-surface hover:text-ink"
             >
               <Heart className="size-4" strokeWidth={1.75} aria-hidden="true" />
               <span className="hidden sm:inline">Save for later</span>
@@ -97,11 +93,7 @@ export function CartLineItem({ item }) {
             <button
               type="button"
               onClick={handleRemove}
-<<<<<<< HEAD
-              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-[13px] text-muted transition-colors hover:bg-surface hover:text-danger"
-=======
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-caption text-muted transition-colors hover:bg-surface hover:text-danger"
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
+              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-caption text-muted transition-colors hover:bg-surface hover:text-danger"
             >
               <Trash2 className="size-4" strokeWidth={1.75} aria-hidden="true" />
               <span className="hidden sm:inline">Remove</span>

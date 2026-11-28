@@ -1,9 +1,6 @@
 import axios from 'axios';
-<<<<<<< HEAD
 import { attachLoadBalancer, createLoadBalancer, parseEndpoints } from './loadBalancer';
-=======
 import { reportError } from './errorReporter';
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
 
 export const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
 
@@ -23,11 +20,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-<<<<<<< HEAD
 // Round-robin + failover across API_ENDPOINTS. Registered before the error formatter
 // below so failed endpoints are retried before the user sees an error.
 attachLoadBalancer(api, createLoadBalancer(API_ENDPOINTS));
-=======
+
 /** Fired on `window` when the API rejects the stored session. AuthProvider listens for it. */
 export const SESSION_EXPIRED_EVENT = 'nova:session-expired';
 
@@ -39,7 +35,6 @@ export const SESSION_EXPIRED_EVENT = 'nova:session-expired';
 /** Reads (GET) refused with 429 are retried once by themselves when the wait is this short or less. */
 const AUTO_RETRY_MAX_SECONDS = 5;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
->>>>>>> 2ee02a475115790a889c400c3730454a436cc71e
 
 api.interceptors.response.use(
   (response) => response,
